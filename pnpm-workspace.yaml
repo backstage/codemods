@@ -1,0 +1,6 @@
+packages:
+  - "codemods/*"
+catalog:
+  "@jssg/utils": "0.0.2"
+  "@codemod.com/jssg-types": "1.5.1"
+  "typescript": "6.0.2"
