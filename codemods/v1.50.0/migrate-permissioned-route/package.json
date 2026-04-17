@@ -8,11 +8,11 @@
     "check-types": "yarn exec tsc --noEmit"
   },
   "dependencies": {
-    "@jssg/utils": "latest"
+    "@jssg/utils": "0.0.4"
   },
   "devDependencies": {
-    "@codemod.com/jssg-types": "latest",
-    "codemod": "latest",
-    "typescript": "latest"
+    "@codemod.com/jssg-types": "1.5.2",
+    "codemod": "^1.7.15",
+    "typescript": "6.0.3"
   }
 }

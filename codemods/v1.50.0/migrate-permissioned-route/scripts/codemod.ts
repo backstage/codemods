@@ -1,4 +1,4 @@
-import { addImport, getImport, removeImport } from "@jssg/utils/javascript/imports";
+import { addImport, getImport } from "@jssg/utils/javascript/imports";
 import { parse } from "codemod:ast-grep";
 import type { Edit, SgNode, SgRoot, Codemod } from "codemod:ast-grep";
 import type TSX from "codemod:ast-grep/langs/tsx";
@@ -60,6 +60,81 @@ function collapseExtraBlankLines(source: string): string {
 
 function finalizeSource(source: string): string {
   return collapseExtraBlankLines(tidyImportStatements(source));
+}
+
+type ImportSpecifierInfo = {
+  importedName: string;
+  text: string;
+};
+
+function getNamedImportSpecifiers(
+  importStatement: SgNode<TSX>,
+): ImportSpecifierInfo[] {
+  const namedImports = importStatement.find({ rule: { kind: "named_imports" } });
+  if (!namedImports) {
+    return [];
+  }
+
+  const specifiers: ImportSpecifierInfo[] = [];
+  for (const child of namedImports.children()) {
+    if (!child.is("import_specifier")) continue;
+
+    const importedNameNode = child.child(0);
+    const importedName =
+      importedNameNode?.is("identifier") || importedNameNode?.is("string")
+        ? importedNameNode.text()
+        : null;
+    if (!importedName) continue;
+
+    specifiers.push({
+      importedName,
+      text: child.text(),
+    });
+  }
+
+  return specifiers;
+}
+
+function updatePermissionReactImport(rootNode: SgNode<TSX>): Edit | null {
+  for (const node of rootNode.findAll({ rule: { kind: "import_statement" } })) {
+    const sourceNode = node.find({ rule: { kind: "string_fragment" } });
+    if (sourceNode?.text() !== PERMISSION_REACT) {
+      continue;
+    }
+
+    const specifiers = getNamedImportSpecifiers(node);
+    if (specifiers.length === 0) {
+      continue;
+    }
+
+    const hasPermissionedRoute = specifiers.some(
+      (specifier) => specifier.importedName === "PermissionedRoute",
+    );
+    if (!hasPermissionedRoute) {
+      continue;
+    }
+
+    const nextSpecifiers = specifiers
+      .filter((specifier) => specifier.importedName !== "PermissionedRoute")
+      .map((specifier) => specifier.text);
+
+    const hasRequirePermission = specifiers.some(
+      (specifier) => specifier.importedName === "RequirePermission",
+    );
+    if (!hasRequirePermission) {
+      nextSpecifiers.push("RequirePermission");
+    }
+
+    const sourceLiteral =
+      node.find({ rule: { kind: "string" } })?.text() ??
+      `'${PERMISSION_REACT}'`;
+
+    return node.replace(
+      `import { ${nextSpecifiers.join(", ")} } from ${sourceLiteral};`,
+    );
+  }
+
+  return null;
 }
 
 function getJsxComponentNameNode(
@@ -320,13 +395,9 @@ const transform: Codemod<TSX> = async (root) => {
   const prog = parseTsx(source);
   const importEdits: Edit[] = [];
 
-  const requirePermissionImportEdit = addImport(prog.root(), {
-    type: "named",
-    specifiers: [{ name: "RequirePermission" }],
-    from: PERMISSION_REACT,
-  });
-  if (requirePermissionImportEdit) {
-    importEdits.push(requirePermissionImportEdit);
+  const permissionReactImportEdit = updatePermissionReactImport(prog.root());
+  if (permissionReactImportEdit) {
+    importEdits.push(permissionReactImportEdit);
   }
 
   const routeModuleType = routeImp?.moduleType ?? "esm";
@@ -338,15 +409,6 @@ const transform: Codemod<TSX> = async (root) => {
   });
   if (routeImportEdit) {
     importEdits.push(routeImportEdit);
-  }
-
-  const removePermissionedRouteImportEdit = removeImport(prog.root(), {
-    type: "named",
-    specifiers: ["PermissionedRoute"],
-    from: PERMISSION_REACT,
-  });
-  if (removePermissionedRouteImportEdit) {
-    importEdits.push(removePermissionedRouteImportEdit);
   }
 
   const out = importEdits.length > 0
