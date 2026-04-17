@@ -12,9 +12,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@backstage/migrate-permissioned-route@workspace:codemods/v1.50.0/migrate-permissioned-route":
+"@backstage/migrate-signals-service@workspace:codemods/v1.50.0/migrate-signals-service":
   version: 0.0.0-use.local
-  resolution: "@backstage/migrate-permissioned-route@workspace:codemods/v1.50.0/migrate-permissioned-route"
+  resolution: "@backstage/migrate-signals-service@workspace:codemods/v1.50.0/migrate-signals-service"
   dependencies:
     "@codemod.com/jssg-types": "npm:latest"
     "@jssg/utils": "npm:latest"
