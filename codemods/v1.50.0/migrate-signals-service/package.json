@@ -1,0 +1,15 @@
+{
+  "name": "@backstage/migrate-signals-service",
+  "version": "0.1.0",
+  "description": "Rename deprecated SignalService exports to SignalsService in @backstage/plugin-signals-node",
+  "type": "module",
+  "scripts": {
+    "test": "yarn exec codemod jssg test -l tsx ./scripts/codemod.ts ./tests && yarn exec codemod workflow validate -w workflow.yaml",
+    "check-types": "yarn exec tsc --noEmit"
+  },
+  "devDependencies": {
+    "@codemod.com/jssg-types": "latest",
+    "codemod": "latest",
+    "typescript": "latest"
+  }
+}
