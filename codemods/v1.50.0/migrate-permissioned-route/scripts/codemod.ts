@@ -21,13 +21,8 @@ const REACT_ROUTER_DOM = "react-router-dom";
 const routesMigrated = useMetricAtom("permissioned-routes-migrated");
 
 /**
- * `addImport` edits are computed against one AST snapshot. Committing several
- * new imports from different modules in a single `commitEdits` can concatenate
- * statements without a newline between them. Applying one import change, then
- * re-parsing before the next, matches how @jssg/utils expects to be used.
- *
- * After those edits, normalize import *text* only: merged specifiers and
- * statement boundaries are string-level details the helpers do not pretty-print.
+ * Import helpers do not pretty-print statement boundaries consistently, so
+ * normalize import text after applying the computed edits.
  */
 function tidyImportStatements(source: string): string {
   const withBreaks = source.replace(/;(?=import\s)/g, ";\n");
@@ -322,45 +317,41 @@ const transform: Codemod<TSX> = async (root) => {
 
   const source = rootNode.commitEdits(jsxEdits);
 
-  let prog = parseTsx(source);
-  let out = source;
+  const prog = parseTsx(source);
+  const importEdits: Edit[] = [];
 
-  const applyImportEdit = (edit: Edit | null): void => {
-    if (!edit) return;
-    out = prog.root().commitEdits([edit]);
-    prog = parseTsx(out);
-  };
-
-  applyImportEdit(
-    addImport(prog.root(), {
-      type: "named",
-      specifiers: [{ name: "RequirePermission" }],
-      from: PERMISSION_REACT,
-    }),
-  );
-
-  const routeImpAfter = getImport(prog.root(), {
+  const requirePermissionImportEdit = addImport(prog.root(), {
     type: "named",
-    name: "Route",
-    from: REACT_ROUTER_DOM,
+    specifiers: [{ name: "RequirePermission" }],
+    from: PERMISSION_REACT,
   });
-  const routeModuleType = routeImpAfter?.moduleType ?? routeImp?.moduleType ?? "esm";
-  applyImportEdit(
-    addImport(prog.root(), {
-      type: "named",
-      specifiers: [{ name: "Route" }],
-      from: REACT_ROUTER_DOM,
-      moduleType: routeModuleType,
-    }),
-  );
+  if (requirePermissionImportEdit) {
+    importEdits.push(requirePermissionImportEdit);
+  }
 
-  applyImportEdit(
-    removeImport(prog.root(), {
-      type: "named",
-      specifiers: ["PermissionedRoute"],
-      from: PERMISSION_REACT,
-    }),
-  );
+  const routeModuleType = routeImp?.moduleType ?? "esm";
+  const routeImportEdit = addImport(prog.root(), {
+    type: "named",
+    specifiers: [{ name: "Route" }],
+    from: REACT_ROUTER_DOM,
+    moduleType: routeModuleType,
+  });
+  if (routeImportEdit) {
+    importEdits.push(routeImportEdit);
+  }
+
+  const removePermissionedRouteImportEdit = removeImport(prog.root(), {
+    type: "named",
+    specifiers: ["PermissionedRoute"],
+    from: PERMISSION_REACT,
+  });
+  if (removePermissionedRouteImportEdit) {
+    importEdits.push(removePermissionedRouteImportEdit);
+  }
+
+  const out = importEdits.length > 0
+    ? prog.root().commitEdits(importEdits)
+    : source;
 
   return finalizeSource(out);
 };
