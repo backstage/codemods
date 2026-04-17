@@ -1,6 +1,6 @@
 # backstage-codemods
 
-A collection of codemods for upgrading and maintaining [Backstage](https://backstage.io) projects, built and maintained by [Codemod](https://codemod.com).
+Official codemods for upgrading and maintaining Backstage projects, built by the community and approved by the Backstage core team.
 
 Backstage moves fast! APIs get deprecated, plugin systems get rewritten, and manual upgrades across a large app become tedious and error-prone. This repo provides automated transformations that handle the mechanical parts of those migrations for you.
 
@@ -21,7 +21,7 @@ _No codemods published yet — check back soon, or [contribute one](./CONTRIBUTI
 Run any codemod in this repo against your Backstage project with the [Codemod CLI](https://docs.codemod.com/cli):
 
 ```bash
-npx codemod@latest <codemod-name>
+npx codemod <codemod-name>
 ```
 
 ## Development
@@ -30,13 +30,13 @@ Codemods in this repo are written using [jssg](https://docs.codemod.com/jssg) (J
 
 ```bash
 # Install dependencies
-pnpm install
+yarn install
 
 # Run all tests
-pnpm test
+yarn test
 
 # Type-check all codemods
-pnpm check-types
+yarn check-types
 ```
 
 ## Contributing

@@ -12,15 +12,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
+          cache: yarn
 
-      - run: pnpm install --frozen-lockfile
+      - name: Enable Corepack
+        run: corepack enable
 
-      - run: pnpm check-types
+      - run: yarn install --immutable
 
-      - run: pnpm test
+      - run: yarn check-types
+
+      - run: yarn test

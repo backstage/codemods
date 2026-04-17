@@ -1,0 +1,10 @@
+{
+  "permissioned-routes-migrated": [
+    {
+      "cardinality": {
+        "pattern": "self-closing"
+      },
+      "count": 2
+    }
+  ]
+}
