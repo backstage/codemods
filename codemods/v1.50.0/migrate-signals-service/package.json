@@ -1,7 +1,7 @@
 {
-  "name": "@backstage/migrate-permissioned-route",
+  "name": "@backstage/migrate-signals-service",
   "version": "0.1.0",
-  "description": "Migrate PermissionedRoute to Route + RequirePermission for @backstage/plugin-permission-react",
+  "description": "Rename deprecated SignalService exports to SignalsService in @backstage/plugin-signals-node",
   "type": "module",
   "scripts": {
     "test": "yarn exec codemod jssg test -l tsx ./scripts/codemod.ts ./tests && yarn exec codemod workflow validate -w workflow.yaml",
@@ -12,7 +12,7 @@
   },
   "devDependencies": {
     "@codemod.com/jssg-types": "1.5.2",
-    "codemod": "^1.7.15",
+    "codemod": "1.7.15",
     "typescript": "6.0.3"
   }
 }

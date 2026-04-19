@@ -17,8 +17,19 @@ __metadata:
   resolution: "@backstage/migrate-permissioned-route@workspace:codemods/v1.50.0/migrate-permissioned-route"
   dependencies:
     "@codemod.com/jssg-types": "npm:1.5.2"
-    "@jssg/utils": "npm:0.0.4"
+    "@jssg/utils": "npm:0.0.5"
     codemod: "npm:^1.7.15"
+    typescript: "npm:6.0.3"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/migrate-signals-service@workspace:codemods/v1.50.0/migrate-signals-service":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-signals-service@workspace:codemods/v1.50.0/migrate-signals-service"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    "@jssg/utils": "npm:0.0.5"
+    codemod: "npm:1.7.15"
     typescript: "npm:6.0.3"
   languageName: unknown
   linkType: soft
@@ -313,10 +324,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jssg/utils@npm:0.0.4":
-  version: 0.0.4
-  resolution: "@jssg/utils@npm:0.0.4"
-  checksum: 10c0/9a36c2f34bb561ca6cae2455a0f144ef28367dbb0537d190781593e01ef3a6df0c7a00eba6cb9d33355556b82f88dae3699224ffac82f05e7095bb7e0435ee08
+"@jssg/utils@npm:0.0.5":
+  version: 0.0.5
+  resolution: "@jssg/utils@npm:0.0.5"
+  checksum: 10c0/da9794929cf46ac27103a83b3eb8b2935335d31b3848af65fa7337aab1910f79754ddd6c406d8364dcf69c4fc01f949d3b5c5449743b6974cdc149f6ba48d91c
   languageName: node
   linkType: hard
 
@@ -442,7 +453,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"codemod@npm:^1.7.15":
+"codemod@npm:1.7.15, codemod@npm:^1.7.15":
   version: 1.7.15
   resolution: "codemod@npm:1.7.15"
   dependencies:
