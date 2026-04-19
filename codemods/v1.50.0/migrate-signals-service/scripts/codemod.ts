@@ -1,3 +1,4 @@
+import { getImport } from "@jssg/utils/javascript/imports";
 import type { Codemod, Edit, SgNode } from "codemod:ast-grep";
 import type TSX from "codemod:ast-grep/langs/tsx";
 import { useMetricAtom } from "codemod:metrics";
@@ -12,85 +13,53 @@ const RENAME_MAP = {
 } as const;
 
 type DeprecatedExport = keyof typeof RENAME_MAP;
+const DEPRECATED_EXPORTS = Object.keys(RENAME_MAP) as DeprecatedExport[];
 
 const renamedExports = useMetricAtom("signals-service-renames");
-
-function getImportSource(node: SgNode<TSX, "import_statement">): string | null {
-  const source = node.find({
-    rule: { kind: "string_fragment" },
-  });
-  return source?.text() ?? null;
-}
-
-function getImportSpecifiers(
-  node: SgNode<TSX, "import_statement">,
-): SgNode<TSX, "import_specifier">[] {
-  return node.findAll({
-    rule: { kind: "import_specifier" },
-  });
-}
-
-function getSpecifierImportedAndLocalNames(
-  specifier: SgNode<TSX, "import_specifier">,
-): { imported: string; local: string; importedNode: SgNode<TSX>; localNode: SgNode<TSX> } | null {
-  const identifiers = specifier.children().filter(c => c.is("identifier"));
-  const importedNode = identifiers[0];
-  if (!importedNode) return null;
-
-  const localNode = identifiers[1] ?? importedNode;
-  const imported = importedNode.text();
-  const local = localNode.text();
-
-  return { imported, local, importedNode, localNode };
-}
-
-function isDeprecatedExport(name: string): name is DeprecatedExport {
-  return Object.prototype.hasOwnProperty.call(RENAME_MAP, name);
-}
 
 const transform: Codemod<TSX> = async root => {
   const rootNode = root.root();
   const edits: Edit[] = [];
-  const importStatements = rootNode
-    .findAll({
-      rule: { kind: "import_statement" },
-    })
-    .filter((node): node is SgNode<TSX, "import_statement"> =>
-      node.is("import_statement"),
-    );
 
-  for (const importStatement of importStatements) {
-    if (getImportSource(importStatement) !== SIGNALS_NODE) continue;
+  for (const name of DEPRECATED_EXPORTS) {
+    const imp = getImport(rootNode, { type: "named", name, from: SIGNALS_NODE });
+    if (!imp || imp.isNamespace || imp.moduleType !== "esm") continue;
 
-    for (const specifier of getImportSpecifiers(importStatement)) {
-      const names = getSpecifierImportedAndLocalNames(specifier);
-      if (!names) continue;
-      if (!isDeprecatedExport(names.imported)) continue;
+    const specifier = imp.node.parent();
+    if (!specifier || !specifier.is("import_specifier")) continue;
 
-      const replacement = RENAME_MAP[names.imported];
-      renamedExports.increment({
-        from: names.imported,
-        to: replacement,
-      });
+    const identifiers = specifier.children().filter(c => c.is("identifier"));
+    const importedNameNode = identifiers[0] as SgNode<TSX> | undefined;
+    if (!importedNameNode) continue;
+    const localNameNode = (identifiers[1] as SgNode<TSX> | undefined) ?? importedNameNode;
 
-      edits.push(names.importedNode.replace(replacement));
+    const replacement = RENAME_MAP[name];
+    renamedExports.increment({ from: name, to: replacement });
+    edits.push(importedNameNode.replace(replacement));
 
-      if (names.local !== names.imported) continue;
+    /**
+     * Only rewrite local references when the binding is not aliased. With
+     * `import { X as Y }`, callers use `Y` and must stay untouched - only the
+     * imported name `X` inside the specifier is renamed.
+     */
+    if (imp.alias !== name) continue;
 
-      for (const refGroup of names.localNode.references()) {
-        if (refGroup.root.filename() !== root.filename()) continue;
-        for (const refNode of refGroup.nodes) {
-          if (refNode.id() === names.localNode.id()) continue;
-          edits.push(refNode.replace(replacement));
-        }
+    for (const refGroup of localNameNode.references()) {
+      /**
+       * Defend against `codemod@1.7.15`'s `.references()` returning cross-file
+       * reference groups whose ranges belong to a different source file - applying
+       * those edits to our current file corrupts unrelated spans (e.g. the import
+       * source string). When a fixed CLI release lands, this guard can go.
+       */
+      if (refGroup.root.filename() !== root.filename()) continue;
+      for (const refNode of refGroup.nodes) {
+        if (refNode.id() === localNameNode.id()) continue;
+        edits.push(refNode.replace(replacement));
       }
     }
   }
 
-  if (edits.length === 0) {
-    return null;
-  }
-
+  if (edits.length === 0) return null;
   return rootNode.commitEdits(edits);
 };
 

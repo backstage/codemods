@@ -8,7 +8,7 @@
     "check-types": "yarn exec tsc --noEmit"
   },
   "dependencies": {
-    "@jssg/utils": "0.0.4"
+    "@jssg/utils": "0.0.5"
   },
   "devDependencies": {
     "@codemod.com/jssg-types": "1.5.2",

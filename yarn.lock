@@ -2,7 +2,7 @@
 # Manual changes might be lost - proceed with caution!
 
 __metadata:
-  version: 8
+  version: 9
   cacheKey: 10c0
 
 "@babel/runtime@npm:^7.5.5":
@@ -12,14 +12,25 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@backstage/migrate-permissioned-route@workspace:codemods/v1.50.0/migrate-permissioned-route":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-permissioned-route@workspace:codemods/v1.50.0/migrate-permissioned-route"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    "@jssg/utils": "npm:0.0.5"
+    codemod: "npm:^1.7.15"
+    typescript: "npm:6.0.3"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/migrate-signals-service@workspace:codemods/v1.50.0/migrate-signals-service":
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-signals-service@workspace:codemods/v1.50.0/migrate-signals-service"
   dependencies:
-    "@codemod.com/jssg-types": "npm:latest"
-    "@jssg/utils": "npm:latest"
-    codemod: "npm:latest"
-    typescript: "npm:latest"
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    "@jssg/utils": "npm:0.0.5"
+    codemod: "npm:1.7.15"
+    typescript: "npm:6.0.3"
   languageName: unknown
   linkType: soft
 
@@ -256,42 +267,42 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@codemod.com/cli-darwin-arm64@npm:1.7.14":
-  version: 1.7.14
-  resolution: "@codemod.com/cli-darwin-arm64@npm:1.7.14"
+"@codemod.com/cli-darwin-arm64@npm:1.7.15":
+  version: 1.7.15
+  resolution: "@codemod.com/cli-darwin-arm64@npm:1.7.15"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@codemod.com/cli-darwin-x64@npm:1.7.14":
-  version: 1.7.14
-  resolution: "@codemod.com/cli-darwin-x64@npm:1.7.14"
+"@codemod.com/cli-darwin-x64@npm:1.7.15":
+  version: 1.7.15
+  resolution: "@codemod.com/cli-darwin-x64@npm:1.7.15"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@codemod.com/cli-linux-arm64-gnu@npm:1.7.14":
-  version: 1.7.14
-  resolution: "@codemod.com/cli-linux-arm64-gnu@npm:1.7.14"
+"@codemod.com/cli-linux-arm64-gnu@npm:1.7.15":
+  version: 1.7.15
+  resolution: "@codemod.com/cli-linux-arm64-gnu@npm:1.7.15"
   conditions: os=linux & cpu=arm64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@codemod.com/cli-linux-x64-gnu@npm:1.7.14":
-  version: 1.7.14
-  resolution: "@codemod.com/cli-linux-x64-gnu@npm:1.7.14"
+"@codemod.com/cli-linux-x64-gnu@npm:1.7.15":
+  version: 1.7.15
+  resolution: "@codemod.com/cli-linux-x64-gnu@npm:1.7.15"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@codemod.com/cli-win32-x64-msvc@npm:1.7.14":
-  version: 1.7.14
-  resolution: "@codemod.com/cli-win32-x64-msvc@npm:1.7.14"
+"@codemod.com/cli-win32-x64-msvc@npm:1.7.15":
+  version: 1.7.15
+  resolution: "@codemod.com/cli-win32-x64-msvc@npm:1.7.15"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
 
-"@codemod.com/jssg-types@npm:latest":
+"@codemod.com/jssg-types@npm:1.5.2":
   version: 1.5.2
   resolution: "@codemod.com/jssg-types@npm:1.5.2"
   checksum: 10c0/5032977b26555e49e7860078a3f3d0070f40a4a491bfa786064af958c21bb4db64c0a3886321e686726c7316200c60f82456e1e7383164144958c62c1298defd
@@ -313,10 +324,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jssg/utils@npm:latest":
-  version: 0.0.4
-  resolution: "@jssg/utils@npm:0.0.4"
-  checksum: 10c0/9a36c2f34bb561ca6cae2455a0f144ef28367dbb0537d190781593e01ef3a6df0c7a00eba6cb9d33355556b82f88dae3699224ffac82f05e7095bb7e0435ee08
+"@jssg/utils@npm:0.0.5":
+  version: 0.0.5
+  resolution: "@jssg/utils@npm:0.0.5"
+  checksum: 10c0/da9794929cf46ac27103a83b3eb8b2935335d31b3848af65fa7337aab1910f79754ddd6c406d8364dcf69c4fc01f949d3b5c5449743b6974cdc149f6ba48d91c
   languageName: node
   linkType: hard
 
@@ -442,15 +453,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"codemod@npm:latest":
-  version: 1.7.14
-  resolution: "codemod@npm:1.7.14"
+"codemod@npm:1.7.15, codemod@npm:^1.7.15":
+  version: 1.7.15
+  resolution: "codemod@npm:1.7.15"
   dependencies:
-    "@codemod.com/cli-darwin-arm64": "npm:1.7.14"
-    "@codemod.com/cli-darwin-x64": "npm:1.7.14"
-    "@codemod.com/cli-linux-arm64-gnu": "npm:1.7.14"
-    "@codemod.com/cli-linux-x64-gnu": "npm:1.7.14"
-    "@codemod.com/cli-win32-x64-msvc": "npm:1.7.14"
+    "@codemod.com/cli-darwin-arm64": "npm:1.7.15"
+    "@codemod.com/cli-darwin-x64": "npm:1.7.15"
+    "@codemod.com/cli-linux-arm64-gnu": "npm:1.7.15"
+    "@codemod.com/cli-linux-x64-gnu": "npm:1.7.15"
+    "@codemod.com/cli-win32-x64-msvc": "npm:1.7.15"
     detect-libc: "npm:^2.0.3"
   dependenciesMeta:
     "@codemod.com/cli-darwin-arm64":
@@ -465,7 +476,7 @@ __metadata:
       optional: true
   bin:
     codemod: codemod
-  checksum: 10c0/93cafef82890d037e8fb7d6784788a0945d37e1d05e292c64312070e1ecde30bcb3d4c015aef4e598e6f346baf6f970f62c3182d3c5db8bc6f23a8ab8e619f19
+  checksum: 10c0/700d741051d0d4d24b457676929b2345b8b78d4b6730cb433cd0e70b9dd3131fef7de3bc92b539e4e653506232f4ed03f2ada744bf1b9e5143f712d31c97572c
   languageName: node
   linkType: hard
 
@@ -1021,7 +1032,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:latest":
+"typescript@npm:6.0.3":
   version: 6.0.3
   resolution: "typescript@npm:6.0.3"
   bin:
@@ -1031,7 +1042,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3Alatest#optional!builtin<compat/typescript>":
+"typescript@patch:typescript@npm%3A6.0.3#optional!builtin<compat/typescript>":
   version: 6.0.3
   resolution: "typescript@patch:typescript@npm%3A6.0.3#optional!builtin<compat/typescript>::version=6.0.3&hash=5786d5"
   bin:
