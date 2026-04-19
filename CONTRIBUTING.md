@@ -6,20 +6,20 @@ Thanks for your interest in contributing to useful-codemods!
 
 ```bash
 # Install dependencies
-pnpm install
+yarn install
 
 # Run all tests
-pnpm test
+yarn test
 
 # Type-check all codemods
-pnpm check-types
+yarn check-types
 ```
 
 ## Making changes
 
 1. Create a branch from `main`.
 2. Make your changes and add or update tests.
-3. Run `pnpm test` and `pnpm check-types` to verify everything passes.
+3. Run `yarn test` and `yarn check-types` to verify everything passes.
 4. Add a changeset (see below).
 5. Open a pull request.
 
@@ -28,7 +28,7 @@ pnpm check-types
 This repo uses [Changesets](https://github.com/changesets/changesets) for versioning and releases. Every PR that changes a codemod must include a changeset.
 
 ```bash
-pnpm changeset
+yarn changeset
 ```
 
 Follow the prompts to:

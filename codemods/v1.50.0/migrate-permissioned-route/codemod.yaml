@@ -1,0 +1,24 @@
+schema_version: "1.0"
+
+name: "@backstage/migrate-permissioned-route"
+version: "0.1.0"
+description: "Migrate PermissionedRoute to Route + RequirePermission for @backstage/plugin-permission-react"
+author: "Alex Bit<alex@codemod.com>"
+license: "MIT"
+workflow: "workflow.yaml"
+
+
+targets:
+  languages: ["typescript", "tsx"]
+
+keywords:
+  - backstage
+  - migration
+  - permission
+  - react-router
+
+registry:
+  access: "public"
+  visibility: "public"
+
+capabilities: []
