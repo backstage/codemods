@@ -1,4 +1,4 @@
-import { addImport, getImport } from "@jssg/utils/javascript/imports";
+import { addImport, getImport, removeImport } from "@jssg/utils/javascript/imports";
 import { parse } from "codemod:ast-grep";
 import type { Edit, SgNode, SgRoot, Codemod } from "codemod:ast-grep";
 import type TSX from "codemod:ast-grep/langs/tsx";
@@ -6,11 +6,6 @@ import { useMetricAtom } from "codemod:metrics";
 
 const TSX_LANG = "tsx";
 
-/**
- * JSX `replace` commits return new source; import helpers need a `program` root
- * built from that text. `parse`'s return type is not narrowed by the `"tsx"` key,
- * so we assert once at this boundary.
- */
 function parseTsx(source: string): SgRoot<TSX> {
   return parse(TSX_LANG, source) as SgRoot<TSX>;
 }
@@ -20,20 +15,34 @@ const REACT_ROUTER_DOM = "react-router-dom";
 
 const routesMigrated = useMetricAtom("permissioned-routes-migrated");
 
+function collapseExtraBlankLines(source: string): string {
+  return source.replace(/\n{3,}/g, "\n\n");
+}
+
 /**
- * Import helpers do not pretty-print statement boundaries consistently, so
- * normalize import text after applying the computed edits.
+ * Clean up specifier whitespace after `removeImport` + `addImport` merges, handling
+ * both the single-line case (`{ a,b }`) and the multi-line merge that `addImport`
+ * produces when it inserts before the closing brace of an existing multi-line block
+ * (`...Last,\n, NewSpec}` -> `...Last,\n  NewSpec,\n}`).
  */
 function tidyImportStatements(source: string): string {
-  const withBreaks = source.replace(/;(?=import\s)/g, ";\n");
-  const lines = withBreaks.split("\n");
-  const out: string[] = [];
+  let out = source.replace(/;(?=import\s)/g, ";\n");
+
+  out = out.replace(
+    /(\n)([ \t]+)([^\n{}]*?,)(\n),\s*([^\n{}]+?)\s*\}/g,
+    (_m, nl1: string, indent: string, prevLine: string, nl2: string, spec: string) =>
+      `${nl1}${indent}${prevLine}${nl2}${indent}${spec.trim()},${nl2}}`,
+  );
+
+  const lines = out.split("\n");
+  const next: string[] = [];
   for (const line of lines) {
     const trimmed = line.trimStart();
     if (
       trimmed.startsWith("import ") &&
       !trimmed.startsWith("import type ") &&
-      trimmed.includes(" from ")
+      trimmed.includes(" from ") &&
+      /\{[^}]*\}/.test(trimmed)
     ) {
       const formatted = line.replace(
         /import\s*\{([^}]*)\}\s*from/,
@@ -45,101 +54,19 @@ function tidyImportStatements(source: string): string {
           return `import { ${parts.join(", ")} } from`;
         },
       );
-      out.push(formatted);
+      next.push(formatted);
     } else {
-      out.push(line);
+      next.push(line);
     }
   }
-  return out.join("\n");
-}
-
-/** Collapse accidental triple+ newlines after automated edits (output-only). */
-function collapseExtraBlankLines(source: string): string {
-  return source.replace(/\n{3,}/g, "\n\n");
+  return next.join("\n");
 }
 
 function finalizeSource(source: string): string {
   return collapseExtraBlankLines(tidyImportStatements(source));
 }
 
-type ImportSpecifierInfo = {
-  importedName: string;
-  text: string;
-};
-
-function getNamedImportSpecifiers(
-  importStatement: SgNode<TSX>,
-): ImportSpecifierInfo[] {
-  const namedImports = importStatement.find({ rule: { kind: "named_imports" } });
-  if (!namedImports) {
-    return [];
-  }
-
-  const specifiers: ImportSpecifierInfo[] = [];
-  for (const child of namedImports.children()) {
-    if (!child.is("import_specifier")) continue;
-
-    const importedNameNode = child.child(0);
-    const importedName =
-      importedNameNode?.is("identifier") || importedNameNode?.is("string")
-        ? importedNameNode.text()
-        : null;
-    if (!importedName) continue;
-
-    specifiers.push({
-      importedName,
-      text: child.text(),
-    });
-  }
-
-  return specifiers;
-}
-
-function updatePermissionReactImport(rootNode: SgNode<TSX>): Edit | null {
-  for (const node of rootNode.findAll({ rule: { kind: "import_statement" } })) {
-    const sourceNode = node.find({ rule: { kind: "string_fragment" } });
-    if (sourceNode?.text() !== PERMISSION_REACT) {
-      continue;
-    }
-
-    const specifiers = getNamedImportSpecifiers(node);
-    if (specifiers.length === 0) {
-      continue;
-    }
-
-    const hasPermissionedRoute = specifiers.some(
-      (specifier) => specifier.importedName === "PermissionedRoute",
-    );
-    if (!hasPermissionedRoute) {
-      continue;
-    }
-
-    const nextSpecifiers = specifiers
-      .filter((specifier) => specifier.importedName !== "PermissionedRoute")
-      .map((specifier) => specifier.text);
-
-    const hasRequirePermission = specifiers.some(
-      (specifier) => specifier.importedName === "RequirePermission",
-    );
-    if (!hasRequirePermission) {
-      nextSpecifiers.push("RequirePermission");
-    }
-
-    const sourceLiteral =
-      node.find({ rule: { kind: "string" } })?.text() ??
-      `'${PERMISSION_REACT}'`;
-
-    return node.replace(
-      `import { ${nextSpecifiers.join(", ")} } from ${sourceLiteral};`,
-    );
-  }
-
-  return null;
-}
-
-function getJsxComponentNameNode(
-  el: SgNode<TSX>,
-): SgNode<TSX> | null {
+function getJsxComponentNameNode(el: SgNode<TSX>): SgNode<TSX> | null {
   if (el.is("jsx_self_closing_element")) {
     const n = el.child(1);
     return n ?? null;
@@ -171,20 +98,15 @@ function parseJsxAttributes(opening: SgNode<TSX>): Map<string, SgNode<TSX>> {
   const map = new Map<string, SgNode<TSX>>();
   for (const child of opening.children()) {
     if (!child.is("jsx_attribute")) continue;
-    const nameNode = child.find({
-      rule: { kind: "property_identifier" },
-    });
+    const nameNode = child.find({ rule: { kind: "property_identifier" } });
     if (!nameNode) continue;
     map.set(nameNode.text(), child);
   }
   return map;
 }
 
-/** Inner JSX / expression node inside `element={...}` (not `{` / `}` punctuation). */
 function getElementExpressionInner(elementAttr: SgNode<TSX>): SgNode<TSX> | null {
-  const jsxExpr = elementAttr.find({
-    rule: { kind: "jsx_expression" },
-  });
+  const jsxExpr = elementAttr.find({ rule: { kind: "jsx_expression" } });
   if (!jsxExpr) return null;
   for (const c of jsxExpr.children()) {
     const k = c.kind();
@@ -238,14 +160,11 @@ function innerIsSkippedRequirePermission(
   return true;
 }
 
-function buildRequirePermissionChildrenInner(
-  elementAttr: SgNode<TSX>,
-): string | null {
+function buildRequirePermissionChildrenInner(elementAttr: SgNode<TSX>): string | null {
   const inner = getElementExpressionInner(elementAttr);
   return inner?.text() ?? null;
 }
 
-/** Raw slice between `>` and `</` so leading indentation is preserved (no jsx_text nodes). */
 function collectRouteBodySlice(jsxEl: SgNode<TSX>, fullSource: string): string {
   const children = jsxEl.children();
   if (children.length < 3) return "";
@@ -291,8 +210,7 @@ function buildReplacement(
       const ecVal = ec?.text() ?? "null";
       reqProps.push(`errorPage=${ecVal}`);
     }
-    const propsJoined =
-      reqProps.length > 0 ? ` ${reqProps.join(" ")}` : "";
+    const propsJoined = reqProps.length > 0 ? ` ${reqProps.join(" ")}` : "";
     reqInner = `<${requirePermissionName}${propsJoined}>${innerPage}</${requirePermissionName}>`;
   }
 
@@ -317,9 +235,7 @@ const transform: Codemod<TSX> = async (root) => {
     name: "PermissionedRoute",
     from: PERMISSION_REACT,
   });
-  if (!permImport) {
-    return null;
-  }
+  if (!permImport) return null;
 
   const localPermissionedRoute = permImport.alias;
 
@@ -334,15 +250,10 @@ const transform: Codemod<TSX> = async (root) => {
   for (const kind of ["jsx_self_closing_element", "jsx_element"] as const) {
     for (const n of rootNode.findAll({ rule: { kind } })) {
       const name = getJsxComponentName(n);
-      if (name === localPermissionedRoute) {
-        candidates.push(n);
-      }
+      if (name === localPermissionedRoute) candidates.push(n);
     }
   }
-
-  if (candidates.length === 0) {
-    return null;
-  }
+  if (candidates.length === 0) return null;
 
   const routeImp = getImport(rootNode, {
     type: "named",
@@ -351,7 +262,7 @@ const transform: Codemod<TSX> = async (root) => {
   });
   const routeName = routeImp?.alias ?? "Route";
 
-  const jsxEdits: Edit[] = [];
+  const edits: Edit[] = [];
 
   for (const node of candidates) {
     const opening = getOpeningForAttrs(node);
@@ -365,12 +276,8 @@ const transform: Codemod<TSX> = async (root) => {
       requirePermissionAlias,
     );
 
-    const bodySlice = node.is("jsx_element")
-      ? collectRouteBodySlice(node, fullSource)
-      : "";
-    const mode = node.is("jsx_self_closing_element")
-      ? "self-closing"
-      : "with-children";
+    const bodySlice = node.is("jsx_element") ? collectRouteBodySlice(node, fullSource) : "";
+    const mode = node.is("jsx_self_closing_element") ? "self-closing" : "with-children";
 
     const replacement = buildReplacement(
       attrs,
@@ -383,37 +290,64 @@ const transform: Codemod<TSX> = async (root) => {
     if (!replacement) continue;
 
     routesMigrated.increment({ pattern: mode });
-    jsxEdits.push(node.replace(replacement));
+    edits.push(node.replace(replacement));
   }
 
-  if (jsxEdits.length === 0) {
-    return null;
-  }
+  if (edits.length === 0) return null;
 
-  const source = rootNode.commitEdits(jsxEdits);
-
-  const prog = parseTsx(source);
-  const importEdits: Edit[] = [];
-
-  const permissionReactImportEdit = updatePermissionReactImport(prog.root());
-  if (permissionReactImportEdit) {
-    importEdits.push(permissionReactImportEdit);
-  }
-
-  const routeModuleType = routeImp?.moduleType ?? "esm";
-  const routeImportEdit = addImport(prog.root(), {
+  /**
+   * Phase 1: apply JSX rewrites and drop `PermissionedRoute` from its import
+   * together. Committing removal first guarantees that Phase 2's addImport
+   * calls compute insertion points from the post-removal source - otherwise
+   * a merge target that was just deleted would be silently clobbered.
+   */
+  const removePermissionedRouteEdit = removeImport(rootNode, {
     type: "named",
-    specifiers: [{ name: "Route" }],
-    from: REACT_ROUTER_DOM,
-    moduleType: routeModuleType,
+    specifiers: ["PermissionedRoute"],
+    from: PERMISSION_REACT,
   });
-  if (routeImportEdit) {
-    importEdits.push(routeImportEdit);
-  }
+  if (removePermissionedRouteEdit) edits.push(removePermissionedRouteEdit);
 
-  const out = importEdits.length > 0
-    ? prog.root().commitEdits(importEdits)
-    : source;
+  const phase1Source = rootNode.commitEdits(edits);
+
+  /**
+   * `addImport` against a freshly parsed program that contains no imports AND
+   * has leading whitespace tickles a quickjs-level crash inside `@jssg/utils`.
+   * When Phase 1 removed the only import from the file, skip the util-based
+   * add step and prepend the two new statements verbatim - the output order
+   * and blank-line separator are deterministic this way too.
+   */
+  const phase2HasImports = /^\s*(?:import\s|const\s+[^=]+=\s*require\b)/m.test(phase1Source);
+
+  let out: string;
+  if (phase2HasImports) {
+    const phase2Root = parseTsx(phase1Source).root();
+    const addEdits: Edit[] = [];
+
+    const addRequirePermissionEdit = addImport(phase2Root, {
+      type: "named",
+      specifiers: [{ name: "RequirePermission" }],
+      from: PERMISSION_REACT,
+      moduleType: permImport.moduleType,
+    });
+    if (addRequirePermissionEdit) addEdits.push(addRequirePermissionEdit);
+
+    const addRouteEdit = addImport(phase2Root, {
+      type: "named",
+      specifiers: [{ name: "Route" }],
+      from: REACT_ROUTER_DOM,
+      moduleType: routeImp?.moduleType ?? "esm",
+    });
+    if (addRouteEdit) addEdits.push(addRouteEdit);
+
+    out = addEdits.length > 0 ? phase2Root.commitEdits(addEdits) : phase1Source;
+  } else {
+    const header = [
+      `import { RequirePermission } from '${PERMISSION_REACT}';`,
+      `import { Route } from '${REACT_ROUTER_DOM}';`,
+    ].join("\n");
+    out = `${header}\n\n${phase1Source.replace(/^\s+/, "")}`;
+  }
 
   return finalizeSource(out);
 };

@@ -1,5 +1,5 @@
-import { RequirePermission } from '@backstage/plugin-permission-react';
 import { Route as R } from 'react-router-dom';
+import { RequirePermission } from '@backstage/plugin-permission-react';
 
 const p = {} as any;
 

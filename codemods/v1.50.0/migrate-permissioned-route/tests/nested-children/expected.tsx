@@ -1,5 +1,5 @@
-import { RequirePermission } from '@backstage/plugin-permission-react';
 import { Route } from 'react-router-dom';
+import { RequirePermission } from '@backstage/plugin-permission-react';
 
 const docsPermission = {} as any;
 
