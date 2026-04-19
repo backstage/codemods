@@ -1,0 +1,12 @@
+{
+  "catalog-node-alpha-migration": [
+    {
+      "cardinality": {
+        "export": "*",
+        "outcome": "manual-required",
+        "reason": "namespace-import"
+      },
+      "count": 1
+    }
+  ]
+}

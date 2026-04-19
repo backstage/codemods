@@ -1,0 +1,28 @@
+{
+  "catalog-node-alpha-migration": [
+    {
+      "cardinality": {
+        "export": "catalogPermissionExtensionPoint",
+        "outcome": "manual-required",
+        "reason": "removed-reexport"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "export": "catalogProcessingExtensionPoint",
+        "outcome": "auto-migrated",
+        "reason": "stabilized-reexport"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "export": "catalogServiceRef",
+        "outcome": "auto-migrated",
+        "reason": "stabilized-reexport"
+      },
+      "count": 1
+    }
+  ]
+}

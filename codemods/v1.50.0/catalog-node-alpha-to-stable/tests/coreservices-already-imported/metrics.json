@@ -1,0 +1,12 @@
+{
+  "catalog-node-alpha-migration": [
+    {
+      "cardinality": {
+        "export": "catalogPermissionExtensionPoint",
+        "outcome": "auto-migrated",
+        "reason": "superseded-core-service-rewrite"
+      },
+      "count": 1
+    }
+  ]
+}

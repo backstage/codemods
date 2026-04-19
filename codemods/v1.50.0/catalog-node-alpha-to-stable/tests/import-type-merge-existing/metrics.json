@@ -1,0 +1,12 @@
+{
+  "catalog-node-alpha-migration": [
+    {
+      "cardinality": {
+        "export": "CatalogProcessingExtensionPoint",
+        "outcome": "auto-migrated",
+        "reason": "stabilized-import"
+      },
+      "count": 1
+    }
+  ]
+}

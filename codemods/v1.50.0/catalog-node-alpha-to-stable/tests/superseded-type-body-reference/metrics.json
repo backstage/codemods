@@ -1,0 +1,20 @@
+{
+  "catalog-node-alpha-migration": [
+    {
+      "cardinality": {
+        "export": "CatalogPermissionRuleInput",
+        "outcome": "manual-required",
+        "reason": "dangling-type-reference"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "export": "catalogPermissionExtensionPoint",
+        "outcome": "auto-migrated",
+        "reason": "superseded-core-service-rewrite"
+      },
+      "count": 1
+    }
+  ]
+}
