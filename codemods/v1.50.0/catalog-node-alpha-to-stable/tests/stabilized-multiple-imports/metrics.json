@@ -1,0 +1,60 @@
+{
+  "catalog-node-alpha-migration": [
+    {
+      "cardinality": {
+        "export": "CatalogAnalysisExtensionPoint",
+        "outcome": "auto-migrated",
+        "reason": "stabilized-import"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "export": "CatalogLocationsExtensionPoint",
+        "outcome": "auto-migrated",
+        "reason": "stabilized-import"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "export": "CatalogProcessingExtensionPoint",
+        "outcome": "auto-migrated",
+        "reason": "stabilized-import"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "export": "catalogAnalysisExtensionPoint",
+        "outcome": "auto-migrated",
+        "reason": "stabilized-import"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "export": "catalogLocationsExtensionPoint",
+        "outcome": "auto-migrated",
+        "reason": "stabilized-import"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "export": "catalogProcessingExtensionPoint",
+        "outcome": "auto-migrated",
+        "reason": "stabilized-import"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "export": "catalogServiceRef",
+        "outcome": "auto-migrated",
+        "reason": "stabilized-import"
+      },
+      "count": 1
+    }
+  ]
+}

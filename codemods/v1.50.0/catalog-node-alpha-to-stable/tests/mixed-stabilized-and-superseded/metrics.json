@@ -1,0 +1,36 @@
+{
+  "catalog-node-alpha-migration": [
+    {
+      "cardinality": {
+        "export": "CatalogPermissionRuleInput",
+        "outcome": "auto-migrated",
+        "reason": "superseded-type-removed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "export": "catalogPermissionExtensionPoint",
+        "outcome": "auto-migrated",
+        "reason": "superseded-core-service-rewrite"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "export": "catalogProcessingExtensionPoint",
+        "outcome": "auto-migrated",
+        "reason": "stabilized-import"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "export": "catalogServiceRef",
+        "outcome": "auto-migrated",
+        "reason": "stabilized-import"
+      },
+      "count": 1
+    }
+  ]
+}

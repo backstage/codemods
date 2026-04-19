@@ -1,0 +1,98 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: "1"
+
+params:
+  schema:
+    aiFixup:
+      type: boolean
+      default: false
+      description: "Run an AI-powered fixup step to address edge cases the AST codemod cannot handle mechanically (namespace imports, dep variable renaming, dangling type references, shorthand properties)."
+
+nodes:
+  - id: apply-transforms
+    name: Apply AST Transformations
+    type: automatic
+    steps:
+      - name: "Migrate deprecated catalog-node alpha exports to stable equivalents"
+        js-ast-grep:
+          js_file: scripts/codemod.ts
+          language: "tsx"
+          semantic_analysis: file
+          include:
+            - "**/*.ts"
+            - "**/*.tsx"
+          exclude:
+            - "**/node_modules/**"
+
+  - id: ai-fixup
+    name: AI fixup for edge cases
+    type: automatic
+    depends_on: [apply-transforms]
+    steps:
+      - name: "Fix remaining edge cases that require contextual understanding"
+        if: "${{ params.aiFixup }}"
+        ai:
+          model: "claude-sonnet-4-6"
+          system_prompt: |
+            You are a Backstage migration expert. You are fixing edge cases left over
+            from an AST-based codemod that migrated @backstage/plugin-catalog-node/alpha
+            exports to their stable equivalents in Backstage 1.50.0.
+
+            The AST codemod already handled the mechanical parts:
+            - Stabilized exports (catalogServiceRef, Catalog*ExtensionPoint, etc.) were moved
+              from @backstage/plugin-catalog-node/alpha to @backstage/plugin-catalog-node.
+            - catalogPermissionExtensionPoint references were replaced with
+              coreServices.permissionsRegistry from @backstage/backend-plugin-api.
+            - Superseded type imports (CatalogPermissionRuleInput, CatalogPermissionExtensionPoint)
+              were removed.
+
+            Your job is to find and fix the remaining issues that the AST codemod could not
+            handle mechanically. Be precise and conservative — only change what is necessary.
+          prompt: |
+            Search the codebase for remaining migration issues and fix them. Address each
+            category below in order:
+
+            ## 1. Namespace imports
+            Find any `import * as <alias> from '@backstage/plugin-catalog-node/alpha'` statements.
+            For each:
+            - Identify which properties of the namespace alias are used (e.g., `Alpha.catalogServiceRef`).
+            - Replace namespace property accesses with direct named imports from the correct package:
+              - Stabilized exports (catalogServiceRef, catalogProcessingExtensionPoint, etc.)
+                → import from '@backstage/plugin-catalog-node'
+              - catalogPermissionExtensionPoint → replace with coreServices.permissionsRegistry
+                from '@backstage/backend-plugin-api'
+              - Non-migratable exports (CatalogModelExtensionPoint, catalogModelExtensionPoint,
+                catalogEntityPermissionResourceRef) → keep importing from alpha
+            - Remove the namespace import if all usages have been replaced, or keep it for
+              any remaining non-migratable usages.
+
+            ## 2. Dep variable renaming (superseded permission migration)
+            Find any `deps: { <key>: coreServices.permissionsRegistry }` patterns where the
+            dep key name still references "catalog" (e.g., `catalog`, `catalogPerms`, `cat`).
+            Rename the dep key to `permissions` and update the corresponding destructured
+            parameter in the `async init({ ... })` function and all usages of that parameter
+            within the init function body. Only rename if the current name is clearly
+            catalog-oriented and misleading.
+
+            ## 3. Dangling superseded type references
+            Find any remaining references to `CatalogPermissionRuleInput` or
+            `CatalogPermissionExtensionPoint` that are no longer imported. For each:
+            - If used as a type annotation, check if there is an equivalent type available
+              from @backstage/backend-plugin-api (e.g., PermissionRuleInput). If so, add
+              the import and replace the type. If not, add a TODO comment noting manual
+              migration is needed.
+
+            ## 4. Shorthand properties
+            Find any shorthand property usage like `{ catalogPermissionExtensionPoint }` that
+            was not transformed by the AST codemod. Replace with the expanded form using the
+            new API: `{ permissionsRegistry: coreServices.permissionsRegistry }`.
+
+            ## 5. Removed re-exports
+            Find any files where a re-export of catalogPermissionExtensionPoint was removed
+            (the line may be gone or there may be an empty export). If the re-export was
+            providing the symbol to downstream consumers, add a comment explaining the
+            breaking change and what consumers should use instead.
+
+            After making changes, verify the files are syntactically valid TypeScript.
+          max_steps: 50
