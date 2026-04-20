@@ -59,7 +59,17 @@ The codemod only acts on object literals that are unambiguously typed as `Locati
 
 - **Structural-only inference is intentionally skipped.** Object literals with the shape `{ id, type, target }` but no explicit `Location` type (annotation, cast, satisfies, return type, or nesting inside a response type) are left alone. This avoids false positives on unrelated types. Run the codemod on tests where `Location` is used explicitly, or add an annotation first.
 - **Mocks without an explicit return type** (e.g. `jest.fn().mockReturnValue({ id, type, target })` where the mock is untyped) are not detected. Annotate the mock with `jest.Mocked<...>` or the returned expression with `as Location`/`satisfies Location` before running.
-- **Single-line object literals** receive the field inline with a `//` comment; the closing brace moves to a new line. Run your formatter after the codemod for consistent style.
+- **Single-line object literals** receive the field inline with a `/* */` block comment so the closing brace stays on the same line. Multi-line objects use a `//` line comment on a new line matching the existing indentation. Run your formatter after the codemod if you want a uniform comment style.
+
+### Optional: AI fixup step
+
+Resolving the `TODO` markers by hand is mostly mechanical — read the object's `type`/`target`, decide whether the surrounding test asserts on `entityRef`, then either compute `location:default/generated-<sha1(type:target)>` or pick a readable stable ref. The workflow ships an optional AI-powered step that automates this. Enable it with `--param aiFixup=true`:
+
+- **Assertion-bearing test sites** (`toEqual`/`toMatchObject`/`toMatchSnapshot` against the location, direct `.entityRef` reads, snapshot files) get the deterministic SHA-1 ref inlined as a static string so tests stay self-contained.
+- **Presence-only test sites and loose mocks** get a readable `location:default/test-<slug>` derived from nearby naming, keeping diffs human-friendly.
+- **Production code** is not rewritten with a real value — the AST codemod's `TODO` is replaced with a `FIXME` note pushing back on the hand-rolled `Location` construction, since the backend should normally populate `entityRef`.
+
+When running inside a coding agent (Claude Code, Cursor, etc.) the AI step hands off `[AI INSTRUCTIONS]` to the parent agent. Otherwise, set `LLM_API_KEY` to execute the step via the configured LLM provider.
 
 ## Metrics
 
@@ -80,9 +90,16 @@ yarn dlx codemod@latest run @backstage/location-entityref-required -t /path/to/t
 ## Usage (from this repo)
 
 ```bash
+# AST codemod only (deterministic, leaves TODO markers)
 yarn dlx codemod@latest workflow run \
   -w codemods/v1.50.0/location-entityref-required/workflow.yaml \
   -t /path/to/your/backstage-repo
+
+# AST codemod + AI fixup for the TODO placeholders
+yarn dlx codemod@latest workflow run \
+  -w codemods/v1.50.0/location-entityref-required/workflow.yaml \
+  -t /path/to/your/backstage-repo \
+  --param aiFixup=true
 
 # Dry run (preview changes)
 yarn dlx codemod@latest workflow run \

@@ -2,6 +2,13 @@
 
 version: "1"
 
+params:
+  schema:
+    aiFixup:
+      type: boolean
+      default: false
+      description: "Run an AI-powered fixup step that replaces the TODO entityRef placeholders inserted by the AST codemod with context-appropriate values (deterministic SHA1-based refs for assertion-bearing tests, readable stable refs for presence-only mocks, left untouched for production code)."
+
 nodes:
   - id: apply-transforms
     name: Apply AST Transformations
@@ -17,3 +24,151 @@ nodes:
             - "**/*.tsx"
           exclude:
             - "**/node_modules/**"
+
+  - id: ai-fixup
+    name: AI fixup for entityRef placeholders
+    type: automatic
+    depends_on: [apply-transforms]
+    steps:
+      - name: "Replace placeholder entityRef values with context-appropriate ones"
+        if: "${{ params.aiFixup }}"
+        ai:
+          model: "claude-sonnet-4-6"
+          system_prompt: |
+            You are a Backstage 1.50.0 migration assistant. An AST codemod has
+            inserted placeholder `entityRef` fields on `Location` object literals
+            from `@backstage/catalog-client`, each flagged with either a
+            `// TODO(backstage-codemod): replace with actual entityRef` line comment
+            (multi-line objects) or a `/* TODO(backstage-codemod): replace with
+            actual entityRef */` block comment (single-line objects). The
+            placeholder value is always `'location:default/example'`.
+
+            Your job is to replace those placeholders with context-appropriate
+            values and remove the accompanying TODO comment. Be precise and
+            conservative — only change what is necessary, never touch `id`,
+            `type`, `target`, or unrelated code.
+
+            Canonical runtime format
+            ------------------------
+            In Backstage, the catalog backend auto-generates a Location's
+            `entityRef` deterministically:
+
+                location:default/generated-<sha1Hex(`${type}:${target}`)>
+
+            where `sha1Hex(...)` is the lower-case hex digest of the SHA-1 hash
+            of the concatenation `${type}:${target}` (for example,
+            `url:https://example.com/catalog-info.yaml`).
+
+            Production code rarely needs to construct a `Location` by hand — the
+            backend populates this field on the wire. Most occurrences you'll
+            see in this migration are test fixtures and mocks.
+          prompt: |
+            Search every file in the target for the marker string
+            `TODO(backstage-codemod): replace with actual entityRef`. For each
+            occurrence, perform the following workflow in order.
+
+            ## 1. Locate the surrounding `Location` literal
+
+            The TODO always sits immediately next to an `entityRef:
+            'location:default/example'` pair inside an object literal that the
+            AST codemod identified as a `Location`. Capture the sibling `type`
+            and `target` values of that same object — you will need them.
+
+            If the object lacks `type` or `target` (for example, malformed or
+            partially written fixtures), leave the placeholder and TODO intact
+            and move on.
+
+            ## 2. Classify the site
+
+            Inspect the enclosing file and the nearest test or block:
+
+            - **Assertion-bearing test site.** The enclosing `it(...)` /
+              `test(...)` block (or a block that transitively consumes this
+              object via a mock return value) compares the `entityRef` against
+              an expected value via `toEqual`, `toMatchObject` with an
+              `entityRef` key, `toStrictEqual`, `toMatchSnapshot`, or a direct
+              `.entityRef` read. Treat snapshot files (`__snapshots__/`) as
+              assertion-bearing.
+            - **Presence-only test / loose mock.** The object is used as a
+              fixture or mock return value but no assertion inspects
+              `entityRef`. This is the common case.
+            - **Production code.** The file is not a test (no `*.test.*`,
+              `*.spec.*`, `__tests__/`, `__mocks__/`, or Storybook file) and the
+              object is constructed at runtime rather than as a fixture.
+
+            ## 3. Substitute the placeholder
+
+            ### Assertion-bearing test
+
+            Compute the deterministic runtime value and inline it as a string
+            literal. Do not introduce imports or helper calls — keep the value
+            static so the test remains self-contained:
+
+                entityRef: 'location:default/generated-<sha1hex>'
+
+            where `<sha1hex>` is the SHA-1 hex digest of the exact string
+            `${type}:${target}` using the sibling values from step 1. Compute
+            the digest yourself before writing the edit — do not leave a
+            placeholder expression.
+
+            If the same `type`/`target` pair appears in multiple sites in the
+            file, use the same computed hash for all of them so the fixtures
+            stay consistent.
+
+            ### Presence-only test / loose mock
+
+            Replace the placeholder with a readable, stable value derived from
+            nearby context — for example the surrounding `describe`/`it` name,
+            the fixture variable name, or the `target` path — normalized to
+            kebab-case:
+
+                entityRef: 'location:default/test-<slug>'
+
+            Keep it short and unique within the file. Consistent reuse is fine
+            if the same logical fixture is used across multiple sites.
+
+            ### Production code
+
+            Do **not** replace the placeholder with a value. Instead, replace
+            the TODO comment with a more explicit follow-up comment so a human
+            reviews the call site:
+
+                // FIXME(backstage-codemod): the catalog backend normally
+                // populates entityRef — verify this code should construct a
+                // Location by hand, or derive the ref from the backend helper.
+
+            Leave `entityRef: 'location:default/example'` in place as a visible
+            sentinel. This is intentional — production Locations should almost
+            always come from the backend, not from hand-written literals.
+
+            ## 4. Remove the original TODO comment
+
+            After substituting (or, for production code, replacing with the
+            FIXME), remove the AST codemod's TODO comment entirely — both the
+            `//` and the `/* */` variants. Preserve surrounding whitespace,
+            indentation, and trailing commas as they were.
+
+            ## 5. Hard guardrails
+
+            - Never modify `id`, `type`, `target`, other properties, imports,
+              surrounding statements, or the `Location` type import.
+            - Never touch an object that uses spread syntax
+              (`{ ...existing }`) — the AST codemod already skipped those and
+              they inherit `entityRef` from the source object.
+            - Never add a new `entityRef` field where none exists; only replace
+              the placeholder value on sites the AST codemod already marked.
+            - If classification is ambiguous (for example, the test consumes
+              the object indirectly and you cannot tell whether `entityRef` is
+              asserted), prefer the "presence-only" branch and leave a short
+              `// NOTE(backstage-codemod): assumed presence-only, verify`
+              comment instead of removing the marker silently.
+            - After edits, each modified file must still parse as valid
+              TypeScript.
+
+            ## 6. Report
+
+            When finished, emit a concise summary of the fixups performed:
+            total sites seen, counts per classification
+            (assertion-bearing / presence-only / production), and any sites
+            that were left with NOTE / FIXME markers for human review.
+          max_steps: 50
