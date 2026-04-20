@@ -1,0 +1,18 @@
+{
+  "location-entityref-migration": [
+    {
+      "cardinality": {
+        "detection": "type-annotation",
+        "outcome": "skipped-existing"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "detection": "type-annotation",
+        "outcome": "skipped-spread"
+      },
+      "count": 1
+    }
+  ]
+}

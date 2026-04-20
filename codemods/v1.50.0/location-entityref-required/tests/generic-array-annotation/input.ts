@@ -1,0 +1,9 @@
+import type { Location } from '@backstage/catalog-client';
+
+const locs: Array<Location> = [
+  {
+    id: 'abc123',
+    type: 'url',
+    target: 'https://example.com/a.yaml',
+  },
+];

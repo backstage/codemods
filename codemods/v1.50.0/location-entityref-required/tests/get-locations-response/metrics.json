@@ -1,0 +1,11 @@
+{
+  "location-entityref-migration": [
+    {
+      "cardinality": {
+        "detection": "get-locations-response",
+        "outcome": "added"
+      },
+      "count": 2
+    }
+  ]
+}

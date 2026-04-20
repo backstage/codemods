@@ -1,0 +1,18 @@
+{
+  "name": "@backstage/location-entityref-required",
+  "version": "0.1.0",
+  "description": "Backstage 1.50.0: Add required entityRef field to Location object literals from @backstage/catalog-client",
+  "type": "module",
+  "scripts": {
+    "test": "yarn exec codemod jssg test -l tsx ./scripts/codemod.ts ./tests && yarn exec codemod workflow validate -w workflow.yaml",
+    "check-types": "yarn exec tsc --noEmit"
+  },
+  "dependencies": {
+    "@jssg/utils": "0.0.5"
+  },
+  "devDependencies": {
+    "@codemod.com/jssg-types": "1.5.2",
+    "codemod": "1.7.15",
+    "typescript": "6.0.3"
+  }
+}
