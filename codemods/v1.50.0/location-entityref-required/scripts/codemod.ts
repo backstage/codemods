@@ -6,7 +6,10 @@ import { useMetricAtom } from "codemod:metrics";
 const CATALOG_CLIENT_SOURCE = "@backstage/catalog-client";
 
 const PLACEHOLDER_ENTITYREF = "'location:default/example'";
-const TODO_COMMENT = "// TODO(backstage-codemod): replace with actual entityRef";
+const TODO_LINE_COMMENT =
+  "// TODO(backstage-codemod): replace with actual entityRef";
+const TODO_BLOCK_COMMENT =
+  "/* TODO(backstage-codemod): replace with actual entityRef */";
 
 type Detection =
   | "type-annotation"
@@ -473,19 +476,24 @@ function buildEntityRefEdit(
   const isMultiLine = objectText.includes("\n");
   const { indent, onOwnLine } = leadingIndentFor(lastPair, source);
 
-  const newField = `entityRef: ${PLACEHOLDER_ENTITYREF}, ${TODO_COMMENT}`;
+  /**
+   * A `//` line comment runs to the end of the line, so inline insertions must
+   * use a `/* *\/` block comment to avoid swallowing the closing brace of the
+   * object (or sibling array elements on the same line).
+   */
+  const useLineComment = isMultiLine && onOwnLine;
+  const todoComment = useLineComment ? TODO_LINE_COMMENT : TODO_BLOCK_COMMENT;
+  const newField = `entityRef: ${PLACEHOLDER_ENTITYREF}, ${todoComment}`;
 
   let insertAt: number;
   let insertedText: string;
 
   if (trailingCommaEnd !== null) {
     insertAt = trailingCommaEnd;
-    insertedText =
-      isMultiLine && onOwnLine ? `\n${indent}${newField}` : ` ${newField}`;
+    insertedText = useLineComment ? `\n${indent}${newField}` : ` ${newField}`;
   } else {
     insertAt = lastPairEnd;
-    insertedText =
-      isMultiLine && onOwnLine ? `,\n${indent}${newField}` : `, ${newField}`;
+    insertedText = useLineComment ? `,\n${indent}${newField}` : `, ${newField}`;
   }
 
   return {
