@@ -1,6 +1,6 @@
 schema_version: "1.0"
 
-name: "replace-create-schema-from-zod"
+name: "@backstage/replace-create-schema-from-zod"
 version: "0.1.0"
 description: "Backstage 1.50.0: Replace createSchemaFromZod and config.schema with configSchema"
 author: "Paul Schultz<pschultz@redhat.com>"
