@@ -78,12 +78,17 @@ const transform: Transform<TSX> = async (root) => {
   }
 
   // 2. Find classNames.toolbarWrapper property accesses and rename to classNames.toolbar
-  //    Match the pattern: any object ending in .classNames.toolbarWrapper
+  //    Covers both `classNames.toolbarWrapper` and `X.classNames.toolbarWrapper`
   const classNameAccesses = rootNode.findAll({
     rule: {
-      pattern: "$$$OBJ.classNames.toolbarWrapper",
+      any: [
+        { pattern: "$OBJ.classNames.toolbarWrapper" },
+        { pattern: "classNames.toolbarWrapper" },
+      ],
     },
   });
+
+  const handledPropIds = new Set<number>();
 
   for (const match of classNameAccesses) {
     const propNode = match.find({
@@ -93,7 +98,8 @@ const transform: Transform<TSX> = async (root) => {
       },
     });
 
-    if (propNode) {
+    if (propNode && !handledPropIds.has(propNode.id())) {
+      handledPropIds.add(propNode.id());
       edits.push(propNode.replace(NEW_PROPERTY));
       migrationMetric.increment({
         type: "property-access",

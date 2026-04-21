@@ -1,0 +1,9 @@
+/* TODO(backstage-codemod): wrapper element was removed — review child/descendant selectors */
+.bui-PluginHeaderToolbar > button {
+  color: red;
+}
+
+/* TODO(backstage-codemod): wrapper element was removed — review child/descendant selectors */
+.bui-PluginHeaderToolbar .icon {
+  font-size: 16px;
+}

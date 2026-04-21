@@ -4,7 +4,7 @@
   "description": "Backstage 1.50.0: Rename .bui-PluginHeaderToolbarWrapper to .bui-PluginHeaderToolbar and classNames.toolbarWrapper to classNames.toolbar",
   "type": "module",
   "scripts": {
-    "test": "yarn exec codemod jssg test -l tsx ./scripts/codemod.ts ./tests && yarn exec codemod workflow validate -w workflow.yaml",
+    "test": "yarn exec codemod jssg test -l tsx ./scripts/codemod.ts ./tests && yarn exec codemod jssg test -l css ./scripts/codemod-css.ts ./tests-css && yarn exec codemod workflow validate -w workflow.yaml",
     "check-types": "yarn exec tsc --noEmit"
   },
   "devDependencies": {
