@@ -1,0 +1,11 @@
+{
+  "header-tab-migration": [
+    {
+      "cardinality": {
+        "action": "namespace-import-skipped",
+        "alias": "UI"
+      },
+      "count": 1
+    }
+  ]
+}
