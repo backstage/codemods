@@ -1,0 +1,10 @@
+{
+  "remove-bootstrap-env-proxy": [
+    {
+      "cardinality": {
+        "action": "re-export-removed"
+      },
+      "count": 1
+    }
+  ]
+}
