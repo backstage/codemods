@@ -1,0 +1,19 @@
+schema_version: "1.0"
+
+name: "replace-create-schema-from-zod"
+version: "0.1.0"
+description: "Backstage 1.50.0: Replace createSchemaFromZod and config.schema with configSchema"
+author: "Paul Schultz<pschultz@redhat.com>"
+license: "MIT"
+workflow: "workflow.yaml"
+
+targets:
+  languages: ["tsx", "ts"]
+
+keywords: ["backstage", "migration", "createSchemaFromZod", "configSchema", "1.50.0"]
+
+registry:
+  access: "public"
+  visibility: "public"
+
+capabilities: []
