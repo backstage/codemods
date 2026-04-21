@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: "1"
+
+params:
+  schema:
+    aiFixup:
+      type: boolean
+      default: false
+      description: "Run an AI-powered fixup step to address edge cases the AST codemod cannot handle mechanically."
+
+nodes:
+  - id: apply-transforms
+    name: Apply AST Transformations
+    type: automatic
+    steps:
+      - name: "Rename PluginHeaderToolbarWrapper to PluginHeaderToolbar in JS/TS files"
+        js-ast-grep:
+          js_file: scripts/codemod.ts
+          language: "tsx"
+          include:
+            - "**/*.ts"
+            - "**/*.tsx"
+            - "**/*.js"
+            - "**/*.jsx"
+            - "**/*.css"
+            - "**/*.scss"
+          exclude:
+            - "**/node_modules/**"
+
+  - id: ai-fixup
+    name: AI fixup for edge cases
+    type: automatic
+    depends_on: [apply-transforms]
+    steps:
+      - name: "Fix remaining edge cases that require contextual understanding"
+        if: "${{ params.aiFixup }}"
+        ai:
+          model: "claude-sonnet-4-6"
+          system_prompt: |
+            You are a Backstage migration expert. You are fixing edge cases left over
+            from an AST-based codemod that renamed .bui-PluginHeaderToolbarWrapper to
+            .bui-PluginHeaderToolbar and classNames.toolbarWrapper to classNames.toolbar
+            in Backstage 1.50.0 (BUI v0.14.0).
+
+            The wrapper DOM element was removed from PluginHeader, so child/descendant
+            selectors targeting `.bui-PluginHeaderToolbarWrapper > ...` may need to be
+            restructured. The AST codemod added TODO comments for these cases.
+
+            Your job is to find and fix the remaining issues that the AST codemod could not
+            handle mechanically. Be precise and conservative.
+          prompt: |
+            Search the codebase for remaining migration issues and fix them:
+
+            ## 1. Review TODO comments
+            Find all `/* TODO(backstage-codemod): wrapper element was removed -- review child/descendant selectors */`
+            comments and assess whether the surrounding selector needs restructuring.
+
+            ## 2. Verify selector correctness
+            For selectors that used `.bui-PluginHeaderToolbarWrapper > .child`, verify
+            that the child selector still applies correctly now that the wrapper element
+            is removed. The toolbar children are now direct children of PluginHeader.
+
+            ## 3. Check styled-components and Emotion
+            Look for any remaining `PluginHeaderToolbarWrapper` references in template
+            literals, styled-components, or Emotion CSS-in-JS that the AST codemod
+            may have missed.
+
+            After making changes, verify the files are syntactically valid.
+          max_steps: 30
