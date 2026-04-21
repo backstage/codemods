@@ -1,6 +1,6 @@
 import type { Transform, Edit, SgNode } from "codemod:ast-grep";
 import type TSX from "codemod:ast-grep/langs/tsx";
-import { getImport, addImport, removeImport } from "@jssg/utils/javascript/imports";
+import { getImport, addImport } from "@jssg/utils/javascript/imports";
 import { useMetricAtom } from "codemod:metrics";
 
 const migrationMetric = useMetricAtom("replace-create-schema-from-zod");
@@ -61,6 +61,7 @@ function findSchemaPair(configValue: SgNode<TSX>): SgNode<TSX> | null {
 /**
  * Given a `createSchemaFromZod(z => z.object({...}))` call node, extract the
  * inner object literal contents (the properties inside z.object({...})).
+ * If the callback parameter is not named `z`, renames all references to `z`.
  */
 function extractSchemaFromZodCallBody(
   callNode: SgNode<TSX>,
@@ -68,6 +69,10 @@ function extractSchemaFromZodCallBody(
   // The call has arguments containing an arrow function: z => z.object({...})
   const arrowFn = callNode.find({ rule: { kind: "arrow_function" } });
   if (!arrowFn) return null;
+
+  // Get the parameter name (could be 'z', 'zod', 'schema', etc.)
+  const param = arrowFn.field("parameter");
+  const paramName = param?.text() ?? "z";
 
   // The body of the arrow function should be a call to z.object({...})
   const body = arrowFn.field("body");
@@ -77,8 +82,38 @@ function extractSchemaFromZodCallBody(
   const objectArg = body.find({ rule: { kind: "object" } });
   if (!objectArg) return null;
 
+  // If the param is not 'z', we need to rename references inside the object
+  if (paramName !== "z") {
+    // Find all identifiers matching the param name inside the object
+    const paramRefs = objectArg.findAll({
+      rule: {
+        kind: "identifier",
+        regex: `^${escapeRegex(paramName)}$`,
+      },
+    });
+
+    if (paramRefs.length > 0) {
+      const renameEdits: Edit[] = [];
+      for (const ref of paramRefs) {
+        renameEdits.push(ref.replace("z"));
+      }
+      const renamedText = objectArg.commitEdits(renameEdits);
+      // Extract content from the renamed text (strip outer braces)
+      return extractObjectContentFromText(renamedText);
+    }
+  }
+
   // Return the inner content of the object (without the braces)
   return extractObjectContent(objectArg);
+}
+
+/**
+ * Extract and re-indent content from an object text string (already stringified).
+ */
+function extractObjectContentFromText(text: string): string {
+  // Remove outer braces
+  const inner = text.slice(1, -1);
+  return reindentContent(inner);
 }
 
 /**
@@ -89,6 +124,13 @@ function extractObjectContent(objectNode: SgNode<TSX>): string {
   const text = objectNode.text();
   // Remove outer braces
   const inner = text.slice(1, -1);
+  return reindentContent(inner);
+}
+
+/**
+ * Re-indent extracted content for placement at configSchema property level.
+ */
+function reindentContent(inner: string): string {
 
   // Split into lines and re-indent
   const lines = inner.split("\n");
@@ -285,25 +327,16 @@ const transform: Transform<TSX> = async (root) => {
         },
       });
 
-      if (callee || !hasSchemaImport) {
-        // Only process if it's the right function call
-        if (callee) {
-          const innerContent = extractSchemaFromZodCallBody(schemaValue);
-          if (innerContent !== null) {
-            // Replace the entire `config: { schema: createSchemaFromZod(...) }`
-            // with `configSchema: { innerContent }`
-            const trimmedContent = innerContent.trim();
-
-            // Re-indent: the inner content from z.object({...}) needs to be
-            // placed at the configSchema level
-            edits.push(configPair.replace(`configSchema: {${innerContent}}`));
-            needsZodImport = true;
-            transformedAny = true;
-            migrationMetric.increment({
-              pattern: "createSchemaFromZod",
-              outcome: "auto-migrated",
-            });
-          }
+      if (callee) {
+        const innerContent = extractSchemaFromZodCallBody(schemaValue);
+        if (innerContent !== null) {
+          edits.push(configPair.replace(`configSchema: {${innerContent}}`));
+          needsZodImport = true;
+          transformedAny = true;
+          migrationMetric.increment({
+            pattern: "createSchemaFromZod",
+            outcome: "auto-migrated",
+          });
         }
       }
     }
