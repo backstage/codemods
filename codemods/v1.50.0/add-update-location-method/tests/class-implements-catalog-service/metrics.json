@@ -1,0 +1,12 @@
+{
+  "add-update-location-method": [
+    {
+      "cardinality": {
+        "interface": "CatalogService",
+        "outcome": "auto-migrated",
+        "reason": "class-stub-added"
+      },
+      "count": 1
+    }
+  ]
+}
