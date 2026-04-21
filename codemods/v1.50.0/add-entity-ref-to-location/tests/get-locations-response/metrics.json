@@ -1,0 +1,10 @@
+{
+  "add-entity-ref-to-location": [
+    {
+      "cardinality": {
+        "action": "entityRef-added"
+      },
+      "count": 2
+    }
+  ]
+}

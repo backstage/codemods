@@ -1,0 +1,10 @@
+{
+  "add-entity-ref-to-location": [
+    {
+      "cardinality": {
+        "action": "skipped"
+      },
+      "count": 1
+    }
+  ]
+}

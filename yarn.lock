@@ -12,6 +12,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@backstage/add-entity-ref-to-location@workspace:codemods/v1.50.0/add-entity-ref-to-location":
+  version: 0.0.0-use.local
+  resolution: "@backstage/add-entity-ref-to-location@workspace:codemods/v1.50.0/add-entity-ref-to-location"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    "@jssg/utils": "npm:0.0.5"
+    codemod: "npm:1.7.15"
+    typescript: "npm:6.0.3"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/add-update-location-method@workspace:codemods/v1.50.0/add-update-location-method":
   version: 0.0.0-use.local
   resolution: "@backstage/add-update-location-method@workspace:codemods/v1.50.0/add-update-location-method"
