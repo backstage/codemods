@@ -2,10 +2,10 @@
   "add-entity-ref-to-location": [
     {
       "cardinality": {
-        "detection": "return-type-annotation",
+        "detection": "array-type-annotation",
         "outcome": "added"
       },
-      "count": 1
+      "count": 2
     }
   ]
 }

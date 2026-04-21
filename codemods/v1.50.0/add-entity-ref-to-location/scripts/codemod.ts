@@ -1,4 +1,4 @@
-import type { Transform, Edit, SgNode } from "codemod:ast-grep";
+import type { Codemod, Edit, SgNode } from "codemod:ast-grep";
 import type TSX from "codemod:ast-grep/langs/tsx";
 import { getImport } from "@jssg/utils/javascript/imports";
 import { useMetricAtom } from "codemod:metrics";
@@ -9,6 +9,23 @@ const CATALOG_CLIENT = "@backstage/catalog-client";
 
 const ENTITY_REF_PROPERTY =
   "entityRef: 'location:default/example', // TODO(backstage-codemod): replace with actual entityRef";
+
+type Detection =
+  | "type-annotation"
+  | "array-type-annotation"
+  | "as-cast"
+  | "satisfies"
+  | "array-as-cast"
+  | "array-satisfies"
+  | "return-type-annotation"
+  | "add-location-response"
+  | "get-locations-response";
+
+type Outcome = "added" | "skipped-spread" | "skipped-existing";
+
+function recordMigration(outcome: Outcome, detection: Detection): void {
+  migrationMetric.increment({ outcome, detection });
+}
 
 /**
  * Check whether an object literal already contains an `entityRef` property.
@@ -43,10 +60,6 @@ function hasSpread(objectNode: SgNode<TSX>): boolean {
  * just before the closing `}`. Returns `null` if the object should be skipped.
  */
 function buildEntityRefEdit(objectNode: SgNode<TSX>): Edit | null {
-  if (hasEntityRef(objectNode) || hasSpread(objectNode)) {
-    return null;
-  }
-
   // Find the last pair (property) in the object to insert after it
   const pairs = objectNode.findAll({ rule: { kind: "pair" } });
   const lastPair = pairs[pairs.length - 1];
@@ -84,106 +97,295 @@ function buildEntityRefEdit(objectNode: SgNode<TSX>): Edit | null {
 }
 
 /**
- * Find all object nodes directly typed as Location via `: Location` annotation.
+ * A candidate Location object literal, paired with the detection path.
  */
-function findTypeAnnotatedObjects(
-  rootNode: SgNode<TSX, "program">,
-  locationAlias: string,
+interface Candidate {
+  object: SgNode<TSX>;
+  detection: Detection;
+}
+
+/**
+ * Given a `type_annotation` node, return the inner type node.
+ */
+function typeAnnotationTypeNode(
+  typeAnnotation: SgNode<TSX>,
+): SgNode<TSX> | null {
+  for (const child of typeAnnotation.children()) {
+    if (child.isNamed()) return child;
+  }
+  return null;
+}
+
+function isTypeIdentifierNamed(
+  typeNode: SgNode<TSX>,
+  name: string,
+): boolean {
+  return typeNode.kind() === "type_identifier" && typeNode.text() === name;
+}
+
+/**
+ * Matches `Location[]` array type.
+ */
+function isArrayOfType(typeNode: SgNode<TSX>, name: string): boolean {
+  if (typeNode.kind() !== "array_type") return false;
+  const inner = typeNode.children().find((c) => c.isNamed());
+  return !!inner && isTypeIdentifierNamed(inner, name);
+}
+
+/**
+ * Matches `Array<Location>` / `ReadonlyArray<Location>`.
+ */
+function isGenericArrayOfType(typeNode: SgNode<TSX>, name: string): boolean {
+  if (typeNode.kind() !== "generic_type") return false;
+  const named = typeNode.children().filter((c) => c.isNamed());
+  const outer = named[0];
+  const args = named[1];
+  if (!outer || outer.kind() !== "type_identifier") return false;
+  if (outer.text() !== "Array" && outer.text() !== "ReadonlyArray") return false;
+  if (!args || args.kind() !== "type_arguments") return false;
+  const innerType = args.children().find((c) => c.isNamed());
+  return !!innerType && isTypeIdentifierNamed(innerType, name);
+}
+
+/**
+ * Extract object literals from a value expression. When arrayMode is true,
+ * extracts each element from an array literal.
+ */
+function extractObjectsFromValue(
+  valueNode: SgNode<TSX>,
+  arrayMode: boolean,
 ): SgNode<TSX>[] {
-  // Pattern: variable_declarator with type_annotation containing Location
-  const results: SgNode<TSX>[] = [];
+  const objects: SgNode<TSX>[] = [];
+
+  if (arrayMode) {
+    if (valueNode.kind() !== "array") return objects;
+    for (const child of valueNode.children()) {
+      if (child.kind() === "object") {
+        objects.push(child);
+      }
+    }
+    return objects;
+  }
+
+  if (valueNode.kind() === "object") {
+    objects.push(valueNode);
+  } else if (valueNode.kind() === "parenthesized_expression") {
+    const inner = valueNode.children().find((c) => c.kind() === "object");
+    if (inner) objects.push(inner);
+  }
+
+  return objects;
+}
+
+/**
+ * Find nested property values inside objects that have a key matching one of
+ * the given property names. Used for AddLocationResponse.location and
+ * GetLocationsResponse[].data.
+ */
+function findPropertyObjectValues(
+  container: SgNode<TSX>,
+  propertyNames: string[],
+): SgNode<TSX>[] {
+  const objects: SgNode<TSX>[] = [];
+  const nameRegex = `^(${propertyNames.join("|")})$`;
+
+  const pairs = container.findAll({
+    rule: {
+      kind: "pair",
+      has: {
+        kind: "property_identifier",
+        regex: nameRegex,
+      },
+    },
+  });
+
+  for (const pair of pairs) {
+    const valueObj = pair.find({ rule: { kind: "object" } });
+    if (valueObj) {
+      objects.push(valueObj);
+    }
+  }
+
+  return objects;
+}
+
+interface ImportedTypes {
+  locationAlias: string | null;
+  addLocationResponseAlias: string | null;
+  getLocationsResponseAlias: string | null;
+}
+
+function resolveImportedTypes(
+  rootNode: SgNode<TSX, "program">,
+): ImportedTypes {
+  const locationImport = getImport(rootNode, {
+    type: "named",
+    name: "Location",
+    from: CATALOG_CLIENT,
+  });
+  const addLocationResponseImport = getImport(rootNode, {
+    type: "named",
+    name: "AddLocationResponse",
+    from: CATALOG_CLIENT,
+  });
+  const getLocationsResponseImport = getImport(rootNode, {
+    type: "named",
+    name: "GetLocationsResponse",
+    from: CATALOG_CLIENT,
+  });
+
+  return {
+    locationAlias: locationImport?.alias ?? null,
+    addLocationResponseAlias: addLocationResponseImport?.alias ?? null,
+    getLocationsResponseAlias: getLocationsResponseImport?.alias ?? null,
+  };
+}
+
+/**
+ * Collect candidates from variable declarations with type annotations.
+ */
+function collectTypeAnnotatedCandidates(
+  rootNode: SgNode<TSX, "program">,
+  types: ImportedTypes,
+): Candidate[] {
+  const { locationAlias, addLocationResponseAlias, getLocationsResponseAlias } =
+    types;
+  const candidates: Candidate[] = [];
 
   const declarators = rootNode.findAll({
     rule: {
       kind: "variable_declarator",
-      has: {
-        kind: "type_annotation",
-        has: {
-          kind: "type_identifier",
-          regex: `^${locationAlias}$`,
-        },
-      },
+      has: { kind: "type_annotation" },
     },
   });
 
   for (const decl of declarators) {
-    const obj = decl.find({ rule: { kind: "object" } });
-    if (obj) {
-      results.push(obj);
+    const typeAnnotation = decl.find({ rule: { kind: "type_annotation" } });
+    if (!typeAnnotation) continue;
+    const typeNode = typeAnnotationTypeNode(typeAnnotation);
+    if (!typeNode) continue;
+
+    // Find the value (object or array literal)
+    const value = decl.find({
+      rule: {
+        any: [{ kind: "object" }, { kind: "array" }],
+      },
+    });
+
+    if (locationAlias) {
+      if (isTypeIdentifierNamed(typeNode, locationAlias)) {
+        const obj = decl.find({ rule: { kind: "object" } });
+        if (obj) {
+          candidates.push({ object: obj, detection: "type-annotation" });
+        }
+        continue;
+      }
+      if (
+        isArrayOfType(typeNode, locationAlias) ||
+        isGenericArrayOfType(typeNode, locationAlias)
+      ) {
+        const arr = decl.find({ rule: { kind: "array" } });
+        if (arr) {
+          for (const obj of extractObjectsFromValue(arr, true)) {
+            candidates.push({ object: obj, detection: "array-type-annotation" });
+          }
+        }
+        continue;
+      }
+    }
+
+    if (
+      addLocationResponseAlias &&
+      isTypeIdentifierNamed(typeNode, addLocationResponseAlias)
+    ) {
+      if (value) {
+        for (const obj of findPropertyObjectValues(value, ["location"])) {
+          candidates.push({ object: obj, detection: "add-location-response" });
+        }
+      }
+      continue;
+    }
+
+    if (
+      getLocationsResponseAlias &&
+      isTypeIdentifierNamed(typeNode, getLocationsResponseAlias)
+    ) {
+      if (value) {
+        for (const obj of findPropertyObjectValues(value, ["data"])) {
+          candidates.push({ object: obj, detection: "get-locations-response" });
+        }
+      }
+      continue;
     }
   }
 
-  return results;
+  return candidates;
 }
 
 /**
- * Find all object nodes typed via `satisfies Location`.
+ * Collect candidates from `as` and `satisfies` expressions.
  */
-function findSatisfiesObjects(
+function collectAssertionCandidates(
   rootNode: SgNode<TSX, "program">,
-  locationAlias: string,
-): SgNode<TSX>[] {
-  const results: SgNode<TSX>[] = [];
+  types: ImportedTypes,
+): Candidate[] {
+  const { locationAlias } = types;
+  if (!locationAlias) return [];
+  const candidates: Candidate[] = [];
 
-  const satisfiesExprs = rootNode.findAll({
+  const assertions = rootNode.findAll({
     rule: {
-      kind: "satisfies_expression",
-      has: {
-        kind: "type_identifier",
-        regex: `^${locationAlias}$`,
-      },
+      any: [{ kind: "as_expression" }, { kind: "satisfies_expression" }],
     },
   });
 
-  for (const expr of satisfiesExprs) {
-    const obj = expr.find({ rule: { kind: "object" } });
-    if (obj) {
-      results.push(obj);
+  for (const assertion of assertions) {
+    const named = assertion.children().filter((c) => c.isNamed());
+    if (named.length < 2) continue;
+    const valueNode = named[0];
+    const typeNode = named[named.length - 1];
+    if (!valueNode || !typeNode) continue;
+
+    const isSatisfies = assertion.kind() === "satisfies_expression";
+
+    if (isTypeIdentifierNamed(typeNode, locationAlias)) {
+      for (const obj of extractObjectsFromValue(valueNode, false)) {
+        candidates.push({
+          object: obj,
+          detection: isSatisfies ? "satisfies" : "as-cast",
+        });
+      }
+      continue;
+    }
+    if (
+      isArrayOfType(typeNode, locationAlias) ||
+      isGenericArrayOfType(typeNode, locationAlias)
+    ) {
+      for (const obj of extractObjectsFromValue(valueNode, true)) {
+        candidates.push({
+          object: obj,
+          detection: isSatisfies ? "array-satisfies" : "array-as-cast",
+        });
+      }
+      continue;
     }
   }
 
-  return results;
+  return candidates;
 }
 
 /**
- * Find all object nodes typed via `as Location`.
+ * Collect candidates from function/arrow return type annotations.
  */
-function findAsObjects(
+function collectReturnTypeCandidates(
   rootNode: SgNode<TSX, "program">,
-  locationAlias: string,
-): SgNode<TSX>[] {
-  const results: SgNode<TSX>[] = [];
+  types: ImportedTypes,
+): Candidate[] {
+  const { locationAlias } = types;
+  if (!locationAlias) return [];
+  const candidates: Candidate[] = [];
 
-  const asExprs = rootNode.findAll({
-    rule: {
-      kind: "as_expression",
-      has: {
-        kind: "type_identifier",
-        regex: `^${locationAlias}$`,
-      },
-    },
-  });
-
-  for (const expr of asExprs) {
-    const obj = expr.find({ rule: { kind: "object" } });
-    if (obj) {
-      results.push(obj);
-    }
-  }
-
-  return results;
-}
-
-/**
- * Find object literals returned from functions/arrows with `: Location` return type.
- */
-function findReturnTypeObjects(
-  rootNode: SgNode<TSX, "program">,
-  locationAlias: string,
-): SgNode<TSX>[] {
-  const results: SgNode<TSX>[] = [];
-
-  // function_declaration and method_definition with Location return type
+  // function_declaration with Location return type
   const funcDecls = rootNode.findAll({
     rule: {
       kind: "function_declaration",
@@ -211,154 +413,78 @@ function findReturnTypeObjects(
     },
   });
 
-  // For function_declarations, find objects inside return statements
   for (const fn of funcDecls) {
     const returnStmts = fn.findAll({ rule: { kind: "return_statement" } });
     for (const ret of returnStmts) {
       const obj = ret.find({ rule: { kind: "object" } });
       if (obj) {
-        results.push(obj);
+        candidates.push({ object: obj, detection: "return-type-annotation" });
       }
     }
   }
 
-  // For arrow_functions, find expression body objects and return statement objects
   for (const fn of arrowFns) {
-    // Expression body: () => ({ ... }) - object inside parenthesized_expression
     const parenExprs = fn.children().filter((c) => c.kind() === "parenthesized_expression");
     for (const paren of parenExprs) {
       const obj = paren.find({ rule: { kind: "object" } });
       if (obj) {
-        results.push(obj);
+        candidates.push({ object: obj, detection: "return-type-annotation" });
       }
     }
 
-    // Block body with return statements: () => { return { ... }; }
     const returnStmts = fn.findAll({ rule: { kind: "return_statement" } });
     for (const ret of returnStmts) {
       const obj = ret.find({ rule: { kind: "object" } });
       if (obj) {
-        results.push(obj);
+        candidates.push({ object: obj, detection: "return-type-annotation" });
       }
     }
   }
 
-  return results;
+  return candidates;
 }
 
-/**
- * Find nested Location objects inside AddLocationResponse-typed variables.
- * Looks for `location: { ... }` property inside objects annotated as AddLocationResponse.
- */
-function findAddLocationResponseObjects(
-  rootNode: SgNode<TSX, "program">,
-  addLocationResponseAlias: string,
-): SgNode<TSX>[] {
-  const results: SgNode<TSX>[] = [];
-
-  // Find variable_declarators with AddLocationResponse type annotation
-  const declarators = rootNode.findAll({
-    rule: {
-      kind: "variable_declarator",
-      has: {
-        kind: "type_annotation",
-        has: {
-          kind: "type_identifier",
-          regex: `^${addLocationResponseAlias}$`,
-        },
-      },
-    },
-  });
-
-  for (const decl of declarators) {
-    const topObj = decl.find({ rule: { kind: "object" } });
-    if (!topObj) continue;
-    findLocationPropertyObjects(topObj, results);
-  }
-
-  return results;
-}
-
-/**
- * Recursively find `location: { ... }` pairs inside an object literal.
- */
-function findLocationPropertyObjects(
-  objectNode: SgNode<TSX>,
-  results: SgNode<TSX>[],
-): void {
-  const locationPairs = objectNode.findAll({
-    rule: {
-      kind: "pair",
-      has: {
-        kind: "property_identifier",
-        regex: "^location$",
-      },
-    },
-  });
-
-  for (const pair of locationPairs) {
-    const valueObj = pair.find({ rule: { kind: "object" } });
-    if (valueObj) {
-      results.push(valueObj);
-    }
-  }
-}
-
-const transform: Transform<TSX> = async (root) => {
+const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root() as SgNode<TSX, "program">;
   const edits: Edit[] = [];
 
-  // Check for Location import from @backstage/catalog-client
-  const locationImport = getImport(rootNode, {
-    type: "named",
-    name: "Location",
-    from: CATALOG_CLIENT,
-  });
+  const types = resolveImportedTypes(rootNode);
 
-  const addLocationResponseImport = getImport(rootNode, {
-    type: "named",
-    name: "AddLocationResponse",
-    from: CATALOG_CLIENT,
-  });
-
-  // Early exit if neither Location nor AddLocationResponse is imported
-  if (!locationImport && !addLocationResponseImport) {
+  // Early exit if none of the relevant types are imported
+  if (
+    !types.locationAlias &&
+    !types.addLocationResponseAlias &&
+    !types.getLocationsResponseAlias
+  ) {
     return null;
   }
 
-  const locationAlias = locationImport?.alias ?? null;
-  const addLocationResponseAlias = addLocationResponseImport?.alias ?? null;
+  // Collect all candidates from different detection patterns
+  const candidates: Candidate[] = [
+    ...collectTypeAnnotatedCandidates(rootNode, types),
+    ...collectAssertionCandidates(rootNode, types),
+    ...collectReturnTypeCandidates(rootNode, types),
+  ];
 
-  // Collect all object nodes that need the entityRef field
-  const objectsToTransform: SgNode<TSX>[] = [];
-
-  if (locationAlias !== null) {
-    objectsToTransform.push(
-      ...findTypeAnnotatedObjects(rootNode, locationAlias),
-    );
-    objectsToTransform.push(...findSatisfiesObjects(rootNode, locationAlias));
-    objectsToTransform.push(...findAsObjects(rootNode, locationAlias));
-    objectsToTransform.push(...findReturnTypeObjects(rootNode, locationAlias));
-  }
-
-  if (addLocationResponseAlias !== null) {
-    objectsToTransform.push(
-      ...findAddLocationResponseObjects(rootNode, addLocationResponseAlias),
-    );
-  }
-
-  // Deduplicate by node id (an object could match multiple patterns)
+  // Deduplicate by node id
   const seen = new Set<number>();
-  for (const obj of objectsToTransform) {
-    if (seen.has(obj.id())) continue;
-    seen.add(obj.id());
+  for (const { object, detection } of candidates) {
+    if (seen.has(object.id())) continue;
+    seen.add(object.id());
 
-    const edit = buildEntityRefEdit(obj);
+    if (hasSpread(object)) {
+      recordMigration("skipped-spread", detection);
+      continue;
+    }
+    if (hasEntityRef(object)) {
+      recordMigration("skipped-existing", detection);
+      continue;
+    }
+
+    const edit = buildEntityRefEdit(object);
     if (edit) {
       edits.push(edit);
-      migrationMetric.increment({ action: "entityRef-added" });
-    } else {
-      migrationMetric.increment({ action: "skipped" });
+      recordMigration("added", detection);
     }
   }
 

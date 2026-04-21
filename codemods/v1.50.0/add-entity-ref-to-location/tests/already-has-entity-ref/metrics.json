@@ -2,7 +2,8 @@
   "add-entity-ref-to-location": [
     {
       "cardinality": {
-        "action": "skipped"
+        "detection": "type-annotation",
+        "outcome": "skipped-existing"
       },
       "count": 1
     }
