@@ -1,4 +1,4 @@
-import type { Transform, Edit, SgNode } from "codemod:ast-grep";
+import type { Codemod, Edit, SgNode } from "codemod:ast-grep";
 import type TSX from "codemod:ast-grep/langs/tsx";
 import { useMetricAtom } from "codemod:metrics";
 
@@ -189,7 +189,7 @@ function buildNamedStatement(
   return `${keyword} ${typeKw}{\n  ${specTexts.join(",\n  ")},\n} from '${source}';`;
 }
 
-const transform: Transform<TSX> = async (root) => {
+const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root() as SgNode<TSX, "program">;
   const edits: Edit[] = [];
 
