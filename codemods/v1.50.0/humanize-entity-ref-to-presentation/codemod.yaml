@@ -1,0 +1,19 @@
+schema_version: "1.0"
+
+name: "humanize-entity-ref-to-presentation"
+version: "0.1.0"
+description: "Backstage 1.50.0: Replace deprecated humanizeEntityRef/humanizeEntity with Catalog Presentation API"
+author: "Paul Schultz<pschultz@redhat.com>"
+license: "MIT"
+workflow: "workflow.yaml"
+
+targets:
+  languages: ["tsx", "ts"]
+
+keywords: ["backstage", "migration", "catalog-react", "humanizeEntityRef", "EntityDisplayName", "1.50.0"]
+
+registry:
+  access: "public"
+  visibility: "public"
+
+capabilities: []
