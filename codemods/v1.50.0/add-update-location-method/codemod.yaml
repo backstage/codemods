@@ -1,6 +1,6 @@
 schema_version: "1.0"
 
-name: "add-update-location-method"
+name: "@backstage/add-update-location-method"
 version: "0.1.0"
 description: "Backstage 1.50.0: Add required updateLocation method to CatalogApi and CatalogService implementations"
 author: "Paul Schultz<pschultz@redhat.com>"
