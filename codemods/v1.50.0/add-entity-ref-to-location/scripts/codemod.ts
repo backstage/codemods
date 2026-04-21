@@ -84,28 +84,6 @@ function buildEntityRefEdit(objectNode: SgNode<TSX>): Edit | null {
 }
 
 /**
- * Check if a type_identifier node refers to a name that is imported from
- * the catalog-client package (directly or via alias).
- */
-function isLocationTypeRef(
-  typeNode: SgNode<TSX>,
-  locationAlias: string | null,
-  addLocationResponseAlias: string | null,
-): "Location" | "AddLocationResponse" | null {
-  const typeName = typeNode.text();
-  if (locationAlias !== null && typeName === locationAlias) {
-    return "Location";
-  }
-  if (
-    addLocationResponseAlias !== null &&
-    typeName === addLocationResponseAlias
-  ) {
-    return "AddLocationResponse";
-  }
-  return null;
-}
-
-/**
  * Find all object nodes directly typed as Location via `: Location` annotation.
  */
 function findTypeAnnotatedObjects(
@@ -190,6 +168,78 @@ function findAsObjects(
     const obj = expr.find({ rule: { kind: "object" } });
     if (obj) {
       results.push(obj);
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Find object literals returned from functions/arrows with `: Location` return type.
+ */
+function findReturnTypeObjects(
+  rootNode: SgNode<TSX, "program">,
+  locationAlias: string,
+): SgNode<TSX>[] {
+  const results: SgNode<TSX>[] = [];
+
+  // function_declaration and method_definition with Location return type
+  const funcDecls = rootNode.findAll({
+    rule: {
+      kind: "function_declaration",
+      has: {
+        kind: "type_annotation",
+        has: {
+          kind: "type_identifier",
+          regex: `^${locationAlias}$`,
+        },
+      },
+    },
+  });
+
+  // arrow_function with Location return type
+  const arrowFns = rootNode.findAll({
+    rule: {
+      kind: "arrow_function",
+      has: {
+        kind: "type_annotation",
+        has: {
+          kind: "type_identifier",
+          regex: `^${locationAlias}$`,
+        },
+      },
+    },
+  });
+
+  // For function_declarations, find objects inside return statements
+  for (const fn of funcDecls) {
+    const returnStmts = fn.findAll({ rule: { kind: "return_statement" } });
+    for (const ret of returnStmts) {
+      const obj = ret.find({ rule: { kind: "object" } });
+      if (obj) {
+        results.push(obj);
+      }
+    }
+  }
+
+  // For arrow_functions, find expression body objects and return statement objects
+  for (const fn of arrowFns) {
+    // Expression body: () => ({ ... }) - object inside parenthesized_expression
+    const parenExprs = fn.children().filter((c) => c.kind() === "parenthesized_expression");
+    for (const paren of parenExprs) {
+      const obj = paren.find({ rule: { kind: "object" } });
+      if (obj) {
+        results.push(obj);
+      }
+    }
+
+    // Block body with return statements: () => { return { ... }; }
+    const returnStmts = fn.findAll({ rule: { kind: "return_statement" } });
+    for (const ret of returnStmts) {
+      const obj = ret.find({ rule: { kind: "object" } });
+      if (obj) {
+        results.push(obj);
+      }
     }
   }
 
@@ -288,6 +338,7 @@ const transform: Transform<TSX> = async (root) => {
     );
     objectsToTransform.push(...findSatisfiesObjects(rootNode, locationAlias));
     objectsToTransform.push(...findAsObjects(rootNode, locationAlias));
+    objectsToTransform.push(...findReturnTypeObjects(rootNode, locationAlias));
   }
 
   if (addLocationResponseAlias !== null) {
