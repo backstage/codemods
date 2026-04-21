@@ -230,7 +230,7 @@ const transform: Transform<TSX> = async (root) => {
     migrationMetric.increment({ action: "import-removed" });
   }
 
-  // --- Step 5: Handle re-exports in the same file ---
+  // --- Step 6: Handle re-exports in the same file ---
   const reExportEdits = processReExports(rootNode);
   edits.push(...reExportEdits);
 
