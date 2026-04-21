@@ -1,6 +1,6 @@
 schema_version: "1.0"
 
-name: "dialog-api-show-to-open"
+name: "@backstage/dialog-api-show-to-open"
 version: "0.1.0"
 description: "Backstage 1.50.0: Replace deprecated DialogApi .show() and .showModal() with .open()"
 author: "Paul Schultz<pschultz@redhat.com>"

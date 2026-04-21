@@ -1,4 +1,4 @@
-import type { Transform, Edit, SgNode } from "codemod:ast-grep";
+import type { Codemod, Edit, SgNode } from "codemod:ast-grep";
 import type TSX from "codemod:ast-grep/langs/tsx";
 import { getImport } from "@jssg/utils/javascript/imports";
 import { useMetricAtom } from "codemod:metrics";
@@ -47,7 +47,7 @@ function getIndentation(node: SgNode<TSX>, fullSource: string): string {
   return match ? match[1] ?? "" : "";
 }
 
-const transform: Transform<TSX> = async (root) => {
+const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root() as SgNode<TSX, "program">;
 
   // Check if this file imports dialogApiRef or DialogApi from the right package
