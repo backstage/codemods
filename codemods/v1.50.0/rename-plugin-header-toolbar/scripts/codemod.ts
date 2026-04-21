@@ -1,4 +1,4 @@
-import type { Transform, Edit } from "codemod:ast-grep";
+import type { Codemod, Edit } from "codemod:ast-grep";
 import type TSX from "codemod:ast-grep/langs/tsx";
 import { useMetricAtom } from "codemod:metrics";
 
@@ -23,7 +23,7 @@ function hasDescendantOrChildCombinator(value: string): boolean {
   return pattern.test(value);
 }
 
-const transform: Transform<TSX> = async (root) => {
+const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root();
   const edits: Edit[] = [];
 

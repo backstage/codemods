@@ -1,4 +1,4 @@
-import type { Transform, Edit } from "codemod:ast-grep";
+import type { Codemod, Edit } from "codemod:ast-grep";
 import type CSS from "codemod:ast-grep/langs/css";
 import { useMetricAtom } from "codemod:metrics";
 
@@ -10,7 +10,7 @@ const NEW_CLASS_NAME = "bui-PluginHeaderToolbar";
 const TODO_COMMENT =
   "/* TODO(backstage-codemod): wrapper element was removed — review child/descendant selectors */";
 
-const transform: Transform<CSS> = async (root) => {
+const transform: Codemod<CSS> = async (root) => {
   const rootNode = root.root();
   const edits: Edit[] = [];
 
