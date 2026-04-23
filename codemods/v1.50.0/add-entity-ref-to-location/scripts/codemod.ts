@@ -694,6 +694,74 @@ function collectMockLocationCandidates(
 }
 
 /**
+ * Find assertion object literals from toEqual calls on a reference node.
+ * Returns the object nodes found in the assertion arguments.
+ */
+function findAssertionObjects(refNode: SgNode<TSX>): SgNode<TSX>[] {
+  const objects: SgNode<TSX>[] = [];
+
+  // Check if this reference is inside an expect() call's arguments
+  const expectCallArg = refNode.ancestors().find(
+    (a) =>
+      a.kind() === "arguments" &&
+      a.parent()?.kind() === "call_expression" &&
+      a.parent()?.find({
+        rule: {
+          kind: "identifier",
+          regex: "^expect$",
+        },
+      }) !== null,
+  );
+
+  if (!expectCallArg) return objects;
+
+  // Now find the chained .toEqual() or .toMatchObject() call
+  const expectCall = expectCallArg.parent();
+  if (!expectCall) return objects;
+
+  // The assertion call chains off the expect call:
+  //   call_expression (toEqual call)
+  //     member_expression
+  //       call_expression (expect call)
+  //       property_identifier (toEqual)
+  //     arguments ({ ... })
+
+  // expect() -> member_expression -> outer call_expression
+  const assertionCall = expectCall.parent()?.parent();
+  if (!assertionCall || assertionCall.kind() !== "call_expression") return objects;
+
+  // Check the method name — only handle toEqual (exact match).
+  // toMatchObject is a partial matcher; adding entityRef would change
+  // the test semantics.
+  const assertionMethodNode = assertionCall.find({
+    rule: {
+      kind: "member_expression",
+      has: {
+        kind: "property_identifier",
+        regex: "^toEqual$",
+      },
+    },
+  });
+  if (!assertionMethodNode) return objects;
+
+  // Get the direct arguments child of the assertion call_expression
+  const assertionArgs = assertionCall.children().find(
+    (c) => c.kind() === "arguments",
+  );
+  if (!assertionArgs) return objects;
+
+  // Find object literals in the assertion arguments
+  // Only match direct children (not deeply nested objects)
+  for (const child of assertionArgs.children()) {
+    if (child.kind() === "object") {
+      objects.push(child);
+    }
+  }
+
+  return objects;
+}
+
+/**
  * Collect candidates from test assertion patterns where a Location-typed
  * variable is compared with an object literal via toEqual.
  *
@@ -707,10 +775,16 @@ function collectMockLocationCandidates(
  *
  * Uses `.references()` to find where Location-typed variables appear in
  * expect() calls, then extracts the assertion object literals.
+ *
+ * With `semantic_analysis: workspace`, references may span multiple files.
+ * Same-file references are returned as candidates for the caller to batch.
+ * Cross-file references are committed and written immediately via
+ * `root.write()`.
  */
 function collectTestAssertionCandidates(
   rootNode: SgNode<TSX, "program">,
   types: ImportedTypes,
+  currentFilename: string,
 ): Candidate[] {
   const { locationAlias } = types;
   if (!locationAlias) return [];
@@ -741,62 +815,31 @@ function collectTestAssertionCandidates(
     const refs = nameNode.references();
 
     for (const fileRef of refs) {
+      const isSameFile = fileRef.root.filename() === currentFilename;
+
       for (const refNode of fileRef.nodes) {
-        // Check if this reference is inside an expect() call's arguments
-        const expectCallArg = refNode.ancestors().find(
-          (a) =>
-            a.kind() === "arguments" &&
-            a.parent()?.kind() === "call_expression" &&
-            a.parent()?.find({
-              rule: {
-                kind: "identifier",
-                regex: "^expect$",
-              },
-            }) !== null,
-        );
+        const assertionObjects = findAssertionObjects(refNode);
 
-        if (!expectCallArg) continue;
+        for (const assertionObj of assertionObjects) {
+          if (hasSpread(assertionObj)) {
+            recordMigration("skipped-spread", "test-assertion");
+            continue;
+          }
+          if (hasEntityRef(assertionObj)) {
+            recordMigration("skipped-existing", "test-assertion");
+            continue;
+          }
 
-        // Now find the chained .toEqual() or .toMatchObject() call
-        const expectCall = expectCallArg.parent();
-        if (!expectCall) continue;
+          const edit = buildEntityRefEdit(assertionObj);
+          if (!edit) continue;
 
-        // The assertion call chains off the expect call:
-        //   call_expression (toEqual call)
-        //     member_expression
-        //       call_expression (expect call)
-        //       property_identifier (toEqual)
-        //     arguments ({ ... })
-
-        // expect() -> member_expression -> outer call_expression
-        const assertionCall = expectCall.parent()?.parent();
-        if (!assertionCall || assertionCall.kind() !== "call_expression") continue;
-
-        // Check the method name — only handle toEqual (exact match).
-        // toMatchObject is a partial matcher; adding entityRef would change
-        // the test semantics.
-        const assertionMethodNode = assertionCall.find({
-          rule: {
-            kind: "member_expression",
-            has: {
-              kind: "property_identifier",
-              regex: "^toEqual$",
-            },
-          },
-        });
-        if (!assertionMethodNode) continue;
-
-        // Get the direct arguments child of the assertion call_expression
-        const assertionArgs = assertionCall.children().find(
-          (c) => c.kind() === "arguments",
-        );
-        if (!assertionArgs) continue;
-
-        // Find object literals in the assertion arguments
-        // Only match direct children (not deeply nested objects)
-        for (const child of assertionArgs.children()) {
-          if (child.kind() === "object") {
-            candidates.push({ object: child, detection: "test-assertion" });
+          if (isSameFile) {
+            candidates.push({ object: assertionObj, detection: "test-assertion" });
+          } else {
+            // Cross-file edit: commit and write immediately
+            const crossContent = fileRef.root.root().commitEdits([edit]);
+            fileRef.root.write(crossContent);
+            recordMigration("added", "test-assertion");
           }
         }
       }
@@ -808,6 +851,7 @@ function collectTestAssertionCandidates(
 
 const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root() as SgNode<TSX, "program">;
+  const currentFilename = root.filename();
   const edits: Edit[] = [];
 
   const types = resolveImportedTypes(rootNode);
@@ -828,7 +872,7 @@ const transform: Codemod<TSX> = async (root) => {
     ...collectReturnTypeCandidates(rootNode, types),
     ...collectInferredReturnVariableCandidates(rootNode, types),
     ...collectMockLocationCandidates(rootNode, types),
-    ...collectTestAssertionCandidates(rootNode, types),
+    ...collectTestAssertionCandidates(rootNode, types, currentFilename),
   ];
 
   // Deduplicate by node id
