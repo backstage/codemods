@@ -2,12 +2,12 @@
   "humanize-entity-ref-migration": [
     {
       "cardinality": {
-        "context": "utility",
+        "context": "jsx",
         "function": "humanizeEntityRef",
         "outcome": "auto-migrated",
-        "reason": "namespace-call-replaced"
+        "reason": "call-replaced"
       },
-      "count": 2
+      "count": 1
     }
   ]
 }

@@ -76,6 +76,37 @@ function extractSpecifiers(importNode: SgNode<TSX>): Array<{
 }
 
 /**
+ * Check if a call site is inside a conditional, loop, or other construct
+ * that would violate React's Rules of Hooks.
+ */
+function isInsideConditionalOrLoop(
+  callNode: SgNode<TSX>,
+  componentBoundary: SgNode<TSX>,
+): boolean {
+  const unsafeKinds = new Set([
+    "if_statement",
+    "for_statement",
+    "for_in_statement",
+    "while_statement",
+    "do_statement",
+    "switch_statement",
+    "ternary_expression",
+    "catch_clause",
+  ]);
+
+  for (const ancestor of callNode.ancestors()) {
+    // Stop checking when we reach the component boundary
+    if (ancestor.id() === componentBoundary.id()) {
+      return false;
+    }
+    if (unsafeKinds.has(ancestor.kind())) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Determine the call-site context for a call_expression node.
  */
 function determineContext(callNode: SgNode<TSX>): Context {
@@ -94,7 +125,16 @@ function determineContext(callNode: SgNode<TSX>): Context {
       kind === "function_expression" ||
       kind === "method_definition"
     ) {
-      return isReactComponent(ancestor) ? "react-component" : "utility";
+      if (isReactComponent(ancestor)) {
+        // Even though we're in a React component, if the call is inside
+        // a conditional or loop, using a hook would violate Rules of Hooks.
+        // Fall back to entityPresentationSnapshot (utility context) instead.
+        if (isInsideConditionalOrLoop(callNode, ancestor)) {
+          return "utility";
+        }
+        return "react-component";
+      }
+      return "utility";
     }
   }
 
@@ -124,6 +164,7 @@ function buildReplacement(
   entityArg: string,
   optionsArg: string | null,
   isHumanizeEntity: boolean,
+  isJsxExpression: boolean,
 ): string {
   // For humanizeEntity, the 2nd arg is a fallback name, which the Presentation API handles
   const contextArg = isHumanizeEntity ? null : optionsArg;
@@ -131,13 +172,22 @@ function buildReplacement(
   switch (context) {
     case "jsx": {
       let props = `entityRef={${entityArg}}`;
+      let todoPrefix = "";
       if (contextArg) {
-        const jsxProps = optionsToJsxProps(contextArg);
+        const { props: jsxProps, hadNonLiteral } = optionsToJsxProps(contextArg);
         if (jsxProps) {
           props += ` ${jsxProps}`;
         }
+        if (hadNonLiteral) {
+          todoPrefix = `{/* TODO(backstage-codemod): Non-literal options (${contextArg.trim()}) could not be converted to JSX props. Manually spread or pass them. */}`;
+        }
       }
-      return `<EntityDisplayName ${props} />`;
+      const component = `<EntityDisplayName ${props} />`;
+      if (todoPrefix && isJsxExpression) {
+        // When replacing a jsx_expression, we're replacing the outer {}, so output raw JSX
+        return `${todoPrefix}${component}`;
+      }
+      return todoPrefix ? `${todoPrefix}${component}` : component;
     }
     case "react-component": {
       const args = contextArg ? `${entityArg}, ${contextArg}` : entityArg;
@@ -152,11 +202,16 @@ function buildReplacement(
 
 /**
  * Convert an options object like `{ defaultKind: 'Component' }` into JSX props.
+ * Returns an object with the converted props string and whether any options were dropped.
  */
-function optionsToJsxProps(optionsText: string): string | null {
+function optionsToJsxProps(optionsText: string): { props: string | null; hadNonLiteral: boolean } {
   const trimmed = optionsText.trim();
   if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) {
-    return null;
+    // Entire options argument is a variable reference or non-literal expression
+    console.log(
+      `[humanize-entity-ref-to-presentation] WARNING: Non-literal options (${trimmed}) could not be converted to JSX props. A TODO comment was added.`,
+    );
+    return { props: null, hadNonLiteral: true };
   }
 
   const props: string[] = [];
@@ -170,7 +225,26 @@ function optionsToJsxProps(optionsText: string): string | null {
     }
   }
 
-  return props.length > 0 ? props.join(" ") : null;
+  // Check if there were properties we couldn't parse (non-literal values)
+  const allPropsPattern = /(\w+)\s*:/g;
+  let allMatch: RegExpExecArray | null;
+  const allKeys = new Set<string>();
+  while ((allMatch = allPropsPattern.exec(trimmed)) !== null) {
+    if (allMatch[1]) {
+      allKeys.add(allMatch[1]);
+    }
+  }
+  const parsedKeys = new Set(props.map((p) => p.split("=")[0]));
+  const droppedKeys = [...allKeys].filter((k) => !parsedKeys.has(k));
+
+  if (droppedKeys.length > 0) {
+    console.log(
+      `[humanize-entity-ref-to-presentation] WARNING: Non-literal option values for keys (${droppedKeys.join(", ")}) could not be converted to JSX props. A TODO comment was added.`,
+    );
+    return { props: props.length > 0 ? props.join(" ") : null, hadNonLiteral: true };
+  }
+
+  return { props: props.length > 0 ? props.join(" ") : null, hadNonLiteral: false };
 }
 
 /**
@@ -218,22 +292,23 @@ function replaceDeprecatedCall(
   const entityArg = argChildren[0]?.text() ?? "";
   const optionsArg = argChildren[1]?.text() ?? null;
 
+  // Check if this call is inside a jsx_expression (for JSX context replacements)
+  const jsxExpr = context === "jsx"
+    ? call.ancestors().find((a) => a.kind() === "jsx_expression")
+    : null;
+
   const replacement = buildReplacement(
     context,
     entityArg,
     optionsArg,
     isHumanizeEntity,
+    jsxExpr !== null && jsxExpr !== undefined,
   );
 
-  if (context === "jsx") {
+  if (context === "jsx" && jsxExpr) {
     // For JSX context, replace the parent jsx_expression node (which includes the { } braces)
     // so we get <EntityDisplayName .../> instead of {<EntityDisplayName .../>}
-    const jsxExpr = call.ancestors().find((a) => a.kind() === "jsx_expression");
-    if (jsxExpr) {
-      edits.push(jsxExpr.replace(replacement));
-    } else {
-      edits.push(call.replace(replacement));
-    }
+    edits.push(jsxExpr.replace(replacement));
   } else {
     edits.push(call.replace(replacement));
   }
@@ -437,11 +512,21 @@ const transform: Codemod<TSX> = async (root) => {
         "entityPresentationSnapshot",
       ];
 
+      const deprecatedNames = deprecatedSpecs.map((spec) => {
+        const ids = spec.findAll({
+          rule: {
+            any: [{ kind: "identifier" }, { kind: "type_identifier" }],
+          },
+        });
+        return ids[0]?.text() ?? "";
+      }).filter(Boolean);
+
       const keptTexts = keptSpecs.map((s) => s.text());
       const allSpecs = [...keptTexts, ...newExports];
 
-      const replacement = buildNamedStatement("export", allSpecs, SOURCE_PKG, false);
-      edits.push(reExport.replace(replacement));
+      const todoComment = `// TODO(backstage-codemod): ${deprecatedNames.join(", ")} were re-exported here. Consumers should pick the appropriate replacement:\n//   - EntityDisplayName: for JSX rendering\n//   - useEntityPresentation: for React component hooks\n//   - entityPresentationSnapshot: for non-React utilities\n`;
+      const exportStatement = buildNamedStatement("export", allSpecs, SOURCE_PKG, false);
+      edits.push(reExport.replace(`${todoComment}${exportStatement}`));
     }
   }
 
