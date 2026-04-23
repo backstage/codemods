@@ -57,80 +57,58 @@ function escapeRegex(str: string): string {
 }
 
 /**
- * Check if a reference node participates in a dismissal check pattern:
- * - `result === undefined` / `result !== undefined`
- * - `result == null` / `result != null`
- * - `if (result)` / `if (!result)` (truthiness check in condition position)
- * - `result ?? fallback` (nullish coalescing)
- * - `result?.value` (optional chaining)
- * - `result ? x : y` (ternary with result as the condition)
+ * Check if a reference node participates in a dismissal check pattern
+ * using the idiomatic ref.inside() API.
  */
 function isDismissalCheck(refNode: SgNode<TSX>): boolean {
+  const name = refNode.text();
+
+  // Use ref.inside() for patterns where the ref appears in a comparison
+  // expression — these are precise because the expression itself is the match.
+  const insideComparison = refNode.inside({
+    rule: {
+      any: [
+        // Strict/loose equality with undefined/null
+        { pattern: `${name} === undefined` },
+        { pattern: `${name} !== undefined` },
+        { pattern: `${name} == null` },
+        { pattern: `${name} != null` },
+        // Nullish coalescing: result ?? fallback
+        { pattern: `${name} ?? $$$` },
+        // Optional chaining: result?.prop
+        {
+          kind: "member_expression",
+          all: [
+            { has: { kind: "optional_chain" } },
+            { has: { kind: "identifier", regex: `^${escapeRegex(name)}$` } },
+          ],
+        },
+        // Unary negation: !result
+        { pattern: `!${name}` },
+      ],
+    },
+  });
+
+  if (insideComparison) return true;
+
+  // For truthiness and ternary checks, use parent-walking to verify the ref
+  // is the actual condition, not just any occurrence inside the block.
   const parent = refNode.parent();
   if (!parent) return false;
-  const parentKind = parent.kind();
 
-  // Pattern: result === undefined / result !== undefined / result == null / result != null
-  if (parentKind === "binary_expression") {
-    const operatorNode = parent.children().find((c) => {
-      const k = c.kind();
-      return k === "===" || k === "!==" || k === "==" || k === "!=" || k === "??";
-    });
-    if (!operatorNode) return false;
-    const op = operatorNode.kind();
-
-    // Nullish coalescing: result ?? fallback
-    if (op === "??") {
-      return true;
-    }
-
-    // Strict equality with undefined: result === undefined / result !== undefined
-    if (op === "===" || op === "!==") {
-      const hasUndefined = parent.find({
-        rule: { kind: "undefined", regex: "^undefined$" },
-      });
-      if (hasUndefined) return true;
-    }
-
-    // Loose equality with null: result == null / result != null
-    if (op === "==" || op === "!=") {
-      const hasNull = parent.find({
-        rule: { kind: "null", regex: "^null$" },
-      });
-      if (hasNull) return true;
-    }
-
-    return false;
-  }
-
-  // Pattern: !result (unary negation — typically in if(!result))
-  if (parentKind === "unary_expression") {
-    const opChild = parent.children().find((c) => c.kind() === "!");
-    if (opChild) return true;
-  }
-
-  // Pattern: if (result) — bare identifier inside parenthesized_expression of if_statement
-  if (parentKind === "parenthesized_expression") {
+  // if (result) — identifier inside parenthesized_expression of if_statement
+  if (parent.kind() === "parenthesized_expression") {
     const grandparent = parent.parent();
     if (grandparent && grandparent.kind() === "if_statement") {
       return true;
     }
   }
 
-  // Pattern: result?.value — optional chaining (member_expression with optional_chain child)
-  if (parentKind === "member_expression") {
-    const hasOptionalChain = parent.children().some(
-      (c) => c.kind() === "optional_chain",
-    );
-    if (hasOptionalChain) return true;
-  }
-
-  // Pattern: result ? x : y — ternary expression where result is the condition
-  if (parentKind === "ternary_expression") {
-    // The condition is the first named child of the ternary_expression
+  // result ? x : y — ternary expression where result is the condition
+  if (parent.kind() === "ternary_expression") {
     const children = parent.children();
-    const firstChild = children.find((c) => c.kind() === "identifier");
-    if (firstChild && firstChild.id() === refNode.id()) {
+    const firstNamedChild = children.find((c) => c.kind() === "identifier");
+    if (firstNamedChild && firstNamedChild.id() === refNode.id()) {
       return true;
     }
   }
@@ -138,8 +116,26 @@ function isDismissalCheck(refNode: SgNode<TSX>): boolean {
   return false;
 }
 
+/**
+ * Information about a .show()/.showModal() call site, collected before any
+ * edits are made so that references() works on the original source.
+ */
+interface CallSiteInfo {
+  /** The property_identifier node to rename (show -> open) */
+  propertyNode: SgNode<TSX>;
+  /** Original method name: "show" | "showModal" */
+  methodName: string;
+  /** The call_expression node (for finding the containing statement) */
+  callNode: SgNode<TSX>;
+  /** Binding identifiers for the result variable (from `const x = await ...show(...)`) */
+  resultBinding: SgNode<TSX> | null;
+  /** Binding identifiers from .then(result => ...) callback parameter */
+  thenParamBinding: SgNode<TSX> | null;
+}
+
 const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root() as SgNode<TSX, "program">;
+  const currentFile = root.filename();
 
   // Check if this file imports dialogApiRef or DialogApi from the right package
   const dialogApiRefImport = getImport(rootNode, {
@@ -157,7 +153,6 @@ const transform: Codemod<TSX> = async (root) => {
     return null;
   }
 
-  const edits: Edit[] = [];
   const fullSource = rootNode.text();
 
   // Collect the set of variable names that are known DialogApi receivers.
@@ -229,13 +224,12 @@ const transform: Codemod<TSX> = async (root) => {
     }
   }
 
-  // Track which statements already have a TODO comment inserted,
-  // so we don't insert duplicates when multiple calls share a statement.
-  const commentedStatementIds = new Set<number>();
+  // ──────────────────────────────────────────────────────────────────────
+  // Phase 1: Collect all call sites and their result bindings BEFORE
+  // making any edits. This ensures references() works on original source.
+  // ──────────────────────────────────────────────────────────────────────
 
-  // Collect binding identifiers from variable_declarators that hold .show() results,
-  // so we can trace their references for dismissal checks after the rename pass.
-  const bindingIdentifiers: SgNode<TSX>[] = [];
+  const callSites: CallSiteInfo[] = [];
 
   // Find all call expressions with .show(...) or .showModal(...)
   const calls = rootNode.findAll({
@@ -269,33 +263,9 @@ const transform: Codemod<TSX> = async (root) => {
     const receiverName = objectNode.text();
     if (!dialogApiReceiverNames.has(receiverName)) continue;
 
-    // Replace the method name with "open"
-    edits.push(propertyNode.replace("open"));
-    migrationMetric.increment({ method: methodName });
-
-    // Find the containing statement to insert the TODO comment above
-    const stmt = findContainingStatement(call);
-    if (!stmt) continue;
-
-    const stmtId = stmt.id();
-    if (commentedStatementIds.has(stmtId)) continue;
-    commentedStatementIds.add(stmtId);
-
-    // Determine the appropriate TODO comment
-    const todoComment = methodName === "show" ? SHOW_TODO : SHOW_MODAL_TODO;
-    const indent = getIndentation(stmt, fullSource);
-
-    // Insert the TODO comment before the statement
-    const commentEdit: Edit = {
-      startPos: stmt.range().start.index,
-      endPos: stmt.range().start.index,
-      insertedText: `${todoComment}\n${indent}`,
-    };
-    edits.push(commentEdit);
-
-    // For .show() calls only, find the binding identifier for dismissal check tracing
+    // Find the result variable binding (for `const result = await ...show(...)`)
+    let resultBinding: SgNode<TSX> | null = null;
     if (methodName === "show") {
-      // Walk up from the call to find the variable_declarator ancestor
       const ancestors = call.ancestors();
       const varDeclarator = ancestors.find(
         (a) => a.kind() === "variable_declarator",
@@ -303,20 +273,117 @@ const transform: Codemod<TSX> = async (root) => {
       if (varDeclarator) {
         const nameNode = varDeclarator.field("name");
         if (nameNode && nameNode.kind() === "identifier") {
-          bindingIdentifiers.push(nameNode);
+          resultBinding = nameNode;
         }
       }
     }
+
+    // Find .then(result => ...) callback parameter binding
+    let thenParamBinding: SgNode<TSX> | null = null;
+    if (methodName === "show") {
+      // Check if the call is the object of a .then() member expression.
+      // AST shape: call_expression { function: member_expression { object: <our call>, property: "then" }, arguments: [arrow_function { parameters: [identifier] }] }
+      const callParent = call.parent();
+      if (callParent && callParent.kind() === "member_expression") {
+        const thenProp = callParent.field("property");
+        if (thenProp && thenProp.text() === "then") {
+          // The member_expression is the function of the outer call_expression
+          const outerCall = callParent.parent();
+          if (outerCall && outerCall.kind() === "call_expression") {
+            const argsNode = outerCall.field("arguments");
+            if (argsNode) {
+              // The first argument should be the callback (arrow_function or function)
+              const callback = argsNode.children().find(
+                (c) =>
+                  c.kind() === "arrow_function" ||
+                  c.kind() === "function" ||
+                  c.kind() === "function_expression",
+              );
+              if (callback) {
+                const params = callback.field("parameters");
+                if (params) {
+                  // For arrow_function with a single param, it may be a direct identifier
+                  if (params.kind() === "identifier") {
+                    thenParamBinding = params;
+                  } else {
+                    // formal_parameters — find the first identifier child
+                    const firstParam = params
+                      .children()
+                      .find(
+                        (c) =>
+                          c.kind() === "identifier" ||
+                          c.kind() === "required_parameter",
+                      );
+                    if (firstParam) {
+                      if (firstParam.kind() === "identifier") {
+                        thenParamBinding = firstParam;
+                      } else {
+                        // required_parameter — find the identifier child
+                        const paramName = firstParam
+                          .children()
+                          .find((c) => c.kind() === "identifier");
+                        if (paramName) {
+                          thenParamBinding = paramName;
+                        }
+                      }
+                    }
+                  }
+                }
+                // Also try: arrow function with single unparenthesized parameter
+                if (!thenParamBinding && callback.kind() === "arrow_function") {
+                  const paramNode = callback.field("parameter");
+                  if (paramNode && paramNode.kind() === "identifier") {
+                    thenParamBinding = paramNode;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    callSites.push({
+      propertyNode,
+      methodName,
+      callNode: call,
+      resultBinding,
+      thenParamBinding,
+    });
   }
 
-  // Phase 2: Use semantic analysis to find dismissal checks on .show() result variables.
-  // Try references() first (requires semantic_analysis: file in workflow.yaml).
-  // Fall back to AST-based identifier search when semantic analysis is unavailable
-  // (e.g. in the test runner).
+  if (callSites.length === 0) {
+    return null;
+  }
+
+  // ──────────────────────────────────────────────────────────────────────
+  // Phase 2: For each binding, use references() to find dismissal checks.
+  // This runs BEFORE any edits so the source is still original.
+  // ──────────────────────────────────────────────────────────────────────
+
   const dismissalEdits: Edit[] = [];
   const dismissalCommentedStmtIds = new Set<number>();
 
-  for (const bindingId of bindingIdentifiers) {
+  // Track which statement IDs will get method-level TODO comments so we
+  // don't double-comment them.
+  const commentedStatementIds = new Set<number>();
+
+  // Pre-compute which statements will get method-level TODOs
+  for (const site of callSites) {
+    const stmt = findContainingStatement(site.callNode);
+    if (stmt) {
+      commentedStatementIds.add(stmt.id());
+    }
+  }
+
+  // Process all bindings (both variable assignment and .then() callback parameter)
+  const allBindings: SgNode<TSX>[] = [];
+  for (const site of callSites) {
+    if (site.resultBinding) allBindings.push(site.resultBinding);
+    if (site.thenParamBinding) allBindings.push(site.thenParamBinding);
+  }
+
+  for (const bindingId of allBindings) {
     const varName = bindingId.text();
 
     // Try semantic references() first
@@ -324,9 +391,38 @@ const transform: Codemod<TSX> = async (root) => {
     let refNodes: SgNode<TSX>[] = [];
 
     for (const fileRef of refs) {
-      // Only process references in the current file
-      if (fileRef.root.filename() !== root.filename()) continue;
-      refNodes.push(...fileRef.nodes);
+      if (fileRef.root.filename() === currentFile) {
+        // Same file: collect nodes for later editing
+        refNodes.push(...fileRef.nodes);
+      } else {
+        // Cross-file: insert TODO comments and write to the other file
+        const crossFileEdits: Edit[] = [];
+        const crossFileSource = fileRef.root.root().text();
+        const crossCommentedIds = new Set<number>();
+
+        for (const refNode of fileRef.nodes) {
+          if (!isDismissalCheck(refNode)) continue;
+
+          const refStmt = findContainingStatement(refNode);
+          if (!refStmt) continue;
+
+          const refStmtId = refStmt.id();
+          if (crossCommentedIds.has(refStmtId)) continue;
+          crossCommentedIds.add(refStmtId);
+
+          const indent = getIndentation(refStmt, crossFileSource);
+          crossFileEdits.push({
+            startPos: refStmt.range().start.index,
+            endPos: refStmt.range().start.index,
+            insertedText: `${DISMISSAL_TODO}\n${indent}`,
+          });
+        }
+
+        if (crossFileEdits.length > 0) {
+          const newContent = fileRef.root.root().commitEdits(crossFileEdits);
+          fileRef.root.write(newContent);
+        }
+      }
     }
 
     // Fallback: if references() returned nothing (semantic analysis not enabled),
@@ -369,7 +465,43 @@ const transform: Codemod<TSX> = async (root) => {
     }
   }
 
-  const allEdits = [...edits, ...dismissalEdits];
+  // ──────────────────────────────────────────────────────────────────────
+  // Phase 3: Rename .show()/.showModal() -> .open() and insert
+  // method-level TODO comments.
+  // ──────────────────────────────────────────────────────────────────────
+
+  const renameEdits: Edit[] = [];
+  // Re-track commented statements for the rename pass (fresh set because
+  // commentedStatementIds was only used for pre-computing)
+  const renameCommentedStmtIds = new Set<number>();
+
+  for (const site of callSites) {
+    // Replace the method name with "open"
+    renameEdits.push(site.propertyNode.replace("open"));
+    migrationMetric.increment({ method: site.methodName });
+
+    // Find the containing statement to insert the TODO comment above
+    const stmt = findContainingStatement(site.callNode);
+    if (!stmt) continue;
+
+    const stmtId = stmt.id();
+    if (renameCommentedStmtIds.has(stmtId)) continue;
+    renameCommentedStmtIds.add(stmtId);
+
+    // Determine the appropriate TODO comment
+    const todoComment =
+      site.methodName === "show" ? SHOW_TODO : SHOW_MODAL_TODO;
+    const indent = getIndentation(stmt, fullSource);
+
+    // Insert the TODO comment before the statement
+    renameEdits.push({
+      startPos: stmt.range().start.index,
+      endPos: stmt.range().start.index,
+      insertedText: `${todoComment}\n${indent}`,
+    });
+  }
+
+  const allEdits = [...renameEdits, ...dismissalEdits];
   return allEdits.length > 0 ? rootNode.commitEdits(allEdits) : null;
 };
 
