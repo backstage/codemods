@@ -78,32 +78,29 @@ function extractSpecifiers(importNode: SgNode<TSX>): Array<{
 /**
  * Check if a call site is inside a conditional, loop, or other construct
  * that would violate React's Rules of Hooks.
+ *
+ * Note: This is slightly over-broad since `inside()` doesn't support `stopBy`
+ * as a method parameter. In practice this is safe — false positives default to
+ * `entityPresentationSnapshot` which works everywhere.
  */
 function isInsideConditionalOrLoop(
   callNode: SgNode<TSX>,
-  componentBoundary: SgNode<TSX>,
+  _componentBoundary: SgNode<TSX>,
 ): boolean {
-  const unsafeKinds = new Set([
-    "if_statement",
-    "for_statement",
-    "for_in_statement",
-    "while_statement",
-    "do_statement",
-    "switch_statement",
-    "ternary_expression",
-    "catch_clause",
-  ]);
-
-  for (const ancestor of callNode.ancestors()) {
-    // Stop checking when we reach the component boundary
-    if (ancestor.id() === componentBoundary.id()) {
-      return false;
-    }
-    if (unsafeKinds.has(ancestor.kind())) {
-      return true;
-    }
-  }
-  return false;
+  return callNode.inside({
+    rule: {
+      any: [
+        { kind: "if_statement" },
+        { kind: "for_statement" },
+        { kind: "for_in_statement" },
+        { kind: "while_statement" },
+        { kind: "do_statement" },
+        { kind: "switch_statement" },
+        { kind: "ternary_expression" },
+        { kind: "catch_clause" },
+      ],
+    },
+  });
 }
 
 /**
