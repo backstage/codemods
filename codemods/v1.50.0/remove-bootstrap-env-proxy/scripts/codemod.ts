@@ -18,6 +18,15 @@ function escapeRegex(str: string): string {
 }
 
 /**
+ * Check whether a call_expression node has any real (non-comment) arguments.
+ */
+function callHasArguments(callNode: SgNode<TSX>): boolean {
+  const args = callNode.find({ rule: { kind: "arguments" } });
+  if (!args) return false;
+  return args.children().filter((c) => c.isNamed() && !c.is("comment")).length > 0;
+}
+
+/**
  * Find all import_statement nodes that import from a given source.
  */
 function findImportStatementsFrom(
@@ -156,23 +165,30 @@ function handleNamespaceImport(rootNode: SgNode<TSX>): Edit[] {
     if (callStatements.length === 0) continue;
 
     // Determine if any call has arguments (for the TODO message)
-    let hasCustomArgs = false;
-    for (const callStmt of callStatements) {
+    const hasCustomArgs = callStatements.some((callStmt) => {
       const callExpr = callStmt.find({ rule: { kind: "call_expression" } });
-      if (!callExpr) continue;
-
-      const args = callExpr.find({ rule: { kind: "arguments" } });
-      if (args) {
-        const namedChildren = args
-          .children()
-          .filter((c) => c.isNamed() && !c.is("comment"));
-        if (namedChildren.length > 0) {
-          hasCustomArgs = true;
-        }
-      }
-    }
+      return callExpr ? callHasArguments(callExpr) : false;
+    });
 
     const todoComment = hasCustomArgs ? TODO_CUSTOM_ARGS : TODO_SIMPLE;
+
+    // Check whether the namespace alias is used anywhere else in the file
+    const allAliasUsages = rootNode.findAll({
+      rule: { kind: "identifier", regex: escapeRegex(alias) },
+    });
+    // Subtract usages in the import statement itself and in the call statements being removed
+    const importIdentifiers = importStmt.findAll({
+      rule: { kind: "identifier", regex: escapeRegex(alias) },
+    });
+    const callIdentifiers = callStatements.flatMap((cs) =>
+      cs.findAll({ rule: { kind: "identifier", regex: escapeRegex(alias) } }),
+    );
+    const externalUsageCount =
+      allAliasUsages.length -
+      importIdentifiers.length -
+      callIdentifiers.length;
+
+    const namespaceIsOnlyUsedForTarget = externalUsageCount === 0;
 
     // Replace the first call statement with the TODO comment
     const source = rootNode.text();
@@ -208,6 +224,27 @@ function handleNamespaceImport(rootNode: SgNode<TSX>): Edit[] {
         hadArguments: hasCustomArgs ? "yes" : "no",
       });
     }
+
+    // If the namespace alias has no other usages, remove the import statement too
+    if (namespaceIsOnlyUsedForTarget) {
+      const importRange = importStmt.range();
+      let importEndPos = importRange.end.index;
+
+      // Consume trailing newline if present
+      if (source[importEndPos] === "\n") {
+        importEndPos += 1;
+      }
+      // Consume blank line after import if present
+      if (source[importEndPos] === "\n") {
+        importEndPos += 1;
+      }
+
+      edits.push({
+        startPos: importRange.start.index,
+        endPos: importEndPos,
+        insertedText: "",
+      });
+    }
   }
 
   return edits;
@@ -221,9 +258,28 @@ function handleDynamicImport(rootNode: SgNode<TSX>): Edit[] {
   const edits: Edit[] = [];
   const source = rootNode.text();
 
-  // Find all call_expression nodes with `import(...)` syntax containing our source
-  // The AST shape is: variable_declarator -> object_pattern + await_expression -> call_expression -> import + arguments -> string
-  const dynamicImportDecls = rootNode.findAll({
+  // Match dynamic imports with the target in the object_pattern — either as
+  // shorthand `{ bootstrapEnvProxyAgents }` or aliased `{ bootstrapEnvProxyAgents: alias }`
+  const awaitImportRule = {
+    field: "value" as const,
+    kind: "await_expression" as const,
+    has: {
+      kind: "call_expression" as const,
+      has: {
+        kind: "arguments" as const,
+        has: {
+          kind: "string" as const,
+          has: {
+            kind: "string_fragment" as const,
+            regex: escapeRegex(CLI_COMMON_SOURCE),
+          },
+        },
+      },
+    },
+  };
+
+  // Match shorthand: `{ bootstrapEnvProxyAgents }`
+  const shorthandDecls = rootNode.findAll({
     rule: {
       kind: "lexical_declaration",
       has: {
@@ -239,29 +295,40 @@ function handleDynamicImport(rootNode: SgNode<TSX>): Edit[] {
               },
             },
           },
-          {
-            has: {
-              field: "value",
-              kind: "await_expression",
-              has: {
-                kind: "call_expression",
-                has: {
-                  kind: "arguments",
-                  has: {
-                    kind: "string",
-                    has: {
-                      kind: "string_fragment",
-                      regex: escapeRegex(CLI_COMMON_SOURCE),
-                    },
-                  },
-                },
-              },
-            },
-          },
+          { has: awaitImportRule },
         ],
       },
     },
   });
+
+  // Match aliased: `{ bootstrapEnvProxyAgents: alias }`
+  const aliasedDecls = rootNode.findAll({
+    rule: {
+      kind: "lexical_declaration",
+      has: {
+        kind: "variable_declarator",
+        all: [
+          {
+            has: {
+              field: "name",
+              kind: "object_pattern",
+              has: {
+                kind: "pair_pattern",
+                has: {
+                  field: "key",
+                  kind: "property_identifier",
+                  regex: escapeRegex(FUNCTION_NAME),
+                },
+              },
+            },
+          },
+          { has: awaitImportRule },
+        ],
+      },
+    },
+  });
+
+  const dynamicImportDecls = [...shorthandDecls, ...aliasedDecls];
 
   for (const decl of dynamicImportDecls) {
     // Check if bootstrapEnvProxyAgents is the only destructured binding
@@ -273,16 +340,40 @@ function handleDynamicImport(rootNode: SgNode<TSX>): Edit[] {
     });
     if (!objectPattern) continue;
 
-    const allBindings = objectPattern.findAll({
+    // Count all bindings: shorthand + pair_pattern
+    const shorthandBindings = objectPattern.findAll({
       rule: { kind: "shorthand_property_identifier_pattern" },
     });
+    const pairBindings = objectPattern.findAll({
+      rule: { kind: "pair_pattern" },
+    });
+    const totalBindings = shorthandBindings.length + pairBindings.length;
 
-    const hasOnlyTarget =
-      allBindings.length === 1 && allBindings[0]?.text() === FUNCTION_NAME;
+    const hasOnlyTarget = totalBindings === 1;
 
-    // Find the local name used (could be aliased via pair pattern in object_pattern)
-    // For shorthand: `{ bootstrapEnvProxyAgents }` -> localName = bootstrapEnvProxyAgents
-    const localName = FUNCTION_NAME;
+    // Determine the local name used for the destructured binding
+    // Shorthand: `{ bootstrapEnvProxyAgents }` -> localName = "bootstrapEnvProxyAgents"
+    // Aliased:   `{ bootstrapEnvProxyAgents: setup }` -> localName = "setup"
+    let localName = FUNCTION_NAME;
+
+    // Check for aliased pair_pattern: `{ bootstrapEnvProxyAgents: alias }`
+    const pairPattern = objectPattern.find({
+      rule: {
+        kind: "pair_pattern",
+        has: {
+          field: "key",
+          kind: "property_identifier",
+          regex: escapeRegex(FUNCTION_NAME),
+        },
+      },
+    });
+    if (pairPattern) {
+      // The pair_pattern children are: property_identifier (key), ":", identifier (value)
+      const valueNode = pairPattern.find({ rule: { kind: "identifier" } });
+      if (valueNode) {
+        localName = valueNode.text();
+      }
+    }
 
     // Find call statements using the destructured binding
     const callStatements = rootNode.findAll({
@@ -300,21 +391,10 @@ function handleDynamicImport(rootNode: SgNode<TSX>): Edit[] {
     });
 
     // Determine if any call has arguments
-    let hasCustomArgs = false;
-    for (const callStmt of callStatements) {
+    const hasCustomArgs = callStatements.some((callStmt) => {
       const callExpr = callStmt.find({ rule: { kind: "call_expression" } });
-      if (!callExpr) continue;
-
-      const args = callExpr.find({ rule: { kind: "arguments" } });
-      if (args) {
-        const namedChildren = args
-          .children()
-          .filter((c) => c.isNamed() && !c.is("comment"));
-        if (namedChildren.length > 0) {
-          hasCustomArgs = true;
-        }
-      }
-    }
+      return callExpr ? callHasArguments(callExpr) : false;
+    });
 
     const todoComment = hasCustomArgs ? TODO_CUSTOM_ARGS : TODO_SIMPLE;
 
@@ -446,21 +526,10 @@ const transform: Codemod<TSX> = async (root) => {
   });
 
   // Determine if any call has arguments (for the TODO message)
-  let hasCustomArgs = false;
-  for (const callStmt of callStatements) {
+  const hasCustomArgs = callStatements.some((callStmt) => {
     const callExpr = callStmt.find({ rule: { kind: "call_expression" } });
-    if (!callExpr) continue;
-
-    const args = callExpr.find({ rule: { kind: "arguments" } });
-    if (args) {
-      const namedChildren = args
-        .children()
-        .filter((c) => c.isNamed() && !c.is("comment"));
-      if (namedChildren.length > 0) {
-        hasCustomArgs = true;
-      }
-    }
-  }
+    return callExpr ? callHasArguments(callExpr) : false;
+  });
 
   const todoComment = hasCustomArgs ? TODO_CUSTOM_ARGS : TODO_SIMPLE;
 
