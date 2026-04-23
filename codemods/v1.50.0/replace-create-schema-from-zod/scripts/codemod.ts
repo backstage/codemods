@@ -420,41 +420,104 @@ const transform: Codemod<TSX> = async (root) => {
     }
   }
 
-  // Update zod import: 'zod' -> 'zod/v4'
-  if (needsZodImport || transformedAny) {
-    // Find existing zod import
-    const zodImportStatements = rootNode.findAll({
+  // --- Step 4: Flag remaining references to createSchemaFromZod ---
+  // After removing the import, scan for any remaining identifiers matching
+  // the symbol name (e.g., type annotations like ReturnType<typeof createSchemaFromZod>)
+  if (hasSchemaImport && transformedAny) {
+    const remainingRefs = rootNode.findAll({
       rule: {
-        kind: "import_statement",
-        has: {
-          kind: "string",
-          has: {
-            kind: "string_fragment",
-            regex: "^zod$",
+        kind: "identifier",
+        regex: `^${escapeRegex(schemaAlias)}$`,
+        not: {
+          inside: {
+            kind: "import_specifier",
           },
         },
       },
     });
 
-    if (zodImportStatements.length > 0) {
-      // Replace 'zod' with 'zod/v4'
-      for (const zodImport of zodImportStatements) {
-        const stringFragment = zodImport.find({
-          rule: { kind: "string_fragment", regex: "^zod$" },
-        });
-        if (stringFragment) {
-          edits.push(stringFragment.replace("zod/v4"));
-        }
+    // Track which statements we've already flagged to avoid duplicate comments
+    const flaggedStmtPositions = new Set<number>();
+
+    for (const refNode of remainingRefs) {
+      // Skip references inside the config.schema patterns we already transformed
+      if (refNode.inside({
+        rule: {
+          kind: "call_expression",
+          has: {
+            field: "function",
+            kind: "identifier",
+            regex: `^${escapeRegex(schemaAlias)}$`,
+          },
+        },
+      })) {
+        continue;
       }
-    } else {
-      // No existing zod import, add one
-      const edit = addImport(rootNode, {
-        type: "named",
-        specifiers: [{ name: "z" }],
-        from: "zod/v4",
-      });
-      if (edit) edits.push(edit);
+
+      // Find the containing statement to add a comment before it
+      const containingStmt = refNode.ancestors().find(
+        (a) =>
+          a.is("type_alias_declaration") ||
+          a.is("variable_declaration") ||
+          a.is("expression_statement") ||
+          a.is("lexical_declaration"),
+      );
+
+      if (containingStmt) {
+        const stmtStart = containingStmt.range().start.index;
+        if (flaggedStmtPositions.has(stmtStart)) continue;
+        flaggedStmtPositions.add(stmtStart);
+
+        edits.push({
+          startPos: stmtStart,
+          endPos: stmtStart,
+          insertedText:
+            "// TODO: createSchemaFromZod was removed - update this type annotation\n",
+        });
+        migrationMetric.increment({
+          pattern: "type-annotation-reference",
+          outcome: "flagged",
+        });
+      }
     }
+  }
+
+  // Update zod import: 'zod' -> 'zod/v4' (unconditional — all files in scope)
+  const zodImportStatements = rootNode.findAll({
+    rule: {
+      kind: "import_statement",
+      has: {
+        kind: "string",
+        has: {
+          kind: "string_fragment",
+          regex: "^zod$",
+        },
+      },
+    },
+  });
+
+  if (zodImportStatements.length > 0) {
+    // Replace 'zod' with 'zod/v4'
+    for (const zodImport of zodImportStatements) {
+      const stringFragment = zodImport.find({
+        rule: { kind: "string_fragment", regex: "^zod$" },
+      });
+      if (stringFragment) {
+        edits.push(stringFragment.replace("zod/v4"));
+        migrationMetric.increment({
+          pattern: "zod-import",
+          outcome: "auto-migrated",
+        });
+      }
+    }
+  } else if (needsZodImport) {
+    // No existing zod import but we need one (config.schema was transformed)
+    const edit = addImport(rootNode, {
+      type: "named",
+      specifiers: [{ name: "z" }],
+      from: "zod/v4",
+    });
+    if (edit) edits.push(edit);
   }
 
   if (edits.length === 0) return null;

@@ -6,6 +6,13 @@
         "pattern": "callback"
       },
       "count": 1
+    },
+    {
+      "cardinality": {
+        "outcome": "auto-migrated",
+        "pattern": "zod-import"
+      },
+      "count": 1
     }
   ]
 }

@@ -1,5 +1,9 @@
 import { createExtension } from '@backstage/frontend-plugin-api';
-import { z } from 'zod/v4';
+import { z } from 'zod';
+
+const schema = z.object({
+  title: z.string(),
+});
 
 createExtension({
   name: 'my-extension',

@@ -13,6 +13,13 @@
         "pattern": "zod-import"
       },
       "count": 1
+    },
+    {
+      "cardinality": {
+        "outcome": "flagged",
+        "pattern": "type-annotation-reference"
+      },
+      "count": 1
     }
   ]
 }

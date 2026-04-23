@@ -18,6 +18,7 @@ nodes:
         js-ast-grep:
           js_file: scripts/codemod.ts
           language: "tsx"
+          semantic_analysis: file
           include:
             - "**/*.ts"
             - "**/*.tsx"
@@ -41,31 +42,26 @@ nodes:
             The AST codemod already handled the mechanical parts:
             - Removed createSchemaFromZod imports from @backstage/frontend-plugin-api
             - Replaced config.schema with configSchema in createExtension/createExtensionBlueprint
-            - Updated zod import from 'zod' to 'zod/v4'
+            - Replaced config.schema with configSchema in .override()/.make() calls
+            - Updated all zod imports from 'zod' to 'zod/v4'
             - Unwrapped createSchemaFromZod(z => z.object({...})) to inline configSchema
             - Converted callback patterns { field: z => z.type() } to { field: z.type() }
+            - Flagged remaining type annotations referencing createSchemaFromZod with TODO comments
 
             Your job is to find and fix remaining issues that the AST codemod could not
             handle mechanically. Be precise and conservative.
           prompt: |
-            Search the codebase for remaining migration issues and fix them:
+            Search the codebase for remaining createSchemaFromZod calls that the AST
+            codemod could not transform, and fix them.
 
-            ## 1. Complex createSchemaFromZod patterns
-            Find any remaining createSchemaFromZod calls that weren't transformed.
-            These may have complex patterns like variable references, spread operators,
-            or conditional logic inside the callback.
+            These are complex patterns involving:
+            - Variable references (schema defined in a separate variable)
+            - Spread operators inside the callback
+            - Conditional logic or ternary expressions inside the callback
+            - Dynamic property keys or computed values
+            - Multi-statement callback bodies
 
-            ## 2. Override and makeWithOverrides calls
-            Find .override() or .makeWithOverrides() calls that still use the old
-            config.schema pattern. Transform them to use configSchema.
-
-            ## 3. Zod import verification
-            Ensure all files using zod schemas import from 'zod/v4', not 'zod'.
-            Direct zod v3 schemas are rejected at runtime.
-
-            ## 4. Type annotation cleanup
-            If any type annotations reference createSchemaFromZod or the old config
-            schema types, update or remove them.
-
-            After making changes, verify the files are syntactically valid TypeScript.
-          max_steps: 50
+            For each remaining call, inline the schema into configSchema following the
+            same pattern as the AST codemod. After making changes, verify the files are
+            syntactically valid TypeScript.
+          max_steps: 30
