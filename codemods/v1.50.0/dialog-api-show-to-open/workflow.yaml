@@ -18,6 +18,7 @@ nodes:
         js-ast-grep:
           js_file: scripts/codemod.ts
           language: "tsx"
+          semantic_analysis: file
           include:
             - "**/*.ts"
             - "**/*.tsx"
@@ -41,25 +42,22 @@ nodes:
             The AST codemod already handled the mechanical parts:
             - Renamed .show() and .showModal() to .open()
             - Added TODO comments about behavioral differences
+            - Detected dismissal checks on .show() return values (=== undefined,
+              == null, truthiness checks, nullish coalescing) and added specific
+              TODO comments on those patterns
 
             Your job is to find and fix remaining issues that the AST codemod could not
             handle mechanically. Be precise and conservative.
           prompt: |
             Search the codebase for remaining DialogApi migration issues and fix them:
 
-            ## 1. Return type differences
-            Find any code that checks the result of a former .show() call for `undefined`
-            to detect dialog dismissal. The old .show() returned `TResult | undefined`
-            while .open() returns `TResult`. Add or update TODO comments explaining that
-            dismissal detection needs a different approach with .open().
-
-            ## 2. Dialog chrome migration
+            ## 1. Dialog chrome migration
             Find any .open() calls (formerly .show() or .showModal()) where the content
             component does not include its own dialog wrapper (e.g., MUI Dialog, Modal).
             Add TODO comments noting that the component needs to provide its own dialog
             chrome (backdrop, surface, focus trap).
 
-            ## 3. Backdrop click handling
+            ## 2. Backdrop click handling
             Find any code that relied on .show()'s built-in backdrop-click-to-close
             behavior. Add TODO comments explaining that this behavior must now be
             implemented manually in the dialog component.
