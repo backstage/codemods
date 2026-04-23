@@ -25,7 +25,6 @@ describe('getLocation', () => {
     expect(result).toMatchObject({
       id: 'abc123',
       type: 'url',
-      entityRef: 'location:default/example', // TODO(backstage-codemod): replace with actual entityRef
     });
   });
 });

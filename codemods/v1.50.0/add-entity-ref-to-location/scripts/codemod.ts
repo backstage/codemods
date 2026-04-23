@@ -10,6 +10,9 @@ const CATALOG_CLIENT = "@backstage/catalog-client";
 const ENTITY_REF_PROPERTY =
   "entityRef: 'location:default/example', // TODO(backstage-codemod): replace with actual entityRef";
 
+const ENTITY_REF_PROPERTY_INLINE =
+  "entityRef: 'location:default/example' /* TODO(backstage-codemod): replace with actual entityRef */";
+
 type Detection =
   | "type-annotation"
   | "array-type-annotation"
@@ -70,9 +73,12 @@ function buildEntityRefEdit(objectNode: SgNode<TSX>): Edit | null {
     return null; // empty object, skip
   }
 
+  // Detect whether the object is single-line (no newlines between { and })
+  const objectText = objectNode.text();
+  const isSingleLine = !objectText.includes("\n");
+
   // Detect indentation from the last property
   const lastPairText = lastPair.text();
-  const objectText = objectNode.text();
   const lastPairOffset = objectText.lastIndexOf(lastPairText);
   const beforeLastPair = objectText.slice(0, lastPairOffset);
   const lastNewline = beforeLastPair.lastIndexOf("\n");
@@ -91,6 +97,14 @@ function buildEntityRefEdit(objectNode: SgNode<TSX>): Edit | null {
 
   const insertPos = insertAfterNode.range().end.index;
   const prefix = hasTrailingComma ? "" : ",";
+
+  if (isSingleLine) {
+    return {
+      startPos: insertPos,
+      endPos: insertPos,
+      insertedText: `${prefix} ${ENTITY_REF_PROPERTY_INLINE}`,
+    };
+  }
 
   return {
     startPos: insertPos,
@@ -133,6 +147,31 @@ function isArrayOfType(typeNode: SgNode<TSX>, name: string): boolean {
   if (typeNode.kind() !== "array_type") return false;
   const inner = typeNode.children().find((c) => c.isNamed());
   return !!inner && isTypeIdentifierNamed(inner, name);
+}
+
+/**
+ * Matches generic wrapper types like `Partial<Location>`, `Pick<Location, ...>`,
+ * `Omit<Location, ...>`, etc. These may not require all fields, so we skip them.
+ */
+const SKIP_GENERIC_WRAPPERS = new Set([
+  "Partial",
+  "Pick",
+  "Omit",
+  "Required",
+  "Readonly",
+  "Record",
+]);
+
+function isGenericWrapperOfType(typeNode: SgNode<TSX>, name: string): boolean {
+  if (typeNode.kind() !== "generic_type") return false;
+  const named = typeNode.children().filter((c) => c.isNamed());
+  const outer = named[0];
+  const args = named[1];
+  if (!outer || outer.kind() !== "type_identifier") return false;
+  if (!SKIP_GENERIC_WRAPPERS.has(outer.text())) return false;
+  if (!args || args.kind() !== "type_arguments") return false;
+  const innerType = args.children().find((c) => c.isNamed());
+  return !!innerType && isTypeIdentifierNamed(innerType, name);
 }
 
 /**
@@ -268,12 +307,10 @@ function collectTypeAnnotatedCandidates(
     const typeNode = typeAnnotationTypeNode(typeAnnotation);
     if (!typeNode) continue;
 
-    // Find the value (object or array literal)
-    const value = decl.find({
-      rule: {
-        any: [{ kind: "object" }, { kind: "array" }],
-      },
-    });
+    // Skip generic wrappers like Partial<Location>, Pick<Location, ...>, etc.
+    if (locationAlias && isGenericWrapperOfType(typeNode, locationAlias)) {
+      continue;
+    }
 
     if (locationAlias) {
       if (isTypeIdentifierNamed(typeNode, locationAlias)) {
@@ -301,6 +338,9 @@ function collectTypeAnnotatedCandidates(
       addLocationResponseAlias &&
       isTypeIdentifierNamed(typeNode, addLocationResponseAlias)
     ) {
+      const value = decl.find({
+        rule: { any: [{ kind: "object" }, { kind: "array" }] },
+      });
       if (value) {
         for (const obj of findPropertyObjectValues(value, ["location"])) {
           candidates.push({ object: obj, detection: "add-location-response" });
@@ -313,6 +353,9 @@ function collectTypeAnnotatedCandidates(
       getLocationsResponseAlias &&
       isTypeIdentifierNamed(typeNode, getLocationsResponseAlias)
     ) {
+      const value = decl.find({
+        rule: { any: [{ kind: "object" }, { kind: "array" }] },
+      });
       if (value) {
         for (const obj of findPropertyObjectValues(value, ["data"])) {
           candidates.push({ object: obj, detection: "get-locations-response" });
@@ -350,6 +393,11 @@ function collectAssertionCandidates(
     if (!valueNode || !typeNode) continue;
 
     const isSatisfies = assertion.kind() === "satisfies_expression";
+
+    // Skip generic wrappers like Partial<Location>, Pick<Location, ...>, etc.
+    if (isGenericWrapperOfType(typeNode, locationAlias)) {
+      continue;
+    }
 
     if (isTypeIdentifierNamed(typeNode, locationAlias)) {
       for (const obj of extractObjectsFromValue(valueNode, false)) {
@@ -647,7 +695,11 @@ function collectMockLocationCandidates(
 
 /**
  * Collect candidates from test assertion patterns where a Location-typed
- * variable is compared with an object literal via toEqual or toMatchObject.
+ * variable is compared with an object literal via toEqual.
+ *
+ * Only toEqual assertions get entityRef added because they are exact matchers.
+ * toMatchObject is a partial matcher — adding entityRef would change test
+ * semantics.
  *
  * Matches patterns like:
  *   const result: Location = ...;
@@ -720,17 +772,19 @@ function collectTestAssertionCandidates(
         const assertionCall = expectCall.parent()?.parent();
         if (!assertionCall || assertionCall.kind() !== "call_expression") continue;
 
-        // Check the method name is toEqual or toMatchObject
-        const assertionMember = assertionCall.find({
+        // Check the method name — only handle toEqual (exact match).
+        // toMatchObject is a partial matcher; adding entityRef would change
+        // the test semantics.
+        const assertionMethodNode = assertionCall.find({
           rule: {
             kind: "member_expression",
             has: {
               kind: "property_identifier",
-              regex: "^(toEqual|toMatchObject)$",
+              regex: "^toEqual$",
             },
           },
         });
-        if (!assertionMember) continue;
+        if (!assertionMethodNode) continue;
 
         // Get the direct arguments child of the assertion call_expression
         const assertionArgs = assertionCall.children().find(
