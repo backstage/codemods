@@ -116,19 +116,62 @@ function renameBodyReferences(
 }
 
 /**
- * Remove `matchStrategy` properties from object literals.
- * Handles both `matchStrategy: 'prefix'` and `matchStrategy: 'exact'` etc.
+ * Remove `matchStrategy` properties from object literals that are
+ * contextually typed as HeaderTab or HeaderNavTabItem.
+ *
+ * Scoping: only removes `matchStrategy` pairs inside a variable_declarator,
+ * as_expression, or required_parameter whose type annotation references
+ * HeaderTab or HeaderNavTabItem. This prevents accidental removal of
+ * `matchStrategy` on unrelated types that happen to share the property name.
  */
 function removeMatchStrategyProperties(
   rootNode: SgNode<TSX>,
   edits: Edit[],
 ): void {
+  // Match `matchStrategy` pairs scoped to HeaderTab-typed contexts.
+  // The type annotation still references the OLD_TYPE at this point because
+  // edits are committed atomically after all helpers run.
+  const typeRegex = `^(${OLD_TYPE}|${NEW_TYPE})$`;
   const matchStrategyPairs = rootNode.findAll({
     rule: {
       kind: "pair",
       has: {
         kind: "property_identifier",
         regex: escapeRegex(MATCH_STRATEGY_PROP),
+      },
+      inside: {
+        any: [
+          // variable_declarator with HeaderTab type annotation
+          // (covers HeaderTab, HeaderTab[], Array<HeaderTab>, Partial<HeaderTab>,
+          //  and namespace-qualified UI.HeaderTab / UI.HeaderTab[])
+          {
+            kind: "variable_declarator",
+            has: {
+              kind: "type_identifier",
+              regex: typeRegex,
+              stopBy: "end",
+            },
+          },
+          // as_expression: { ... } as HeaderTab  /  { ... } as UI.HeaderTab
+          {
+            kind: "as_expression",
+            has: {
+              kind: "type_identifier",
+              regex: typeRegex,
+              stopBy: "end",
+            },
+          },
+          // function/method parameter: (tab: HeaderTab)
+          {
+            kind: "required_parameter",
+            has: {
+              kind: "type_identifier",
+              regex: typeRegex,
+              stopBy: "end",
+            },
+          },
+        ],
+        stopBy: "end",
       },
     },
   });
