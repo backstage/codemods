@@ -102,6 +102,285 @@ function buildNamedStatement(
   return `${keyword} {\n  ${specTexts.join(",\n  ")},\n} from '${source}';`;
 }
 
+/**
+ * Handle namespace imports: `import * as alias from '@backstage/cli-common'`
+ * Finds `alias.bootstrapEnvProxyAgents()` calls and removes them.
+ */
+function handleNamespaceImport(rootNode: SgNode<TSX>): Edit[] {
+  const edits: Edit[] = [];
+
+  // Find namespace imports from @backstage/cli-common
+  const importStatements = findImportStatementsFrom(rootNode, CLI_COMMON_SOURCE);
+
+  for (const importStmt of importStatements) {
+    const nsImport = importStmt.find({ rule: { kind: "namespace_import" } });
+    if (!nsImport) continue;
+
+    // Extract the alias identifier (e.g., "cliCommon" from `import * as cliCommon`)
+    const aliasNode = nsImport.find({ rule: { kind: "identifier" } });
+    if (!aliasNode) continue;
+
+    const alias = aliasNode.text();
+
+    // Find all expression_statement nodes containing call_expression with
+    // member_expression: alias.bootstrapEnvProxyAgents(...)
+    const callStatements = rootNode.findAll({
+      rule: {
+        kind: "expression_statement",
+        has: {
+          kind: "call_expression",
+          has: {
+            field: "function",
+            kind: "member_expression",
+            all: [
+              {
+                has: {
+                  field: "object",
+                  kind: "identifier",
+                  regex: escapeRegex(alias),
+                },
+              },
+              {
+                has: {
+                  field: "property",
+                  kind: "property_identifier",
+                  regex: escapeRegex(FUNCTION_NAME),
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    if (callStatements.length === 0) continue;
+
+    // Determine if any call has arguments (for the TODO message)
+    let hasCustomArgs = false;
+    for (const callStmt of callStatements) {
+      const callExpr = callStmt.find({ rule: { kind: "call_expression" } });
+      if (!callExpr) continue;
+
+      const args = callExpr.find({ rule: { kind: "arguments" } });
+      if (args) {
+        const namedChildren = args
+          .children()
+          .filter((c) => c.isNamed() && !c.is("comment"));
+        if (namedChildren.length > 0) {
+          hasCustomArgs = true;
+        }
+      }
+    }
+
+    const todoComment = hasCustomArgs ? TODO_CUSTOM_ARGS : TODO_SIMPLE;
+
+    // Replace the first call statement with the TODO comment
+    const source = rootNode.text();
+    for (let i = 0; i < callStatements.length; i++) {
+      const callStmt = callStatements[i];
+      if (!callStmt) continue;
+      const range = callStmt.range();
+      let endPos = range.end.index;
+
+      // Consume trailing newline if present
+      if (source[endPos] === "\n") {
+        endPos += 1;
+      }
+
+      if (i === 0) {
+        // Replace first call with TODO comment
+        edits.push({
+          startPos: range.start.index,
+          endPos,
+          insertedText: `${todoComment}\n`,
+        });
+      } else {
+        // Remove subsequent calls
+        edits.push({
+          startPos: range.start.index,
+          endPos,
+          insertedText: "",
+        });
+      }
+
+      migrationMetric.increment({
+        action: "namespace-call-removed",
+        hadArguments: hasCustomArgs ? "yes" : "no",
+      });
+    }
+  }
+
+  return edits;
+}
+
+/**
+ * Handle dynamic imports: `const { bootstrapEnvProxyAgents } = await import('@backstage/cli-common')`
+ * Finds the destructured binding and subsequent calls, removes both.
+ */
+function handleDynamicImport(rootNode: SgNode<TSX>): Edit[] {
+  const edits: Edit[] = [];
+  const source = rootNode.text();
+
+  // Find all call_expression nodes with `import(...)` syntax containing our source
+  // The AST shape is: variable_declarator -> object_pattern + await_expression -> call_expression -> import + arguments -> string
+  const dynamicImportDecls = rootNode.findAll({
+    rule: {
+      kind: "lexical_declaration",
+      has: {
+        kind: "variable_declarator",
+        all: [
+          {
+            has: {
+              field: "name",
+              kind: "object_pattern",
+              has: {
+                kind: "shorthand_property_identifier_pattern",
+                regex: escapeRegex(FUNCTION_NAME),
+              },
+            },
+          },
+          {
+            has: {
+              field: "value",
+              kind: "await_expression",
+              has: {
+                kind: "call_expression",
+                has: {
+                  kind: "arguments",
+                  has: {
+                    kind: "string",
+                    has: {
+                      kind: "string_fragment",
+                      regex: escapeRegex(CLI_COMMON_SOURCE),
+                    },
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+    },
+  });
+
+  for (const decl of dynamicImportDecls) {
+    // Check if bootstrapEnvProxyAgents is the only destructured binding
+    const varDeclarator = decl.find({ rule: { kind: "variable_declarator" } });
+    if (!varDeclarator) continue;
+
+    const objectPattern = varDeclarator.find({
+      rule: { kind: "object_pattern" },
+    });
+    if (!objectPattern) continue;
+
+    const allBindings = objectPattern.findAll({
+      rule: { kind: "shorthand_property_identifier_pattern" },
+    });
+
+    const hasOnlyTarget =
+      allBindings.length === 1 && allBindings[0]?.text() === FUNCTION_NAME;
+
+    // Find the local name used (could be aliased via pair pattern in object_pattern)
+    // For shorthand: `{ bootstrapEnvProxyAgents }` -> localName = bootstrapEnvProxyAgents
+    const localName = FUNCTION_NAME;
+
+    // Find call statements using the destructured binding
+    const callStatements = rootNode.findAll({
+      rule: {
+        kind: "expression_statement",
+        has: {
+          kind: "call_expression",
+          has: {
+            field: "function",
+            kind: "identifier",
+            regex: escapeRegex(localName),
+          },
+        },
+      },
+    });
+
+    // Determine if any call has arguments
+    let hasCustomArgs = false;
+    for (const callStmt of callStatements) {
+      const callExpr = callStmt.find({ rule: { kind: "call_expression" } });
+      if (!callExpr) continue;
+
+      const args = callExpr.find({ rule: { kind: "arguments" } });
+      if (args) {
+        const namedChildren = args
+          .children()
+          .filter((c) => c.isNamed() && !c.is("comment"));
+        if (namedChildren.length > 0) {
+          hasCustomArgs = true;
+        }
+      }
+    }
+
+    const todoComment = hasCustomArgs ? TODO_CUSTOM_ARGS : TODO_SIMPLE;
+
+    // Remove the dynamic import declaration
+    const declRange = decl.range();
+    let declStartPos = declRange.start.index;
+    let declEndPos = declRange.end.index;
+
+    // Consume leading whitespace on the same line
+    while (declStartPos > 0 && source[declStartPos - 1] === " ") {
+      declStartPos -= 1;
+    }
+
+    // Consume trailing newline if present
+    if (source[declEndPos] === "\n") {
+      declEndPos += 1;
+    }
+
+    // Capture the indentation for the TODO comment
+    const indent = source.substring(declStartPos, declRange.start.index);
+
+    if (hasOnlyTarget) {
+      // Remove entire declaration, replace with TODO
+      edits.push({
+        startPos: declStartPos,
+        endPos: declEndPos,
+        insertedText: `${indent}${todoComment}\n`,
+      });
+    } else {
+      // TODO: handle mixed destructuring (remove only the target binding)
+      // For now, add the TODO before the declaration
+      edits.push({
+        startPos: declStartPos,
+        endPos: declStartPos,
+        insertedText: `${indent}${todoComment}\n`,
+      });
+    }
+
+    // Remove call statements
+    for (const callStmt of callStatements) {
+      const range = callStmt.range();
+      let startPos = range.start.index;
+      let endPos = range.end.index;
+
+      // Consume leading whitespace on the same line
+      while (startPos > 0 && source[startPos - 1] === " ") {
+        startPos -= 1;
+      }
+
+      // Consume trailing newline if present
+      if (source[endPos] === "\n") {
+        endPos += 1;
+      }
+      edits.push({
+        startPos,
+        endPos,
+        insertedText: "",
+      });
+    }
+
+    migrationMetric.increment({ action: "dynamic-import-removed" });
+  }
+
+  return edits;
+}
+
 const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root();
   const edits: Edit[] = [];
@@ -114,8 +393,39 @@ const transform: Codemod<TSX> = async (root) => {
   });
 
   if (!imp) {
-    // No import found -- check for re-exports only
-    return handleReExports(rootNode);
+    // No static import found -- try dynamic import patterns and re-exports
+    const dynEdits = handleDynamicImport(rootNode);
+    const reExportEdits = processReExports(rootNode);
+    const allEdits = [...dynEdits, ...reExportEdits];
+    if (allEdits.length === 0) return null;
+    return rootNode.commitEdits(allEdits);
+  }
+
+  // --- Namespace import: `import * as alias from '@backstage/cli-common'` ---
+  if (imp.isNamespace) {
+    const nsEdits = handleNamespaceImport(rootNode);
+    const reExportEdits = processReExports(rootNode);
+    const allEdits = [...nsEdits, ...reExportEdits];
+    if (allEdits.length === 0) return null;
+    return rootNode.commitEdits(allEdits);
+  }
+
+  // --- Dynamic import: `const { bootstrapEnvProxyAgents } = await import(...)` ---
+  // getImport matches dynamic imports but the existing import_statement-based
+  // handling won't find them. Check if there's actually a static import_statement.
+  const staticImports = findImportStatementsFrom(rootNode, CLI_COMMON_SOURCE);
+  const hasStaticNamedImport = staticImports.some((stmt) => {
+    const specifiers = extractSpecifiers(stmt, "import_specifier");
+    return specifiers.some((s) => s.importedName === FUNCTION_NAME);
+  });
+
+  if (!hasStaticNamedImport) {
+    // getImport found it but there's no static import_statement -- must be dynamic
+    const dynEdits = handleDynamicImport(rootNode);
+    const reExportEdits = processReExports(rootNode);
+    const allEdits = [...dynEdits, ...reExportEdits];
+    if (allEdits.length === 0) return null;
+    return rootNode.commitEdits(allEdits);
   }
 
   const localAlias = imp.alias;
@@ -237,15 +547,6 @@ const transform: Codemod<TSX> = async (root) => {
   if (edits.length === 0) return null;
   return rootNode.commitEdits(edits);
 };
-
-/**
- * Handle files that only have re-exports (no import).
- */
-function handleReExports(rootNode: SgNode<TSX>): string | null {
-  const edits = processReExports(rootNode);
-  if (edits.length === 0) return null;
-  return rootNode.commitEdits(edits);
-}
 
 /**
  * Process re-exports of bootstrapEnvProxyAgents.

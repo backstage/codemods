@@ -18,6 +18,7 @@ nodes:
         js-ast-grep:
           js_file: scripts/codemod.ts
           language: "tsx"
+          semantic_analysis: file
           include:
             - "**/*.ts"
             - "**/*.tsx"
@@ -34,35 +35,30 @@ nodes:
         ai:
           model: "claude-sonnet-4-6"
           system_prompt: |
-            You are a Backstage migration expert. You are fixing edge cases left over
-            from an AST-based codemod that removed deprecated bootstrapEnvProxyAgents()
-            calls from @backstage/cli-common in Backstage 1.50.0.
+            You are a Backstage migration expert. You are scanning for environment
+            configuration that needs updating after the removal of deprecated
+            bootstrapEnvProxyAgents() from @backstage/cli-common in Backstage 1.50.0.
 
-            The AST codemod already handled the mechanical parts:
-            - Removed bootstrapEnvProxyAgents import from @backstage/cli-common
-            - Removed the entire import statement if no other imports remained
-            - Removed bootstrapEnvProxyAgents() call statements
+            The AST codemod already handled all TypeScript/JavaScript changes:
+            - Removed named imports (`import { bootstrapEnvProxyAgents }`)
+            - Removed namespace import calls (`alias.bootstrapEnvProxyAgents()`)
+            - Removed dynamic import patterns (`await import(...)` destructuring)
+            - Removed re-exports of bootstrapEnvProxyAgents
             - Added TODO comments about setting NODE_USE_ENV_PROXY=1
 
-            Your job is to find and fix the remaining issues that the AST codemod could not
-            handle mechanically. Be precise and conservative -- only change what is necessary.
+            Your job is to find environment configuration files that set proxy
+            variables and suggest adding NODE_USE_ENV_PROXY=1 alongside them.
+            Be precise and conservative -- only change what is necessary.
           prompt: |
-            Search the codebase for remaining migration issues and fix them:
+            Search the codebase for environment configuration files that need updating:
 
-            ## 1. Namespace imports
-            Find any `import * as <alias> from '@backstage/cli-common'` statements where
-            the namespace alias is used to call `<alias>.bootstrapEnvProxyAgents()`.
-            Remove those call sites and add the TODO comment.
-
-            ## 2. Dynamic imports
-            Find any `await import('@backstage/cli-common')` patterns where
-            bootstrapEnvProxyAgents is destructured and called. Remove the call and add
-            the TODO comment.
-
-            ## 3. Environment configuration
+            ## Environment configuration
             Search for any .env files, Dockerfiles, docker-compose files, or shell scripts
-            that set HTTP_PROXY or HTTPS_PROXY and suggest adding NODE_USE_ENV_PROXY=1
-            alongside them.
+            that set HTTP_PROXY or HTTPS_PROXY and add NODE_USE_ENV_PROXY=1 alongside them.
 
-            After making changes, verify the files are syntactically valid TypeScript.
-          max_steps: 30
+            For each file found:
+            - If it's a .env file, add `NODE_USE_ENV_PROXY=1` as a new line near the proxy vars
+            - If it's a Dockerfile, add `ENV NODE_USE_ENV_PROXY=1` near existing proxy ENV lines
+            - If it's a docker-compose file, add `NODE_USE_ENV_PROXY: "1"` to the environment section
+            - If it's a shell script, add `export NODE_USE_ENV_PROXY=1` near proxy exports
+          max_steps: 15
