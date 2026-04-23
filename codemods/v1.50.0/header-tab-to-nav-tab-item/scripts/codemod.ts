@@ -79,14 +79,16 @@ function renameSpecifiers(
 /**
  * Rename all body references (type annotations) from HeaderTab to HeaderNavTabItem.
  * These are `type_identifier` or `identifier` nodes with text "HeaderTab" that appear
- * outside of import/export statements.
+ * outside of import/export statements and outside qualified access expressions
+ * (nested_type_identifier / member_expression are handled by handleNamespaceImports).
  */
 function renameBodyReferences(
   rootNode: SgNode<TSX>,
   edits: Edit[],
 ): void {
   // Find all identifier and type_identifier nodes with text "HeaderTab"
-  // that are NOT inside import or export statements
+  // that are NOT inside import/export statements and NOT inside qualified
+  // namespace accesses (those are handled separately by handleNamespaceImports)
   const refs = rootNode.findAll({
     rule: {
       any: [
@@ -98,6 +100,8 @@ function renameBodyReferences(
           any: [
             { kind: "import_statement" },
             { kind: "export_statement" },
+            { kind: "nested_type_identifier" },
+            { kind: "member_expression" },
           ],
           stopBy: "end",
         },
@@ -168,22 +172,127 @@ function removeMatchStrategyProperties(
 }
 
 /**
- * Warn about namespace imports (`import * as X from '@backstage/ui'`)
- * that use HeaderTab. These cannot be automatically migrated.
+ * Handle namespace imports (`import * as X from '@backstage/ui'`).
+ * Finds the namespace alias, then uses `.references()` to trace all usages
+ * of the alias. For each reference whose parent is a `nested_type_identifier`
+ * or `member_expression` with a `HeaderTab` property, renames the property
+ * to `HeaderNavTabItem`.
+ *
+ * Falls back to AST pattern matching if `.references()` returns no results
+ * (e.g., in test mode without full semantic analysis).
  */
-function warnNamespaceImports(
+function handleNamespaceImports(
   importStatements: SgNode<TSX, "import_statement">[],
-): void {
+  rootNode: SgNode<TSX>,
+  edits: Edit[],
+): boolean {
+  let found = false;
+
   for (const imp of importStatements) {
     const nsImport = imp.find({ rule: { kind: "namespace_import" } });
-    if (nsImport) {
-      const alias = nsImport.find({ rule: { kind: "identifier" } })?.text();
-      console.log(
-        `[header-tab-to-nav-tab-item] Cannot automatically migrate namespace import '${alias ?? "*"}' from '${UI_SOURCE}'. Manual migration required: rename HeaderTab to HeaderNavTabItem.`,
-      );
-      migrationMetric.increment({ action: "namespace-import-skipped", alias: alias ?? "*" });
+    if (!nsImport) continue;
+
+    const aliasNode = nsImport.find({ rule: { kind: "identifier" } });
+    if (!aliasNode) continue;
+
+    const alias = aliasNode.text();
+    const aliasRegex = escapeRegex(alias);
+
+    // Try semantic analysis first: use .references() on the alias
+    const refs = aliasNode.references();
+    let usedSemanticRefs = false;
+
+    for (const fileRef of refs) {
+      for (const refNode of fileRef.nodes) {
+        usedSemanticRefs = true;
+        const parent = refNode.parent();
+        if (!parent) continue;
+
+        // Type context: nested_type_identifier (e.g., UI.HeaderTab in type annotations)
+        if (parent.kind() === "nested_type_identifier") {
+          const typeId = parent.find({ rule: { kind: "type_identifier", regex: escapeRegex(OLD_TYPE) } });
+          if (typeId) {
+            edits.push(typeId.replace(NEW_TYPE));
+            found = true;
+            migrationMetric.increment({ action: "namespace-property-renamed", alias });
+          }
+        }
+
+        // Value context: member_expression (e.g., UI.HeaderTab in expressions)
+        if (parent.kind() === "member_expression") {
+          const propId = parent.find({ rule: { kind: "property_identifier", regex: escapeRegex(OLD_TYPE) } });
+          if (propId) {
+            edits.push(propId.replace(NEW_TYPE));
+            found = true;
+            migrationMetric.increment({ action: "namespace-property-renamed", alias });
+          }
+        }
+      }
+    }
+
+    // Fallback: AST pattern matching when .references() returns no results
+    if (!usedSemanticRefs) {
+      // Type context: nested_type_identifier nodes like UI.HeaderTab
+      const typeRefs = rootNode.findAll({
+        rule: {
+          all: [
+            { kind: "nested_type_identifier" },
+            { has: { kind: "identifier", regex: aliasRegex } },
+            { has: { kind: "type_identifier", regex: escapeRegex(OLD_TYPE) } },
+          ],
+          not: {
+            inside: {
+              any: [
+                { kind: "import_statement" },
+                { kind: "export_statement" },
+              ],
+              stopBy: "end",
+            },
+          },
+        },
+      });
+
+      for (const ref of typeRefs) {
+        const typeId = ref.find({ rule: { kind: "type_identifier", regex: escapeRegex(OLD_TYPE) } });
+        if (typeId) {
+          edits.push(typeId.replace(NEW_TYPE));
+          found = true;
+          migrationMetric.increment({ action: "namespace-property-renamed", alias });
+        }
+      }
+
+      // Value context: member_expression nodes like UI.HeaderTab
+      const valueRefs = rootNode.findAll({
+        rule: {
+          all: [
+            { kind: "member_expression" },
+            { has: { kind: "identifier", regex: aliasRegex } },
+            { has: { kind: "property_identifier", regex: escapeRegex(OLD_TYPE) } },
+          ],
+          not: {
+            inside: {
+              any: [
+                { kind: "import_statement" },
+                { kind: "export_statement" },
+              ],
+              stopBy: "end",
+            },
+          },
+        },
+      });
+
+      for (const ref of valueRefs) {
+        const propId = ref.find({ rule: { kind: "property_identifier", regex: escapeRegex(OLD_TYPE) } });
+        if (propId) {
+          edits.push(propId.replace(NEW_TYPE));
+          found = true;
+          migrationMetric.increment({ action: "namespace-property-renamed", alias });
+        }
+      }
     }
   }
+
+  return found;
 }
 
 const transform: Codemod<TSX> = async (root) => {
@@ -201,7 +310,7 @@ const transform: Codemod<TSX> = async (root) => {
   let hasHeaderTabImport = false;
 
   for (const imp of uiImportStatements) {
-    // Skip namespace imports - just warn
+    // Skip namespace imports — handled separately by handleNamespaceImports
     const hasNamespace = imp.find({ rule: { kind: "namespace_import" } });
     if (hasNamespace) continue;
 
@@ -222,12 +331,12 @@ const transform: Codemod<TSX> = async (root) => {
     if (renamed) hasHeaderTabImport = true;
   }
 
-  // Warn about namespace imports
-  warnNamespaceImports(uiImportStatements);
+  // Handle namespace imports: rename UI.HeaderTab -> UI.HeaderNavTabItem
+  const hasNamespaceHeaderTab = handleNamespaceImports(uiImportStatements, rootNode, edits);
 
-  // If we found and renamed any HeaderTab imports, also rename body references
-  // and remove matchStrategy properties
-  if (hasHeaderTabImport) {
+  // If we found and renamed any HeaderTab imports (named or namespace),
+  // also rename body references and remove matchStrategy properties
+  if (hasHeaderTabImport || hasNamespaceHeaderTab) {
     renameBodyReferences(rootNode, edits);
     removeMatchStrategyProperties(rootNode, edits);
   }

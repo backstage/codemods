@@ -2,7 +2,7 @@
   "header-tab-migration": [
     {
       "cardinality": {
-        "action": "namespace-import-skipped",
+        "action": "namespace-property-renamed",
         "alias": "UI"
       },
       "count": 1
