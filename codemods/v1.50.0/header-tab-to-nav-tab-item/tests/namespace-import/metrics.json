@@ -1,0 +1,11 @@
+{
+  "header-tab-migration": [
+    {
+      "cardinality": {
+        "action": "namespace-property-renamed",
+        "alias": "UI"
+      },
+      "count": 1
+    }
+  ]
+}

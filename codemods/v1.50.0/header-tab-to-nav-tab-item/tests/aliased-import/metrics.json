@@ -1,0 +1,11 @@
+{
+  "header-tab-migration": [
+    {
+      "cardinality": {
+        "action": "import-renamed",
+        "specifier": "HeaderTab as MyTab"
+      },
+      "count": 1
+    }
+  ]
+}
