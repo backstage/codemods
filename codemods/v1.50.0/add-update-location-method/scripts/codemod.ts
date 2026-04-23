@@ -370,7 +370,13 @@ function verifyTypeDefinition(
     return fragment?.text() === expectedSource;
   }
 
-  // For 'local' or 'external' definitions, accept if import-check already passed
+  if (def.kind === "external") {
+    // With workspace scope, check the resolved file's path
+    const resolvedPath = def.root.filename();
+    return resolvedPath.includes(expectedSource);
+  }
+
+  // For 'local' definitions, accept if import-check already passed
   return true;
 }
 
