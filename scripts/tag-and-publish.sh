@@ -7,7 +7,7 @@ set -euo pipefail
 
 changed_dirs="[]"
 
-for pkg_json in codemods/*/package.json; do
+for pkg_json in codemods/*/*/package.json; do
   dir="$(dirname "$pkg_json")"
   name="$(node -p "require('./$pkg_json').name")"
   version="$(node -p "require('./$pkg_json').version")"

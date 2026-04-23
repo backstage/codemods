@@ -8,13 +8,21 @@ See the [Codemod docs](https://docs.codemod.com) for more on building and runnin
 
 ## Codemods
 
-_No codemods published yet — check back soon, or [contribute one](./CONTRIBUTING.md)._
+### v1.50.0
 
-<!--
-| Codemod | Description |
-| ------- | ----------- |
-| [example](./codemods/example) | Short description |
--->
+| Codemod                                                                                       | Description                                                                                                                    |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| [add-entity-ref-to-location](./codemods/v1.50.0/add-entity-ref-to-location)                   | Add required `entityRef` field to Location object literals from `@backstage/catalog-client`                                    |
+| [add-update-location-method](./codemods/v1.50.0/add-update-location-method)                   | Add required `updateLocation` method to `CatalogApi` and `CatalogService` implementations                                      |
+| [catalog-node-alpha-to-stable](./codemods/v1.50.0/catalog-node-alpha-to-stable)               | Replace deprecated `@backstage/plugin-catalog-node/alpha` exports with stable equivalents                                      |
+| [dialog-api-show-to-open](./codemods/v1.50.0/dialog-api-show-to-open)                         | Replace deprecated `DialogApi` `.show()` and `.showModal()` with `.open()`                                                     |
+| [header-tab-to-nav-tab-item](./codemods/v1.50.0/header-tab-to-nav-tab-item)                   | Rename `HeaderTab` to `HeaderNavTabItem` and remove `matchStrategy` property in `@backstage/ui`                                |
+| [humanize-entity-ref-to-presentation](./codemods/v1.50.0/humanize-entity-ref-to-presentation) | Replace deprecated `humanizeEntityRef`/`humanizeEntity` with Catalog Presentation API                                          |
+| [migrate-permissioned-route](./codemods/v1.50.0/migrate-permissioned-route)                   | Migrate `PermissionedRoute` to `Route` + `RequirePermission` for `@backstage/plugin-permission-react`                          |
+| [migrate-signals-service](./codemods/v1.50.0/migrate-signals-service)                         | Rename deprecated `SignalService` exports to `SignalsService` in `@backstage/plugin-signals-node`                              |
+| [remove-bootstrap-env-proxy](./codemods/v1.50.0/remove-bootstrap-env-proxy)                   | Remove deprecated `bootstrapEnvProxyAgents()` call and import from `@backstage/cli-common`                                     |
+| [rename-plugin-header-toolbar](./codemods/v1.50.0/rename-plugin-header-toolbar)               | Rename `.bui-PluginHeaderToolbarWrapper` to `.bui-PluginHeaderToolbar` and `classNames.toolbarWrapper` to `classNames.toolbar` |
+| [replace-create-schema-from-zod](./codemods/v1.50.0/replace-create-schema-from-zod)           | Replace `createSchemaFromZod` and `config.schema` with `configSchema`                                                          |
 
 ## Usage
 
@@ -35,8 +43,11 @@ yarn install
 # Run all tests
 yarn test
 
-# Type-check all codemods
-yarn check-types
+# Lint all files
+yarn lint
+
+# Format all files
+yarn format
 ```
 
 ## Contributing
@@ -47,12 +58,13 @@ Contributions are welcome especially codemods that automate common Backstage upg
 
 ```
 codemods/
-  <name>/
-    scripts/codemod.ts   # Codemod logic (jssg / ast-grep)
-    tests/               # Input/expected test fixtures
-    codemod.yaml         # Codemod manifest
-    workflow.yaml        # Execution workflow
-    package.json
+  <version>/
+    <name>/
+      scripts/codemod.ts   # Codemod logic (jssg / ast-grep)
+      tests/               # Input/expected test fixtures
+      codemod.yaml         # Codemod manifest
+      workflow.yaml        # Execution workflow
+      package.json
 ```
 
 ## License
