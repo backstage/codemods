@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: "1"
+
+params:
+  schema:
+    aiFixup:
+      type: boolean
+      default: false
+      description: "Run an AI-powered fixup step to address edge cases the AST codemod cannot handle mechanically."
+
+nodes:
+  - id: apply-transforms
+    name: Apply AST Transformations
+    type: automatic
+    steps:
+      - name: "Remove deprecated bootstrapEnvProxyAgents() calls and imports"
+        js-ast-grep:
+          js_file: scripts/codemod.ts
+          language: "tsx"
+          semantic_analysis: file
+          include:
+            - "**/*.ts"
+            - "**/*.tsx"
+          exclude:
+            - "**/node_modules/**"
+
+  - id: ai-fixup
+    name: AI fixup for edge cases
+    type: automatic
+    depends_on: [apply-transforms]
+    steps:
+      - name: "Fix remaining edge cases that require contextual understanding"
+        if: "${{ params.aiFixup }}"
+        ai:
+          model: "claude-sonnet-4-6"
+          system_prompt: |
+            You are a Backstage migration expert. You are scanning for environment
+            configuration that needs updating after the removal of deprecated
+            bootstrapEnvProxyAgents() from @backstage/cli-common in Backstage 1.50.0.
+
+            The AST codemod already handled all TypeScript/JavaScript changes:
+            - Removed named imports (`import { bootstrapEnvProxyAgents }`)
+            - Removed namespace import calls (`alias.bootstrapEnvProxyAgents()`)
+            - Removed dynamic import patterns (`await import(...)` destructuring)
+            - Removed re-exports of bootstrapEnvProxyAgents
+            - Added TODO comments about setting NODE_USE_ENV_PROXY=1
+
+            Your job is to find environment configuration files that set proxy
+            variables and suggest adding NODE_USE_ENV_PROXY=1 alongside them.
+            Be precise and conservative -- only change what is necessary.
+          prompt: |
+            Search the codebase for environment configuration files that need updating:
+
+            ## Environment configuration
+            Search for any .env files, Dockerfiles, docker-compose files, or shell scripts
+            that set HTTP_PROXY or HTTPS_PROXY and add NODE_USE_ENV_PROXY=1 alongside them.
+
+            For each file found:
+            - If it's a .env file, add `NODE_USE_ENV_PROXY=1` as a new line near the proxy vars
+            - If it's a Dockerfile, add `ENV NODE_USE_ENV_PROXY=1` near existing proxy ENV lines
+            - If it's a docker-compose file, add `NODE_USE_ENV_PROXY: "1"` to the environment section
+            - If it's a shell script, add `export NODE_USE_ENV_PROXY=1` near proxy exports
+          max_steps: 15

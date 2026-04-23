@@ -1,0 +1,11 @@
+{
+  "remove-bootstrap-env-proxy": [
+    {
+      "cardinality": {
+        "action": "namespace-call-removed",
+        "hadArguments": "yes"
+      },
+      "count": 1
+    }
+  ]
+}
