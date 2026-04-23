@@ -78,6 +78,16 @@ function hasUpdateLocationMethod(classBody: SgNode<TSX>): boolean {
 }
 
 /**
+ * Check if an object literal already has updateLocation (property or shorthand).
+ */
+function objectHasUpdateLocation(objectNode: SgNode<TSX>): boolean {
+  return (
+    hasUpdateLocationProperty(objectNode) ||
+    hasUpdateLocationShorthand(objectNode)
+  );
+}
+
+/**
  * Build the stub method body for a class implementation.
  */
 function buildClassStub(optionsType: string, optionsRequired: boolean): string {
@@ -92,6 +102,13 @@ function buildClassStub(optionsType: string, optionsRequired: boolean): string {
     "    throw new Error('updateLocation not implemented'); // TODO(backstage-codemod): implement updateLocation",
     "  }",
   ].join("\n");
+}
+
+/**
+ * Build a stub property for object literals (duck-typed / factory / satisfies / as).
+ */
+function buildObjectStub(): string {
+  return "async () => { throw new Error('updateLocation not implemented'); }";
 }
 
 /**
@@ -127,6 +144,78 @@ function detectMockFactory(objectNode: SgNode<TSX>): string {
     }
   }
   return "jest.fn()";
+}
+
+/**
+ * Choose the right stub value for an object literal:
+ * - If the object contains jest.fn() / vi.fn() calls, use the matching mock factory
+ * - Otherwise, use the throwing async arrow stub
+ */
+function chooseStubValue(objectNode: SgNode<TSX>): string {
+  const mockFactory = detectMockFactory(objectNode);
+  // If the object has mock calls, use the mock factory
+  const hasMockCalls = objectNode.find({
+    rule: {
+      kind: "call_expression",
+      has: {
+        kind: "member_expression",
+        has: {
+          kind: "identifier",
+          regex: "^(jest|vi)$",
+        },
+      },
+    },
+  });
+  if (hasMockCalls) {
+    return mockFactory;
+  }
+  return buildObjectStub();
+}
+
+/**
+ * Insert `updateLocation` property into an object literal.
+ * Returns an Edit or null if insertion is not possible.
+ */
+function insertPropertyIntoObject(
+  objectNode: SgNode<TSX>,
+  stubValue: string,
+): Edit | null {
+  const pairs = objectNode.findAll({ rule: { kind: "pair" } });
+  const shorthands = objectNode.findAll({
+    rule: { kind: "shorthand_property_identifier" },
+  });
+  const lastProperty = [...pairs, ...shorthands].sort(
+    (a, b) => a.range().end.index - b.range().end.index,
+  );
+  const lastProp = lastProperty[lastProperty.length - 1];
+
+  if (lastProp) {
+    const lastPropEnd = lastProp.range().end.index;
+    const nextSibling = lastProp.next();
+    const hasTrailingComma = nextSibling && nextSibling.text() === ",";
+
+    const insertText = hasTrailingComma
+      ? `\n  updateLocation: ${stubValue},`
+      : `,\n  updateLocation: ${stubValue},`;
+
+    return {
+      startPos: hasTrailingComma
+        ? nextSibling.range().end.index
+        : lastPropEnd,
+      endPos: hasTrailingComma
+        ? nextSibling.range().end.index
+        : lastPropEnd,
+      insertedText: insertText,
+    };
+  }
+
+  // Empty object, insert directly
+  const objStart = objectNode.range().start.index + 1;
+  return {
+    startPos: objStart,
+    endPos: objStart,
+    insertedText: `\n  updateLocation: ${stubValue},\n`,
+  };
 }
 
 /**
@@ -196,6 +285,67 @@ function resolveInterfaceAlias(
     from: info.source,
   });
   return imp?.alias ?? null;
+}
+
+/**
+ * Use semantic analysis `.definition()` to verify a type_identifier resolves
+ * to an import from the expected package. Falls back to import-based check
+ * when semantic analysis is unavailable (e.g., in test mode).
+ */
+function verifyTypeDefinition(
+  typeIdNode: SgNode<TSX>,
+  expectedSource: string,
+): boolean {
+  const def = typeIdNode.definition();
+  if (!def) {
+    // Semantic analysis unavailable (test mode) — trust the import-based check
+    return true;
+  }
+
+  if (def.kind === "import") {
+    // Trace back to the import statement and check the source string
+    const importStmt = def.node.parent();
+    if (!importStmt) return false;
+
+    // Walk up to the import_statement node
+    let current: SgNode<TSX> | null = importStmt;
+    while (current && current.kind() !== "import_statement") {
+      current = current.parent();
+    }
+    if (!current) return false;
+
+    const sourceNode = current.find({ rule: { kind: "string" } });
+    if (!sourceNode) return false;
+
+    const fragment = sourceNode.find({ rule: { kind: "string_fragment" } });
+    return fragment?.text() === expectedSource;
+  }
+
+  // For 'local' or 'external' definitions, accept if import-check already passed
+  return true;
+}
+
+/**
+ * Check if a type_identifier directly refers to one of our target interfaces
+ * (not nested inside type_arguments, i.e., not Mocked<CatalogApi> but just CatalogApi).
+ * Uses `.definition()` to harden the check when semantic analysis is available.
+ */
+function findDirectCatalogType(
+  node: SgNode<TSX>,
+  importedInterfaces: Map<string, { alias: string; source: string; optionsType: string; optionsRequired: boolean }>,
+): string | null {
+  for (const [interfaceName, info] of importedInterfaces) {
+    const match = node.find({
+      rule: {
+        kind: "type_identifier",
+        regex: `^${info.alias}$`,
+      },
+    });
+    if (match && verifyTypeDefinition(match, info.source)) {
+      return interfaceName;
+    }
+  }
+  return null;
 }
 
 const transform: Codemod<TSX> = async (root) => {
@@ -303,11 +453,14 @@ const transform: Codemod<TSX> = async (root) => {
     });
   }
 
-  // --- 2. Process mock object literals ---
+  // --- 2. Process mock object literals (Mocked<CatalogApi> pattern) ---
   // Find variable declarations with type annotations containing Mocked<CatalogApi>
   const variableDeclarators = rootNode.findAll({
     rule: { kind: "variable_declarator" },
   });
+
+  // Track objects we've already processed to avoid double-processing
+  const processedObjectIds = new Set<number>();
 
   for (const declarator of variableDeclarators) {
     const typeAnnotation = declarator.find({
@@ -361,53 +514,23 @@ const transform: Codemod<TSX> = async (root) => {
     if (!objectLiteral) continue;
 
     // Check if updateLocation already exists
-    if (
-      hasUpdateLocationProperty(objectLiteral) ||
-      hasUpdateLocationShorthand(objectLiteral)
-    ) {
+    if (objectHasUpdateLocation(objectLiteral)) {
       migrationMetric.increment({
         outcome: "skipped",
         reason: "already-has-property",
         interface: matchedInterfaceName,
       });
+      processedObjectIds.add(objectLiteral.id());
       continue;
     }
 
     // Detect the mock factory (jest.fn() or vi.fn())
     const mockFactory = detectMockFactory(objectLiteral);
 
-    // Find the last pair in the object to insert after it
-    const pairs = objectLiteral.findAll({ rule: { kind: "pair" } });
-    const lastPair = pairs[pairs.length - 1];
-
-    if (lastPair) {
-      // Insert after the last property
-      const lastPairEnd = lastPair.range().end.index;
-      // Check if there's already a trailing comma
-      const nextSibling = lastPair.next();
-      const hasTrailingComma = nextSibling && nextSibling.text() === ",";
-
-      const insertText = hasTrailingComma
-        ? `\n  updateLocation: ${mockFactory},`
-        : `,\n  updateLocation: ${mockFactory},`;
-
-      edits.push({
-        startPos: hasTrailingComma
-          ? nextSibling.range().end.index
-          : lastPairEnd,
-        endPos: hasTrailingComma
-          ? nextSibling.range().end.index
-          : lastPairEnd,
-        insertedText: insertText,
-      });
-    } else {
-      // Empty object, insert directly
-      const objStart = objectLiteral.range().start.index + 1;
-      edits.push({
-        startPos: objStart,
-        endPos: objStart,
-        insertedText: `\n  updateLocation: ${mockFactory},\n`,
-      });
+    const edit = insertPropertyIntoObject(objectLiteral, mockFactory);
+    if (edit) {
+      edits.push(edit);
+      processedObjectIds.add(objectLiteral.id());
     }
 
     migrationMetric.increment({
@@ -417,11 +540,368 @@ const transform: Codemod<TSX> = async (root) => {
     });
   }
 
+  // --- 3. Process explicit-type duck-typed objects ---
+  // 3a. Variables with `: CatalogApi` type annotation (direct, not Mocked-wrapped)
+  for (const declarator of variableDeclarators) {
+    const typeAnnotation = declarator.find({
+      rule: { kind: "type_annotation" },
+    });
+    if (!typeAnnotation) continue;
+
+    // Check for a direct type_identifier (not inside type_arguments/generic)
+    const matchedInterfaceName = findDirectCatalogType(typeAnnotation, importedInterfaces);
+    if (!matchedInterfaceName) continue;
+
+    // Make sure the type_identifier is NOT inside a type_arguments (which would be Mocked<CatalogApi>)
+    const typeId = typeAnnotation.find({
+      rule: {
+        kind: "type_identifier",
+        regex: `^${importedInterfaces.get(matchedInterfaceName)!.alias}$`,
+      },
+    });
+    if (!typeId) continue;
+
+    // Skip if the type_identifier is nested inside type_arguments (handled by mock section)
+    const isInsideTypeArgs = typeId.inside({
+      rule: { kind: "type_arguments" },
+    });
+    if (isInsideTypeArgs) continue;
+
+    // Find the object literal in the declarator
+    const objectLiteral = declarator.find({ rule: { kind: "object" } });
+    if (!objectLiteral) continue;
+
+    // Skip if already processed by the mock section
+    if (processedObjectIds.has(objectLiteral.id())) continue;
+
+    if (objectHasUpdateLocation(objectLiteral)) {
+      migrationMetric.increment({
+        outcome: "skipped",
+        reason: "already-has-property",
+        interface: matchedInterfaceName,
+      });
+      processedObjectIds.add(objectLiteral.id());
+      continue;
+    }
+
+    const stubValue = chooseStubValue(objectLiteral);
+    const edit = insertPropertyIntoObject(objectLiteral, stubValue);
+    if (edit) {
+      edits.push(edit);
+      processedObjectIds.add(objectLiteral.id());
+    }
+
+    migrationMetric.increment({
+      outcome: "auto-migrated",
+      reason: "duck-typed-property-added",
+      interface: matchedInterfaceName,
+    });
+  }
+
+  // 3b. `satisfies CatalogApi` expressions
+  for (const declarator of variableDeclarators) {
+    const satisfiesExprs = declarator.findAll({
+      rule: { kind: "satisfies_expression" },
+    });
+
+    for (const satisfiesExpr of satisfiesExprs) {
+      const matchedInterfaceName = findDirectCatalogType(satisfiesExpr, importedInterfaces);
+      if (!matchedInterfaceName) continue;
+
+      const objectLiteral = satisfiesExpr.find({ rule: { kind: "object" } });
+      if (!objectLiteral) continue;
+
+      if (processedObjectIds.has(objectLiteral.id())) continue;
+
+      if (objectHasUpdateLocation(objectLiteral)) {
+        migrationMetric.increment({
+          outcome: "skipped",
+          reason: "already-has-property",
+          interface: matchedInterfaceName,
+        });
+        processedObjectIds.add(objectLiteral.id());
+        continue;
+      }
+
+      const stubValue = chooseStubValue(objectLiteral);
+      const edit = insertPropertyIntoObject(objectLiteral, stubValue);
+      if (edit) {
+        edits.push(edit);
+        processedObjectIds.add(objectLiteral.id());
+      }
+
+      migrationMetric.increment({
+        outcome: "auto-migrated",
+        reason: "duck-typed-property-added",
+        interface: matchedInterfaceName,
+      });
+    }
+  }
+
+  // 3c. `as CatalogApi` expressions (direct, not `as unknown as Mocked<CatalogApi>`)
+  for (const declarator of variableDeclarators) {
+    const asExprs = declarator.findAll({
+      rule: { kind: "as_expression" },
+    });
+
+    for (const asExpr of asExprs) {
+      // Skip if this as_expression has a Mocked wrapper (handled in mock section)
+      if (hasMockedType(asExpr)) continue;
+
+      // Check if the as-target is a direct CatalogApi/CatalogService type
+      const matchedInterfaceName = findDirectCatalogType(asExpr, importedInterfaces);
+      if (!matchedInterfaceName) continue;
+
+      // Verify the type_identifier is not inside type_arguments
+      const typeId = asExpr.find({
+        rule: {
+          kind: "type_identifier",
+          regex: `^${importedInterfaces.get(matchedInterfaceName)!.alias}$`,
+        },
+      });
+      if (!typeId) continue;
+      const isInsideTypeArgs = typeId.inside({
+        rule: { kind: "type_arguments" },
+      });
+      if (isInsideTypeArgs) continue;
+
+      const objectLiteral = asExpr.find({ rule: { kind: "object" } });
+      if (!objectLiteral) continue;
+
+      if (processedObjectIds.has(objectLiteral.id())) continue;
+
+      if (objectHasUpdateLocation(objectLiteral)) {
+        migrationMetric.increment({
+          outcome: "skipped",
+          reason: "already-has-property",
+          interface: matchedInterfaceName,
+        });
+        processedObjectIds.add(objectLiteral.id());
+        continue;
+      }
+
+      const stubValue = chooseStubValue(objectLiteral);
+      const edit = insertPropertyIntoObject(objectLiteral, stubValue);
+      if (edit) {
+        edits.push(edit);
+        processedObjectIds.add(objectLiteral.id());
+      }
+
+      migrationMetric.increment({
+        outcome: "auto-migrated",
+        reason: "duck-typed-property-added",
+        interface: matchedInterfaceName,
+      });
+    }
+  }
+
+  // --- 4. Process factory functions with CatalogApi/CatalogService return type ---
+  // 4a. function declarations: function foo(): CatalogApi { return {...}; }
+  const functionDeclarations = rootNode.findAll({
+    rule: { kind: "function_declaration" },
+  });
+
+  for (const funcDecl of functionDeclarations) {
+    const returnType = funcDecl.find({ rule: { kind: "type_annotation" } });
+    if (!returnType) continue;
+
+    const matchedInterfaceName = findDirectCatalogType(returnType, importedInterfaces);
+    if (!matchedInterfaceName) continue;
+
+    // Verify the type is direct (not inside type_arguments)
+    const typeId = returnType.find({
+      rule: {
+        kind: "type_identifier",
+        regex: `^${importedInterfaces.get(matchedInterfaceName)!.alias}$`,
+      },
+    });
+    if (!typeId) continue;
+    if (typeId.inside({ rule: { kind: "type_arguments" } })) continue;
+
+    // Find return statements with object literals
+    const returnStatements = funcDecl.findAll({
+      rule: { kind: "return_statement" },
+    });
+
+    for (const returnStmt of returnStatements) {
+      const objectLiteral = returnStmt.find({ rule: { kind: "object" } });
+      if (!objectLiteral) continue;
+
+      if (processedObjectIds.has(objectLiteral.id())) continue;
+
+      if (objectHasUpdateLocation(objectLiteral)) {
+        migrationMetric.increment({
+          outcome: "skipped",
+          reason: "already-has-property",
+          interface: matchedInterfaceName,
+        });
+        processedObjectIds.add(objectLiteral.id());
+        continue;
+      }
+
+      const stubValue = chooseStubValue(objectLiteral);
+      const edit = insertPropertyIntoObject(objectLiteral, stubValue);
+      if (edit) {
+        edits.push(edit);
+        processedObjectIds.add(objectLiteral.id());
+      }
+
+      migrationMetric.increment({
+        outcome: "auto-migrated",
+        reason: "factory-return-property-added",
+        interface: matchedInterfaceName,
+      });
+    }
+  }
+
+  // 4b. Arrow functions with return type: const foo = (): CatalogApi => ({...})
+  const arrowFunctions = rootNode.findAll({
+    rule: { kind: "arrow_function" },
+  });
+
+  for (const arrowFn of arrowFunctions) {
+    // Arrow functions can have type_annotation on formal_parameters level
+    const returnType = arrowFn.find({ rule: { kind: "type_annotation" } });
+    if (!returnType) continue;
+
+    const matchedInterfaceName = findDirectCatalogType(returnType, importedInterfaces);
+    if (!matchedInterfaceName) continue;
+
+    const typeId = returnType.find({
+      rule: {
+        kind: "type_identifier",
+        regex: `^${importedInterfaces.get(matchedInterfaceName)!.alias}$`,
+      },
+    });
+    if (!typeId) continue;
+    if (typeId.inside({ rule: { kind: "type_arguments" } })) continue;
+
+    // Find object literals in the arrow body
+    // Case 1: arrow => ({...}) - parenthesized_expression containing object
+    const parenExpr = arrowFn.find({
+      rule: { kind: "parenthesized_expression" },
+    });
+    if (parenExpr) {
+      const objectLiteral = parenExpr.find({ rule: { kind: "object" } });
+      if (objectLiteral && !processedObjectIds.has(objectLiteral.id())) {
+        if (objectHasUpdateLocation(objectLiteral)) {
+          migrationMetric.increment({
+            outcome: "skipped",
+            reason: "already-has-property",
+            interface: matchedInterfaceName,
+          });
+          processedObjectIds.add(objectLiteral.id());
+        } else {
+          const stubValue = chooseStubValue(objectLiteral);
+          const edit = insertPropertyIntoObject(objectLiteral, stubValue);
+          if (edit) {
+            edits.push(edit);
+            processedObjectIds.add(objectLiteral.id());
+          }
+
+          migrationMetric.increment({
+            outcome: "auto-migrated",
+            reason: "factory-return-property-added",
+            interface: matchedInterfaceName,
+          });
+        }
+      }
+    }
+
+    // Case 2: arrow => { return {...}; } - statement_block with return_statement
+    const stmtBlock = arrowFn.find({ rule: { kind: "statement_block" } });
+    if (stmtBlock) {
+      const returnStatements = stmtBlock.findAll({
+        rule: { kind: "return_statement" },
+      });
+
+      for (const returnStmt of returnStatements) {
+        const objectLiteral = returnStmt.find({ rule: { kind: "object" } });
+        if (!objectLiteral) continue;
+
+        if (processedObjectIds.has(objectLiteral.id())) continue;
+
+        if (objectHasUpdateLocation(objectLiteral)) {
+          migrationMetric.increment({
+            outcome: "skipped",
+            reason: "already-has-property",
+            interface: matchedInterfaceName,
+          });
+          processedObjectIds.add(objectLiteral.id());
+          continue;
+        }
+
+        const stubValue = chooseStubValue(objectLiteral);
+        const edit = insertPropertyIntoObject(objectLiteral, stubValue);
+        if (edit) {
+          edits.push(edit);
+          processedObjectIds.add(objectLiteral.id());
+        }
+
+        migrationMetric.increment({
+          outcome: "auto-migrated",
+          reason: "factory-return-property-added",
+          interface: matchedInterfaceName,
+        });
+      }
+    }
+  }
+
+  // --- 5. Process generic call expressions: foo<CatalogApi>({...}) ---
+  const callExpressions = rootNode.findAll({
+    rule: {
+      kind: "call_expression",
+      has: {
+        kind: "type_arguments",
+      },
+    },
+  });
+
+  for (const callExpr of callExpressions) {
+    const typeArgs = callExpr.find({ rule: { kind: "type_arguments" } });
+    if (!typeArgs) continue;
+
+    const matchedInterfaceName = findDirectCatalogType(typeArgs, importedInterfaces);
+    if (!matchedInterfaceName) continue;
+
+    // Find inline object literal arguments
+    const args = callExpr.find({ rule: { kind: "arguments" } });
+    if (!args) continue;
+
+    const objectLiterals = args.findAll({ rule: { kind: "object" } });
+    for (const objectLiteral of objectLiterals) {
+      if (processedObjectIds.has(objectLiteral.id())) continue;
+
+      if (objectHasUpdateLocation(objectLiteral)) {
+        migrationMetric.increment({
+          outcome: "skipped",
+          reason: "already-has-property",
+          interface: matchedInterfaceName,
+        });
+        processedObjectIds.add(objectLiteral.id());
+        continue;
+      }
+
+      const stubValue = chooseStubValue(objectLiteral);
+      const edit = insertPropertyIntoObject(objectLiteral, stubValue);
+      if (edit) {
+        edits.push(edit);
+        processedObjectIds.add(objectLiteral.id());
+      }
+
+      migrationMetric.increment({
+        outcome: "auto-migrated",
+        reason: "generic-call-property-added",
+        interface: matchedInterfaceName,
+      });
+    }
+  }
+
   if (edits.length === 0) {
     return null;
   }
 
-  // --- 3. Add Location import if needed (for class stubs) ---
+  // --- 6. Add Location import if needed (for class stubs) ---
   if (needsLocationImport) {
     const existingLocationImport = getImport(rootNode, {
       type: "named",

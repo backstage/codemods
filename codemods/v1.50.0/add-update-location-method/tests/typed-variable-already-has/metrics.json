@@ -1,0 +1,12 @@
+{
+  "add-update-location-method": [
+    {
+      "cardinality": {
+        "interface": "CatalogApi",
+        "outcome": "skipped",
+        "reason": "already-has-property"
+      },
+      "count": 1
+    }
+  ]
+}
