@@ -85,7 +85,6 @@ function extractSpecifiers(importNode: SgNode<TSX>): Array<{
  */
 function isInsideConditionalOrLoop(
   callNode: SgNode<TSX>,
-  _componentBoundary: SgNode<TSX>,
 ): boolean {
   return callNode.inside({
     rule: {
@@ -126,7 +125,7 @@ function determineContext(callNode: SgNode<TSX>): Context {
         // Even though we're in a React component, if the call is inside
         // a conditional or loop, using a hook would violate Rules of Hooks.
         // Fall back to entityPresentationSnapshot (utility context) instead.
-        if (isInsideConditionalOrLoop(callNode, ancestor)) {
+        if (isInsideConditionalOrLoop(callNode)) {
           return "utility";
         }
         return "react-component";
