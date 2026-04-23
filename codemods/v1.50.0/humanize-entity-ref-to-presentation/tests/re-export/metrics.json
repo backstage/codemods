@@ -1,0 +1,20 @@
+{
+  "humanize-entity-ref-migration": [
+    {
+      "cardinality": {
+        "function": "humanizeEntity",
+        "outcome": "auto-migrated",
+        "reason": "re-export-replaced"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "function": "humanizeEntityRef",
+        "outcome": "auto-migrated",
+        "reason": "re-export-replaced"
+      },
+      "count": 1
+    }
+  ]
+}

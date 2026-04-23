@@ -1,0 +1,22 @@
+{
+  "humanize-entity-ref-migration": [
+    {
+      "cardinality": {
+        "context": "jsx",
+        "function": "humanizeEntityRef",
+        "outcome": "auto-migrated",
+        "reason": "namespace-call-replaced"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "context": "react-component",
+        "function": "humanizeEntityRef",
+        "outcome": "auto-migrated",
+        "reason": "namespace-call-replaced"
+      },
+      "count": 1
+    }
+  ]
+}
