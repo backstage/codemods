@@ -206,10 +206,7 @@ function extractObjectContent(
   baseIndent: string,
   contentIndent: string,
 ): string {
-  const text = objectNode.text();
-  // Remove outer braces
-  const inner = text.slice(1, -1);
-  return reindentContent(inner, baseIndent, contentIndent);
+  return extractObjectContentFromText(objectNode.text(), baseIndent, contentIndent);
 }
 
 /**
