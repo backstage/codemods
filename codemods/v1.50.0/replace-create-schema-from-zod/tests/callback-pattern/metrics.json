@@ -1,0 +1,11 @@
+{
+  "replace-create-schema-from-zod": [
+    {
+      "cardinality": {
+        "outcome": "auto-migrated",
+        "pattern": "callback"
+      },
+      "count": 1
+    }
+  ]
+}
