@@ -3,8 +3,8 @@
     {
       "cardinality": {
         "interface": "CatalogApi",
-        "outcome": "skipped",
-        "reason": "already-has-property"
+        "outcome": "skipped-existing",
+        "reason": "typed-variable"
       },
       "count": 1
     }

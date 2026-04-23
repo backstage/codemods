@@ -3,8 +3,8 @@
     {
       "cardinality": {
         "interface": "CatalogApi",
-        "outcome": "auto-migrated",
-        "reason": "mock-property-added"
+        "outcome": "added",
+        "reason": "mock-object"
       },
       "count": 1
     }

@@ -5,6 +5,24 @@ import { useMetricAtom } from "codemod:metrics";
 
 const migrationMetric = useMetricAtom("add-update-location-method");
 
+type Outcome = "added" | "skipped-existing";
+type Reason =
+  | "class-implements"
+  | "mock-object"
+  | "typed-variable"
+  | "satisfies"
+  | "as-cast"
+  | "factory-return"
+  | "generic-call";
+
+function recordMigration(
+  outcome: Outcome,
+  reason: Reason,
+  interfaceName: string,
+): void {
+  migrationMetric.increment({ outcome, reason, interface: interfaceName });
+}
+
 /**
  * The two interfaces that now require `updateLocation`.
  */
@@ -190,13 +208,15 @@ function insertPropertyIntoObject(
   const lastProp = lastProperty[lastProperty.length - 1];
 
   if (lastProp) {
+    // Detect indentation from the last property's column position
+    const indent = " ".repeat(lastProp.range().start.column);
     const lastPropEnd = lastProp.range().end.index;
     const nextSibling = lastProp.next();
     const hasTrailingComma = nextSibling && nextSibling.text() === ",";
 
     const insertText = hasTrailingComma
-      ? `\n  updateLocation: ${stubValue},`
-      : `,\n  updateLocation: ${stubValue},`;
+      ? `\n${indent}updateLocation: ${stubValue},`
+      : `,\n${indent}updateLocation: ${stubValue},`;
 
     return {
       startPos: hasTrailingComma
@@ -216,6 +236,35 @@ function insertPropertyIntoObject(
     endPos: objStart,
     insertedText: `\n  updateLocation: ${stubValue},\n`,
   };
+}
+
+/**
+ * Process an object literal: check dedup set, check existing property,
+ * choose stub value, insert property, push edit, and record metric.
+ */
+function processObjectLiteral(
+  obj: SgNode<TSX>,
+  interfaceName: string,
+  reason: Reason,
+  edits: Edit[],
+  processedObjectIds: Set<number>,
+): void {
+  if (processedObjectIds.has(obj.id())) return;
+
+  if (objectHasUpdateLocation(obj)) {
+    recordMigration("skipped-existing", reason, interfaceName);
+    processedObjectIds.add(obj.id());
+    return;
+  }
+
+  const stubValue = chooseStubValue(obj);
+  const edit = insertPropertyIntoObject(obj, stubValue);
+  if (edit) {
+    edits.push(edit);
+    processedObjectIds.add(obj.id());
+  }
+
+  recordMigration("added", reason, interfaceName);
 }
 
 /**
@@ -348,6 +397,47 @@ function findDirectCatalogType(
   return null;
 }
 
+/**
+ * Check whether a node is nested inside an ancestor of the given kind,
+ * stopping the walk at the boundary kind.
+ */
+function isInsideKind(
+  node: SgNode<TSX>,
+  ancestorKind: string,
+  boundaryKind: string,
+): boolean {
+  let current: SgNode<TSX> | null = node.parent();
+  while (current) {
+    const kind = current.kind();
+    if (kind === ancestorKind) return true;
+    if (kind === boundaryKind) return false;
+    current = current.parent();
+  }
+  return false;
+}
+
+/**
+ * Get the return type annotation from an arrow function, avoiding parameter annotations.
+ * Uses the `return_type` field if available; otherwise falls back to finding
+ * the first `type_annotation` that is a direct child of the arrow function
+ * (not nested inside `formal_parameters`).
+ */
+function getArrowReturnType(arrowFn: SgNode<TSX>): SgNode<TSX> | null {
+  // Prefer the tree-sitter field when available
+  const returnType = arrowFn.field("return_type");
+  if (returnType) return returnType;
+
+  // Fallback: find type_annotation children that are NOT inside formal_parameters
+  const allAnnotations = arrowFn.findAll({
+    rule: { kind: "type_annotation" },
+  });
+  for (const ann of allAnnotations) {
+    // Walk up from the annotation; skip if it is nested inside formal_parameters
+    if (!isInsideKind(ann, "formal_parameters", "arrow_function")) return ann;
+  }
+  return null;
+}
+
 const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root() as SgNode<TSX, "program">;
   const edits: Edit[] = [];
@@ -423,11 +513,7 @@ const transform: Codemod<TSX> = async (root) => {
     if (!classBody) continue;
 
     if (hasUpdateLocationMethod(classBody)) {
-      migrationMetric.increment({
-        outcome: "skipped",
-        reason: "already-has-method",
-        interface: matchedInterface.name,
-      });
+      recordMigration("skipped-existing", "class-implements", matchedInterface.name);
       continue;
     }
 
@@ -446,11 +532,7 @@ const transform: Codemod<TSX> = async (root) => {
 
     needsLocationImport = true;
 
-    migrationMetric.increment({
-      outcome: "auto-migrated",
-      reason: "class-stub-added",
-      interface: matchedInterface.name,
-    });
+    recordMigration("added", "class-implements", matchedInterface.name);
   }
 
   // --- 2. Process mock object literals (Mocked<CatalogApi> pattern) ---
@@ -515,11 +597,7 @@ const transform: Codemod<TSX> = async (root) => {
 
     // Check if updateLocation already exists
     if (objectHasUpdateLocation(objectLiteral)) {
-      migrationMetric.increment({
-        outcome: "skipped",
-        reason: "already-has-property",
-        interface: matchedInterfaceName,
-      });
+      recordMigration("skipped-existing", "mock-object", matchedInterfaceName);
       processedObjectIds.add(objectLiteral.id());
       continue;
     }
@@ -533,11 +611,7 @@ const transform: Codemod<TSX> = async (root) => {
       processedObjectIds.add(objectLiteral.id());
     }
 
-    migrationMetric.increment({
-      outcome: "auto-migrated",
-      reason: "mock-property-added",
-      interface: matchedInterfaceName,
-    });
+    recordMigration("added", "mock-object", matchedInterfaceName);
   }
 
   // --- 3. Process explicit-type duck-typed objects ---
@@ -547,6 +621,9 @@ const transform: Codemod<TSX> = async (root) => {
       rule: { kind: "type_annotation" },
     });
     if (!typeAnnotation) continue;
+
+    // Skip if the type annotation is inside an arrow function (handled by section 4b)
+    if (isInsideKind(typeAnnotation, "arrow_function", "variable_declarator")) continue;
 
     // Check for a direct type_identifier (not inside type_arguments/generic)
     const matchedInterfaceName = findDirectCatalogType(typeAnnotation, importedInterfaces);
@@ -571,31 +648,7 @@ const transform: Codemod<TSX> = async (root) => {
     const objectLiteral = declarator.find({ rule: { kind: "object" } });
     if (!objectLiteral) continue;
 
-    // Skip if already processed by the mock section
-    if (processedObjectIds.has(objectLiteral.id())) continue;
-
-    if (objectHasUpdateLocation(objectLiteral)) {
-      migrationMetric.increment({
-        outcome: "skipped",
-        reason: "already-has-property",
-        interface: matchedInterfaceName,
-      });
-      processedObjectIds.add(objectLiteral.id());
-      continue;
-    }
-
-    const stubValue = chooseStubValue(objectLiteral);
-    const edit = insertPropertyIntoObject(objectLiteral, stubValue);
-    if (edit) {
-      edits.push(edit);
-      processedObjectIds.add(objectLiteral.id());
-    }
-
-    migrationMetric.increment({
-      outcome: "auto-migrated",
-      reason: "duck-typed-property-added",
-      interface: matchedInterfaceName,
-    });
+    processObjectLiteral(objectLiteral, matchedInterfaceName, "typed-variable", edits, processedObjectIds);
   }
 
   // 3b. `satisfies CatalogApi` expressions
@@ -611,30 +664,7 @@ const transform: Codemod<TSX> = async (root) => {
       const objectLiteral = satisfiesExpr.find({ rule: { kind: "object" } });
       if (!objectLiteral) continue;
 
-      if (processedObjectIds.has(objectLiteral.id())) continue;
-
-      if (objectHasUpdateLocation(objectLiteral)) {
-        migrationMetric.increment({
-          outcome: "skipped",
-          reason: "already-has-property",
-          interface: matchedInterfaceName,
-        });
-        processedObjectIds.add(objectLiteral.id());
-        continue;
-      }
-
-      const stubValue = chooseStubValue(objectLiteral);
-      const edit = insertPropertyIntoObject(objectLiteral, stubValue);
-      if (edit) {
-        edits.push(edit);
-        processedObjectIds.add(objectLiteral.id());
-      }
-
-      migrationMetric.increment({
-        outcome: "auto-migrated",
-        reason: "duck-typed-property-added",
-        interface: matchedInterfaceName,
-      });
+      processObjectLiteral(objectLiteral, matchedInterfaceName, "satisfies", edits, processedObjectIds);
     }
   }
 
@@ -668,30 +698,7 @@ const transform: Codemod<TSX> = async (root) => {
       const objectLiteral = asExpr.find({ rule: { kind: "object" } });
       if (!objectLiteral) continue;
 
-      if (processedObjectIds.has(objectLiteral.id())) continue;
-
-      if (objectHasUpdateLocation(objectLiteral)) {
-        migrationMetric.increment({
-          outcome: "skipped",
-          reason: "already-has-property",
-          interface: matchedInterfaceName,
-        });
-        processedObjectIds.add(objectLiteral.id());
-        continue;
-      }
-
-      const stubValue = chooseStubValue(objectLiteral);
-      const edit = insertPropertyIntoObject(objectLiteral, stubValue);
-      if (edit) {
-        edits.push(edit);
-        processedObjectIds.add(objectLiteral.id());
-      }
-
-      migrationMetric.increment({
-        outcome: "auto-migrated",
-        reason: "duck-typed-property-added",
-        interface: matchedInterfaceName,
-      });
+      processObjectLiteral(objectLiteral, matchedInterfaceName, "as-cast", edits, processedObjectIds);
     }
   }
 
@@ -727,30 +734,7 @@ const transform: Codemod<TSX> = async (root) => {
       const objectLiteral = returnStmt.find({ rule: { kind: "object" } });
       if (!objectLiteral) continue;
 
-      if (processedObjectIds.has(objectLiteral.id())) continue;
-
-      if (objectHasUpdateLocation(objectLiteral)) {
-        migrationMetric.increment({
-          outcome: "skipped",
-          reason: "already-has-property",
-          interface: matchedInterfaceName,
-        });
-        processedObjectIds.add(objectLiteral.id());
-        continue;
-      }
-
-      const stubValue = chooseStubValue(objectLiteral);
-      const edit = insertPropertyIntoObject(objectLiteral, stubValue);
-      if (edit) {
-        edits.push(edit);
-        processedObjectIds.add(objectLiteral.id());
-      }
-
-      migrationMetric.increment({
-        outcome: "auto-migrated",
-        reason: "factory-return-property-added",
-        interface: matchedInterfaceName,
-      });
+      processObjectLiteral(objectLiteral, matchedInterfaceName, "factory-return", edits, processedObjectIds);
     }
   }
 
@@ -760,8 +744,8 @@ const transform: Codemod<TSX> = async (root) => {
   });
 
   for (const arrowFn of arrowFunctions) {
-    // Arrow functions can have type_annotation on formal_parameters level
-    const returnType = arrowFn.find({ rule: { kind: "type_annotation" } });
+    // Use safe return-type extraction that avoids parameter annotations
+    const returnType = getArrowReturnType(arrowFn);
     if (!returnType) continue;
 
     const matchedInterfaceName = findDirectCatalogType(returnType, importedInterfaces);
@@ -783,28 +767,8 @@ const transform: Codemod<TSX> = async (root) => {
     });
     if (parenExpr) {
       const objectLiteral = parenExpr.find({ rule: { kind: "object" } });
-      if (objectLiteral && !processedObjectIds.has(objectLiteral.id())) {
-        if (objectHasUpdateLocation(objectLiteral)) {
-          migrationMetric.increment({
-            outcome: "skipped",
-            reason: "already-has-property",
-            interface: matchedInterfaceName,
-          });
-          processedObjectIds.add(objectLiteral.id());
-        } else {
-          const stubValue = chooseStubValue(objectLiteral);
-          const edit = insertPropertyIntoObject(objectLiteral, stubValue);
-          if (edit) {
-            edits.push(edit);
-            processedObjectIds.add(objectLiteral.id());
-          }
-
-          migrationMetric.increment({
-            outcome: "auto-migrated",
-            reason: "factory-return-property-added",
-            interface: matchedInterfaceName,
-          });
-        }
+      if (objectLiteral) {
+        processObjectLiteral(objectLiteral, matchedInterfaceName, "factory-return", edits, processedObjectIds);
       }
     }
 
@@ -819,30 +783,7 @@ const transform: Codemod<TSX> = async (root) => {
         const objectLiteral = returnStmt.find({ rule: { kind: "object" } });
         if (!objectLiteral) continue;
 
-        if (processedObjectIds.has(objectLiteral.id())) continue;
-
-        if (objectHasUpdateLocation(objectLiteral)) {
-          migrationMetric.increment({
-            outcome: "skipped",
-            reason: "already-has-property",
-            interface: matchedInterfaceName,
-          });
-          processedObjectIds.add(objectLiteral.id());
-          continue;
-        }
-
-        const stubValue = chooseStubValue(objectLiteral);
-        const edit = insertPropertyIntoObject(objectLiteral, stubValue);
-        if (edit) {
-          edits.push(edit);
-          processedObjectIds.add(objectLiteral.id());
-        }
-
-        migrationMetric.increment({
-          outcome: "auto-migrated",
-          reason: "factory-return-property-added",
-          interface: matchedInterfaceName,
-        });
+        processObjectLiteral(objectLiteral, matchedInterfaceName, "factory-return", edits, processedObjectIds);
       }
     }
   }
@@ -870,30 +811,7 @@ const transform: Codemod<TSX> = async (root) => {
 
     const objectLiterals = args.findAll({ rule: { kind: "object" } });
     for (const objectLiteral of objectLiterals) {
-      if (processedObjectIds.has(objectLiteral.id())) continue;
-
-      if (objectHasUpdateLocation(objectLiteral)) {
-        migrationMetric.increment({
-          outcome: "skipped",
-          reason: "already-has-property",
-          interface: matchedInterfaceName,
-        });
-        processedObjectIds.add(objectLiteral.id());
-        continue;
-      }
-
-      const stubValue = chooseStubValue(objectLiteral);
-      const edit = insertPropertyIntoObject(objectLiteral, stubValue);
-      if (edit) {
-        edits.push(edit);
-        processedObjectIds.add(objectLiteral.id());
-      }
-
-      migrationMetric.increment({
-        outcome: "auto-migrated",
-        reason: "generic-call-property-added",
-        interface: matchedInterfaceName,
-      });
+      processObjectLiteral(objectLiteral, matchedInterfaceName, "generic-call", edits, processedObjectIds);
     }
   }
 

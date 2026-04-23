@@ -3,8 +3,8 @@
     {
       "cardinality": {
         "interface": "CatalogService",
-        "outcome": "auto-migrated",
-        "reason": "class-stub-added"
+        "outcome": "added",
+        "reason": "class-implements"
       },
       "count": 1
     }

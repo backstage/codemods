@@ -3,8 +3,8 @@
     {
       "cardinality": {
         "interface": "CatalogService",
-        "outcome": "auto-migrated",
-        "reason": "factory-return-property-added"
+        "outcome": "added",
+        "reason": "factory-return"
       },
       "count": 1
     }

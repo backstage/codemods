@@ -3,8 +3,8 @@
     {
       "cardinality": {
         "interface": "CatalogApi",
-        "outcome": "auto-migrated",
-        "reason": "duck-typed-property-added"
+        "outcome": "added",
+        "reason": "as-cast"
       },
       "count": 1
     }

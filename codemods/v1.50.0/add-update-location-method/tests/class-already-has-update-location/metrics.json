@@ -3,8 +3,8 @@
     {
       "cardinality": {
         "interface": "CatalogApi",
-        "outcome": "skipped",
-        "reason": "already-has-method"
+        "outcome": "skipped-existing",
+        "reason": "class-implements"
       },
       "count": 1
     }
