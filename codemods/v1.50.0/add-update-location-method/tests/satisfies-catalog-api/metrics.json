@@ -1,0 +1,12 @@
+{
+  "add-update-location-method": [
+    {
+      "cardinality": {
+        "interface": "CatalogApi",
+        "outcome": "added",
+        "reason": "satisfies"
+      },
+      "count": 1
+    }
+  ]
+}

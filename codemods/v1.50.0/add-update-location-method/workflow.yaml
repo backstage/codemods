@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: "1"
+
+params:
+  schema:
+    aiFixup:
+      type: boolean
+      default: false
+      description: "Run an AI-powered fixup step to address edge cases the AST codemod cannot handle mechanically."
+
+nodes:
+  - id: apply-transforms
+    name: Apply AST Transformations
+    type: automatic
+    steps:
+      - name: "Add updateLocation method to CatalogApi and CatalogService implementations"
+        js-ast-grep:
+          js_file: scripts/codemod.ts
+          language: "tsx"
+          semantic_analysis: workspace
+          include:
+            - "**/*.ts"
+            - "**/*.tsx"
+          exclude:
+            - "**/node_modules/**"
+
+  - id: ai-fixup
+    name: AI fixup for edge cases
+    type: automatic
+    depends_on: [apply-transforms]
+    steps:
+      - name: "Fix remaining edge cases that require contextual understanding"
+        if: params.aiFixup == true
+        ai:
+          model: "claude-sonnet-4-6"
+          system_prompt: |
+            You are a Backstage migration expert. You are fixing edge cases left over
+            from an AST-based codemod that added the required `updateLocation` method
+            to CatalogApi and CatalogService implementations in Backstage 1.50.0.
+
+            The AST codemod already handled the following mechanically:
+            - Classes with `implements CatalogApi/CatalogService` got a throwing stub method
+            - Mock objects typed as jest.Mocked<CatalogApi> or vi.Mocked<CatalogApi> got updateLocation: jest/vi.fn()
+            - Variables with `: CatalogApi` type annotation and object literal values
+            - `satisfies CatalogApi` and `as CatalogApi` expressions with object literals
+            - Factory functions with explicit CatalogApi/CatalogService return type
+            - Generic call expressions like `createMock<CatalogApi>({...})`
+
+            Your job is to find and fix the remaining cases that cannot be detected
+            by static AST analysis. Be precise and conservative.
+          prompt: |
+            Search the codebase for remaining CatalogApi or CatalogService implementations
+            that are missing the `updateLocation` method and add it.
+
+            Look for only these patterns that the AST codemod cannot handle:
+            1. Pure structural duck-typing — objects that satisfy the CatalogApi shape
+               but have NO type annotation, NO `satisfies`, NO `as`, and NO generic
+               type argument referencing CatalogApi anywhere
+            2. Proxy or wrapper patterns — classes/objects that delegate to a CatalogApi
+               instance and need to forward the new `updateLocation` call
+
+            Do NOT touch any code that already has `updateLocation`.
+            After making changes, verify the files are syntactically valid TypeScript.
+          max_steps: 50

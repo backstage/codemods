@@ -1,0 +1,12 @@
+{
+  "add-update-location-method": [
+    {
+      "cardinality": {
+        "interface": "CatalogService",
+        "outcome": "added",
+        "reason": "class-implements"
+      },
+      "count": 1
+    }
+  ]
+}
