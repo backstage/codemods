@@ -189,6 +189,80 @@ function buildNamedStatement(
   return `${keyword} ${typeKw}{\n  ${specTexts.join(",\n  ")},\n} from '${source}';`;
 }
 
+/**
+ * Replace a deprecated call expression with the appropriate Presentation API.
+ * Works for both direct calls (identifier) and namespace calls (member_expression).
+ * Returns the context used, or null if the call could not be processed.
+ */
+function replaceDeprecatedCall(
+  call: SgNode<TSX>,
+  importedName: string,
+  edits: Edit[],
+  neededImports: Set<string>,
+  metricReason: string,
+): Context | null {
+  const isHumanizeEntity = importedName === "humanizeEntity";
+  const context = determineContext(call);
+
+  // Extract arguments
+  const args = call.find({ rule: { kind: "arguments" } });
+  if (!args) return null;
+
+  const argChildren: SgNode<TSX>[] = [];
+  for (const child of args.children()) {
+    if (child.isNamed()) {
+      argChildren.push(child);
+    }
+  }
+
+  const entityArg = argChildren[0]?.text() ?? "";
+  const optionsArg = argChildren[1]?.text() ?? null;
+
+  const replacement = buildReplacement(
+    context,
+    entityArg,
+    optionsArg,
+    isHumanizeEntity,
+  );
+
+  if (context === "jsx") {
+    // For JSX context, replace the parent jsx_expression node (which includes the { } braces)
+    // so we get <EntityDisplayName .../> instead of {<EntityDisplayName .../>}
+    const jsxExpr = call.ancestors().find((a) => a.kind() === "jsx_expression");
+    if (jsxExpr) {
+      edits.push(jsxExpr.replace(replacement));
+    } else {
+      edits.push(call.replace(replacement));
+    }
+  } else {
+    edits.push(call.replace(replacement));
+  }
+
+  // Track which imports we need
+  switch (context) {
+    case "jsx":
+      neededImports.add("EntityDisplayName");
+      break;
+    case "react-component":
+      neededImports.add("useEntityPresentation");
+      break;
+    case "utility":
+      neededImports.add("entityPresentationSnapshot");
+      break;
+  }
+
+  migrationMetric.increment({
+    outcome: "auto-migrated",
+    function: importedName,
+    context,
+    reason: metricReason,
+  });
+
+  return context;
+}
+
+const DEPRECATED_FUNCTIONS = ["humanizeEntityRef", "humanizeEntity"];
+
 const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root() as SgNode<TSX, "program">;
   const edits: Edit[] = [];
@@ -199,8 +273,14 @@ const transform: Codemod<TSX> = async (root) => {
   // Find all import statements from the source package
   const importStatements = findImportStatementsFrom(rootNode, SOURCE_PKG);
 
-  // Collect deprecated import info
+  // Collect deprecated import info (named imports)
   const deprecatedImports: DeprecatedImportInfo[] = [];
+
+  // Track namespace import statements that reference deprecated functions
+  const namespaceImportStmts: Array<{
+    stmt: SgNode<TSX, "import_statement">;
+    alias: string;
+  }> = [];
 
   // Track which import statements contain deprecated imports and their kept specs
   const importAnalysis: Array<{
@@ -211,19 +291,20 @@ const transform: Codemod<TSX> = async (root) => {
   }> = [];
 
   for (const importStmt of importStatements) {
-    // Skip namespace imports
-    const hasNamespace = importStmt.find({
+    // Handle namespace imports: extract alias for later call-site resolution
+    const namespaceNode = importStmt.find({
       rule: { kind: "namespace_import" },
     });
-    if (hasNamespace) {
-      console.log(
-        `[humanize-entity-ref-to-presentation] Cannot automatically migrate namespace import from '${SOURCE_PKG}'. Manual migration required.`,
-      );
-      migrationMetric.increment({
-        outcome: "manual-required",
-        function: "*",
-        reason: "namespace-import",
+    if (namespaceNode) {
+      const aliasNode = namespaceNode.find({
+        rule: { kind: "identifier" },
       });
+      if (aliasNode) {
+        namespaceImportStmts.push({
+          stmt: importStmt,
+          alias: aliasNode.text(),
+        });
+      }
       continue;
     }
 
@@ -250,6 +331,59 @@ const transform: Codemod<TSX> = async (root) => {
 
     const isTypeOnly = importStmt.children().some((c) => c.text() === "type");
     importAnalysis.push({ stmt: importStmt, deprecated, kept, isTypeOnly });
+  }
+
+  // Handle namespace import call sites: find CatalogReact.humanizeEntityRef(...) patterns
+  let hasNamespaceMigrations = false;
+  for (const { stmt, alias } of namespaceImportStmts) {
+    const deprecatedCalls = rootNode.findAll({
+      rule: {
+        kind: "call_expression",
+        has: {
+          field: "function",
+          kind: "member_expression",
+          has: {
+            field: "object",
+            kind: "identifier",
+            regex: escapeRegex(alias),
+          },
+        },
+      },
+    });
+
+    for (const call of deprecatedCalls) {
+      // Get the property name from the member_expression
+      const memberExpr = call.find({
+        rule: {
+          kind: "member_expression",
+          has: {
+            field: "object",
+            kind: "identifier",
+            regex: escapeRegex(alias),
+          },
+        },
+      });
+      if (!memberExpr) continue;
+
+      const propertyNode = memberExpr.find({
+        rule: { kind: "property_identifier" },
+      });
+      if (!propertyNode) continue;
+
+      const propertyName = propertyNode.text();
+      if (!DEPRECATED_FUNCTIONS.includes(propertyName)) continue;
+
+      const result = replaceDeprecatedCall(
+        call,
+        propertyName,
+        edits,
+        neededImports,
+        "namespace-call-replaced",
+      );
+      if (result !== null) {
+        hasNamespaceMigrations = true;
+      }
+    }
   }
 
   // Handle re-exports
@@ -311,15 +445,13 @@ const transform: Codemod<TSX> = async (root) => {
     }
   }
 
-  // If no deprecated imports or re-exports, bail
-  if (deprecatedImports.length === 0 && edits.length === 0) {
+  // If no deprecated imports, namespace migrations, or re-exports, bail
+  if (deprecatedImports.length === 0 && !hasNamespaceMigrations && edits.length === 0) {
     return null;
   }
 
-  // Find and replace all call expressions for each deprecated function
+  // Find and replace all call expressions for each named deprecated import
   for (const { alias, importedName } of deprecatedImports) {
-    const isHumanizeEntity = importedName === "humanizeEntity";
-
     const calls = rootNode.findAll({
       rule: {
         kind: "call_expression",
@@ -332,65 +464,17 @@ const transform: Codemod<TSX> = async (root) => {
     });
 
     for (const call of calls) {
-      const context = determineContext(call);
-
-      // Extract arguments
-      const args = call.find({ rule: { kind: "arguments" } });
-      if (!args) continue;
-
-      const argChildren: SgNode<TSX>[] = [];
-      for (const child of args.children()) {
-        if (child.isNamed()) {
-          argChildren.push(child);
-        }
-      }
-
-      const entityArg = argChildren[0]?.text() ?? "";
-      const optionsArg = argChildren[1]?.text() ?? null;
-
-      const replacement = buildReplacement(
-        context,
-        entityArg,
-        optionsArg,
-        isHumanizeEntity,
+      replaceDeprecatedCall(
+        call,
+        importedName,
+        edits,
+        neededImports,
+        "call-replaced",
       );
-
-      if (context === "jsx") {
-        // For JSX context, replace the parent jsx_expression node (which includes the { } braces)
-        // so we get <EntityDisplayName .../> instead of {<EntityDisplayName .../>}
-        const jsxExpr = call.ancestors().find((a) => a.kind() === "jsx_expression");
-        if (jsxExpr) {
-          edits.push(jsxExpr.replace(replacement));
-        } else {
-          edits.push(call.replace(replacement));
-        }
-      } else {
-        edits.push(call.replace(replacement));
-      }
-
-      // Track which imports we need
-      switch (context) {
-        case "jsx":
-          neededImports.add("EntityDisplayName");
-          break;
-        case "react-component":
-          neededImports.add("useEntityPresentation");
-          break;
-        case "utility":
-          neededImports.add("entityPresentationSnapshot");
-          break;
-      }
-
-      migrationMetric.increment({
-        outcome: "auto-migrated",
-        function: importedName,
-        context,
-        reason: "call-replaced",
-      });
     }
   }
 
-  // Now handle import statement replacements
+  // Handle named import statement replacements
   // Strategy: replace the import statement in-place with new specifiers
   for (const { stmt, kept, isTypeOnly } of importAnalysis) {
     const newSpecTexts = Array.from(neededImports);
@@ -402,6 +486,28 @@ const transform: Codemod<TSX> = async (root) => {
     } else {
       // No specifiers left and no new ones needed - remove import
       edits.push(stmt.replace(""));
+    }
+  }
+
+  // For namespace imports, add a separate named import for the needed APIs
+  // (the namespace import stays intact since it may reference other members)
+  if (hasNamespaceMigrations && neededImports.size > 0) {
+    const newImportText = buildNamedStatement(
+      "import",
+      Array.from(neededImports),
+      SOURCE_PKG,
+      false,
+    );
+
+    // Insert after the last namespace import statement from SOURCE_PKG
+    const lastNsImport = namespaceImportStmts[namespaceImportStmts.length - 1];
+    if (lastNsImport) {
+      const endPos = lastNsImport.stmt.range().end.index;
+      edits.push({
+        startPos: endPos,
+        endPos: endPos,
+        insertedText: `\n${newImportText}`,
+      });
     }
   }
 

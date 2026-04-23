@@ -1,0 +1,13 @@
+{
+  "humanize-entity-ref-migration": [
+    {
+      "cardinality": {
+        "context": "react-component",
+        "function": "humanizeEntityRef",
+        "outcome": "auto-migrated",
+        "reason": "call-replaced"
+      },
+      "count": 1
+    }
+  ]
+}

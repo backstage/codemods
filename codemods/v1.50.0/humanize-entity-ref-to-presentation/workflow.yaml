@@ -7,7 +7,7 @@ params:
     aiFixup:
       type: boolean
       default: false
-      description: "Run an AI-powered fixup step to address edge cases the AST codemod cannot handle mechanically (namespace imports, mixed context files)."
+      description: "Run an AI-powered fixup step to address edge cases the AST codemod cannot handle mechanically (mixed context files where the wrong replacement API was chosen)."
 
 nodes:
   - id: apply-transforms
@@ -40,34 +40,29 @@ nodes:
             to the Catalog Presentation API in Backstage 1.50.0.
 
             The AST codemod already handled the mechanical parts:
-            - JSX expressions: humanizeEntityRef(ref) → <EntityDisplayName entityRef={ref} />
-            - React component bodies: humanizeEntityRef(ref) → useEntityPresentation(ref).primaryTitle
-            - Non-React utilities: humanizeEntityRef(ref) → entityPresentationSnapshot(ref).primaryTitle
+            - Named imports: humanizeEntityRef / humanizeEntity (including aliases)
+            - Namespace imports: CatalogReact.humanizeEntityRef(...) etc.
+            - JSX expressions → <EntityDisplayName entityRef={ref} />
+            - React component bodies → useEntityPresentation(ref).primaryTitle
+            - Non-React utilities → entityPresentationSnapshot(ref).primaryTitle
             - humanizeEntity(entity, fallback) → same replacements
+            - String-context detection (template literals, concatenation) → hook/snapshot
             - defaultKind/defaultNamespace options mapping
-            - Import updates
+            - Import and re-export updates
 
-            Your job is to find and fix the remaining issues that the AST codemod could not
-            handle mechanically. Be precise and conservative — only change what is necessary.
+            Your job is to find and fix files where the AST codemod may have chosen
+            the wrong replacement. Be precise and conservative — only change what is
+            necessary.
           prompt: |
-            Search the codebase for remaining migration issues and fix them:
+            Search the codebase for files where the codemod may have incorrectly chosen
+            the replacement API based on context. Specifically look for:
 
-            ## 1. Namespace imports
-            Find any `import * as <alias> from '@backstage/plugin-catalog-react'` where
-            the alias is used to access humanizeEntityRef or humanizeEntity (e.g.,
-            `CatalogReact.humanizeEntityRef(...)`). Replace with the appropriate API
-            based on context.
-
-            ## 2. Type compatibility issues
-            Find places where the return value of humanizeEntityRef (string) was used
-            in string-only contexts that now receive JSX.Element from EntityDisplayName.
-            Fix these by using useEntityPresentation().primaryTitle instead.
-
-            ## 3. Mixed context files
-            Find files where the codemod may have incorrectly chosen the replacement
-            (e.g., used useEntityPresentation in a non-React utility file, or used
-            entityPresentationSnapshot inside a React component where the hook would
-            be more appropriate).
+            - `useEntityPresentation` used in a non-React utility file (should be
+              `entityPresentationSnapshot`)
+            - `entityPresentationSnapshot` used inside a React component where the
+              hook `useEntityPresentation` would be more appropriate
+            - `<EntityDisplayName>` used where a string value is actually needed
+              (e.g., passed to a function expecting `string`, used in comparisons)
 
             After making changes, verify the files are syntactically valid TypeScript.
           max_steps: 50

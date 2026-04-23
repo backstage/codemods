@@ -1,0 +1,13 @@
+{
+  "humanize-entity-ref-migration": [
+    {
+      "cardinality": {
+        "context": "utility",
+        "function": "humanizeEntityRef",
+        "outcome": "auto-migrated",
+        "reason": "namespace-call-replaced"
+      },
+      "count": 2
+    }
+  ]
+}
