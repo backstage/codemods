@@ -8,11 +8,50 @@ const migrationMetric = useMetricAtom("replace-create-schema-from-zod");
 const FRONTEND_API_SOURCE = "@backstage/frontend-plugin-api";
 
 /**
- * Find all `config: { schema: ... }` pairs inside any object literal.
+ * Check if a config pair node is inside an extension API call expression.
+ * Matches: createExtension(...), createExtensionBlueprint(...),
+ *          SomeBlueprint.make(...), SomeBlueprint.override(...)
+ */
+function isInsideExtensionApiCall(node: SgNode<TSX>): boolean {
+  // Walk up to find the containing call_expression via arguments
+  return node.inside({
+    rule: {
+      kind: "arguments",
+      inside: {
+        kind: "call_expression",
+        any: [
+          {
+            has: {
+              field: "function",
+              kind: "identifier",
+              regex: "^(createExtension|createExtensionBlueprint)$",
+            },
+          },
+          {
+            has: {
+              field: "function",
+              kind: "member_expression",
+              has: {
+                field: "property",
+                kind: "property_identifier",
+                regex: "^(make|override)$",
+              },
+            },
+          },
+        ],
+      },
+    },
+  });
+}
+
+/**
+ * Find all `config: { schema: ... }` pairs inside extension API calls.
+ * Only matches inside createExtension(...), createExtensionBlueprint(...),
+ * .override(...), or .make(...) call expressions.
  * Returns the outer `config` pair node.
  */
 function findConfigSchemaPairs(rootNode: SgNode<TSX>): SgNode<TSX>[] {
-  return rootNode.findAll({
+  const candidates = rootNode.findAll({
     rule: {
       kind: "pair",
       all: [
@@ -40,6 +79,8 @@ function findConfigSchemaPairs(rootNode: SgNode<TSX>): SgNode<TSX>[] {
       ],
     },
   });
+
+  return candidates.filter(isInsideExtensionApiCall);
 }
 
 /**
@@ -59,12 +100,48 @@ function findSchemaPair(configValue: SgNode<TSX>): SgNode<TSX> | null {
 }
 
 /**
+ * Detect the indentation unit and base indent from a config pair node.
+ * Returns { baseIndent, contentIndent } as whitespace strings.
+ */
+function detectIndent(configPair: SgNode<TSX>): {
+  baseIndent: string;
+  contentIndent: string;
+} {
+  const configCol = configPair.range().start.column;
+  const baseIndent = " ".repeat(configCol);
+
+  // Try to detect the indent unit from the schema child's column
+  const configValue = configPair.field("value");
+  if (configValue) {
+    const schemaPair = findSchemaPair(configValue);
+    if (schemaPair) {
+      const schemaCol = schemaPair.range().start.column;
+      const indentUnit = schemaCol - configCol;
+      if (indentUnit > 0) {
+        return {
+          baseIndent,
+          contentIndent: " ".repeat(configCol + indentUnit),
+        };
+      }
+    }
+  }
+
+  // Fallback: assume 2-space indent unit
+  return {
+    baseIndent,
+    contentIndent: " ".repeat(configCol + 2),
+  };
+}
+
+/**
  * Given a `createSchemaFromZod(z => z.object({...}))` call node, extract the
  * inner object literal contents (the properties inside z.object({...})).
  * If the callback parameter is not named `z`, renames all references to `z`.
  */
 function extractSchemaFromZodCallBody(
   callNode: SgNode<TSX>,
+  baseIndent: string,
+  contentIndent: string,
 ): string | null {
   // The call has arguments containing an arrow function: z => z.object({...})
   const arrowFn = callNode.find({ rule: { kind: "arrow_function" } });
@@ -99,44 +176,56 @@ function extractSchemaFromZodCallBody(
       }
       const renamedText = objectArg.commitEdits(renameEdits);
       // Extract content from the renamed text (strip outer braces)
-      return extractObjectContentFromText(renamedText);
+      return extractObjectContentFromText(renamedText, baseIndent, contentIndent);
     }
   }
 
   // Return the inner content of the object (without the braces)
-  return extractObjectContent(objectArg);
+  return extractObjectContent(objectArg, baseIndent, contentIndent);
 }
 
 /**
  * Extract and re-indent content from an object text string (already stringified).
  */
-function extractObjectContentFromText(text: string): string {
+function extractObjectContentFromText(
+  text: string,
+  baseIndent: string,
+  contentIndent: string,
+): string {
   // Remove outer braces
   const inner = text.slice(1, -1);
-  return reindentContent(inner);
+  return reindentContent(inner, baseIndent, contentIndent);
 }
 
 /**
  * Extract the content between { and } of an object node, re-indented for
- * placement at the `configSchema` property level (2-space base indent).
+ * placement at the `configSchema` property level.
  */
-function extractObjectContent(objectNode: SgNode<TSX>): string {
+function extractObjectContent(
+  objectNode: SgNode<TSX>,
+  baseIndent: string,
+  contentIndent: string,
+): string {
   const text = objectNode.text();
   // Remove outer braces
   const inner = text.slice(1, -1);
-  return reindentContent(inner);
+  return reindentContent(inner, baseIndent, contentIndent);
 }
 
 /**
  * Re-indent extracted content for placement at configSchema property level.
+ * Uses detected indentation from the source.
  */
-function reindentContent(inner: string): string {
-
+function reindentContent(
+  inner: string,
+  baseIndent: string,
+  contentIndent: string,
+): string {
   // Split into lines and re-indent
   const lines = inner.split("\n");
   if (lines.length <= 1) {
     // Single line: just trim
-    return inner.trim() ? `\n    ${inner.trim()},\n  ` : "";
+    return inner.trim() ? `\n${contentIndent}${inner.trim()},\n${baseIndent}` : "";
   }
 
   // Find the minimum indentation of non-empty lines (skip the first which is often empty)
@@ -152,7 +241,7 @@ function reindentContent(inner: string): string {
 
   if (minIndent === Infinity) minIndent = 0;
 
-  // Re-indent: strip minIndent, add 4 spaces (for configSchema property level)
+  // Re-indent: strip minIndent, add contentIndent
   const reindented: string[] = [];
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -162,17 +251,20 @@ function reindentContent(inner: string): string {
       continue;
     }
     const stripped = line.slice(minIndent);
-    reindented.push(`    ${stripped}`);
+    reindented.push(`${contentIndent}${stripped}`);
   }
 
-  return `\n${reindented.join("\n")}\n  `;
+  return `\n${reindented.join("\n")}\n${baseIndent}`;
 }
 
 /**
  * Process callback pattern fields: { field: z => z.type() }
  * Converts each arrow function value to a direct z.type() call.
  */
-function processCallbackFields(schemaObject: SgNode<TSX>): string | null {
+function processCallbackFields(
+  schemaObject: SgNode<TSX>,
+  contentIndent: string,
+): string | null {
   const pairs = schemaObject.findAll({
     rule: { kind: "pair" },
   });
@@ -219,7 +311,7 @@ function processCallbackFields(schemaObject: SgNode<TSX>): string | null {
     }
   }
 
-  return resultParts.join(",\n    ");
+  return resultParts.join(`,\n${contentIndent}`);
 }
 
 /**
@@ -317,6 +409,9 @@ const transform: Codemod<TSX> = async (root) => {
     const schemaValue = schemaPair.field("value");
     if (!schemaValue) continue;
 
+    // Detect indentation from the source config property
+    const { baseIndent, contentIndent } = detectIndent(configPair);
+
     // Pattern 1: createSchemaFromZod(z => z.object({...}))
     if (schemaValue.is("call_expression")) {
       // Verify this is a call to createSchemaFromZod (or its alias)
@@ -328,7 +423,11 @@ const transform: Codemod<TSX> = async (root) => {
       });
 
       if (callee) {
-        const innerContent = extractSchemaFromZodCallBody(schemaValue);
+        const innerContent = extractSchemaFromZodCallBody(
+          schemaValue,
+          baseIndent,
+          contentIndent,
+        );
         if (innerContent !== null) {
           edits.push(configPair.replace(`configSchema: {${innerContent}}`));
           needsZodImport = true;
@@ -343,10 +442,12 @@ const transform: Codemod<TSX> = async (root) => {
 
     // Pattern 2: { schema: { field: z => z.type(), ... } } (callback pattern)
     if (schemaValue.is("object")) {
-      const callbackResult = processCallbackFields(schemaValue);
+      const callbackResult = processCallbackFields(schemaValue, contentIndent);
       if (callbackResult !== null) {
         edits.push(
-          configPair.replace(`configSchema: {\n    ${callbackResult},\n  }`),
+          configPair.replace(
+            `configSchema: {\n${contentIndent}${callbackResult},\n${baseIndent}}`,
+          ),
         );
         needsZodImport = true;
         transformedAny = true;
