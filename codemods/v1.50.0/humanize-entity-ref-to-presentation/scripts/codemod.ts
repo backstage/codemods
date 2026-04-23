@@ -103,14 +103,35 @@ function isInsideConditionalOrLoop(
 }
 
 /**
+ * Check if a call node is inside a template literal (template_string / template_substitution).
+ * When inside a template literal, the result must be a string, not JSX.
+ */
+function isInsideTemplateLiteral(callNode: SgNode<TSX>): boolean {
+  return callNode.inside({
+    rule: {
+      any: [
+        { kind: "template_string" },
+        { kind: "template_substitution" },
+      ],
+    },
+  });
+}
+
+/**
  * Determine the call-site context for a call_expression node.
  */
 function determineContext(callNode: SgNode<TSX>): Context {
   for (const ancestor of callNode.ancestors()) {
     const kind = ancestor.kind();
 
-    // If we hit a jsx_expression before a function boundary, it's JSX context
+    // If we hit a jsx_expression before a function boundary, it's JSX context —
+    // BUT if the call is inside a template literal within that JSX expression,
+    // a string value is needed, not a JSX component. Use entityPresentationSnapshot
+    // (utility) since it's the lightest-weight synchronous string getter.
     if (kind === "jsx_expression") {
+      if (isInsideTemplateLiteral(callNode)) {
+        return "utility";
+      }
       return "jsx";
     }
 
@@ -153,16 +174,46 @@ function isReactComponent(fnNode: SgNode<TSX>): boolean {
 }
 
 /**
+ * Check if an options node contains `defaultKind` or `defaultNamespace` keys,
+ * which are NOT supported as props on `EntityDisplayName`.
+ */
+function hasUnsupportedJsxOptions(optionsNode: SgNode<TSX>): boolean {
+  const pairs = optionsNode.findAll({ rule: { kind: "pair" } });
+  for (const pair of pairs) {
+    const keyNode = pair.field("key");
+    if (!keyNode) continue;
+    const key = keyNode.text();
+    if (key === "defaultKind" || key === "defaultNamespace") {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Build the replacement text for a call expression based on context.
+ * Returns both the replacement text and the effective context (which may differ
+ * from the input context when JSX falls back to react-component due to options).
  */
 function buildReplacement(
   context: Context,
   entityArg: string,
   optionsNode: SgNode<TSX> | null,
   isHumanizeEntity: boolean,
-): string {
+): { text: string; effectiveContext: Context } {
   // For humanizeEntity, the 2nd arg is a fallback name, which the Presentation API handles
   const contextNode = isHumanizeEntity ? null : optionsNode;
+
+  // In JSX context, if options include defaultKind/defaultNamespace (not supported
+  // as EntityDisplayName props), fall back to useEntityPresentation hook
+  if (context === "jsx" && contextNode && hasUnsupportedJsxOptions(contextNode)) {
+    const optText = contextNode.text();
+    const args = `${entityArg}, ${optText}`;
+    return {
+      text: `useEntityPresentation(${args}).primaryTitle`,
+      effectiveContext: "react-component",
+    };
+  }
 
   switch (context) {
     case "jsx": {
@@ -173,17 +224,17 @@ function buildReplacement(
           props += ` ${jsxProps}`;
         }
       }
-      return `<EntityDisplayName ${props} />`;
+      return { text: `<EntityDisplayName ${props} />`, effectiveContext: "jsx" };
     }
     case "react-component": {
       const optText = contextNode?.text() ?? null;
       const args = optText ? `${entityArg}, ${optText}` : entityArg;
-      return `useEntityPresentation(${args}).primaryTitle`;
+      return { text: `useEntityPresentation(${args}).primaryTitle`, effectiveContext: "react-component" };
     }
     case "utility": {
       const optText = contextNode?.text() ?? null;
       const args = optText ? `${entityArg}, ${optText}` : entityArg;
-      return `entityPresentationSnapshot(${args}).primaryTitle`;
+      return { text: `entityPresentationSnapshot(${args}).primaryTitle`, effectiveContext: "utility" };
     }
   }
 }
@@ -265,28 +316,41 @@ function replaceDeprecatedCall(
   const entityArg = argChildren[0]?.text() ?? "";
   const optionsNode = argChildren[1] ?? null;
 
-  // Check if this call is inside a jsx_expression (for JSX context replacements)
-  const jsxExpr = context === "jsx"
-    ? call.ancestors().find((a) => a.kind() === "jsx_expression")
-    : null;
-
-  const replacement = buildReplacement(
+  const { text: replacement, effectiveContext } = buildReplacement(
     context,
     entityArg,
     optionsNode,
     isHumanizeEntity,
   );
 
-  if (context === "jsx" && jsxExpr) {
-    // For JSX context, replace the parent jsx_expression node (which includes the { } braces)
-    // so we get <EntityDisplayName .../> instead of {<EntityDisplayName .../>}
-    edits.push(jsxExpr.replace(replacement));
+  if (effectiveContext === "jsx") {
+    // Check if this call is inside a jsx_expression (for JSX context replacements)
+    const jsxExpr = call.ancestors().find((a) => a.kind() === "jsx_expression");
+    if (jsxExpr) {
+      // Only strip the {} when the jsx_expression is a direct child of a JSX element
+      // (i.e., a text child position like <Typography>{humanizeEntityRef(...)}</Typography>).
+      // When it's inside a jsx_attribute (prop value like label={...}), keep the {}
+      // to produce valid JSX: label={<EntityDisplayName .../>}
+      const jsxExprParent = jsxExpr.parent();
+      const isInsideAttribute = jsxExprParent?.kind() === "jsx_attribute";
+
+      if (isInsideAttribute) {
+        // Replace just the call expression, keeping the surrounding { }
+        edits.push(call.replace(replacement));
+      } else {
+        // Text child position — strip the {} braces by replacing the entire jsx_expression
+        edits.push(jsxExpr.replace(replacement));
+      }
+    } else {
+      edits.push(call.replace(replacement));
+    }
   } else {
+    // For react-component and utility contexts, replace just the call expression
     edits.push(call.replace(replacement));
   }
 
-  // Track which imports we need
-  switch (context) {
+  // Track which imports we need based on the effective context
+  switch (effectiveContext) {
     case "jsx":
       neededImports.add("EntityDisplayName");
       break;
@@ -301,11 +365,11 @@ function replaceDeprecatedCall(
   migrationMetric.increment({
     outcome: "auto-migrated",
     function: importedName,
-    context,
+    context: effectiveContext,
     reason: metricReason,
   });
 
-  return context;
+  return effectiveContext;
 }
 
 const DEPRECATED_FUNCTIONS = ["humanizeEntityRef", "humanizeEntity"];

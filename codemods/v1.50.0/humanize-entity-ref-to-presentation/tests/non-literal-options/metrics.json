@@ -2,7 +2,7 @@
   "humanize-entity-ref-migration": [
     {
       "cardinality": {
-        "context": "jsx",
+        "context": "react-component",
         "function": "humanizeEntityRef",
         "outcome": "auto-migrated",
         "reason": "call-replaced"
