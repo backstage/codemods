@@ -32,6 +32,7 @@ yarn changeset
 ```
 
 Follow the prompts to:
+
 1. Select the affected codemod(s).
 2. Choose the semver bump type — **patch** for bug fixes, **minor** for new features, **major** for breaking changes.
 3. Write a short summary of the change.

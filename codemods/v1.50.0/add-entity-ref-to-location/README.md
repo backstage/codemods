@@ -45,7 +45,7 @@ const loc: Location = {
   id: 'abc123',
   type: 'url',
   target: 'https://example.com/catalog-info.yaml',
-};
+}
 ```
 
 ```ts
@@ -55,7 +55,7 @@ const loc: Location = {
   type: 'url',
   target: 'https://example.com/catalog-info.yaml',
   entityRef: 'location:default/example', // TODO(backstage-codemod): replace with actual entityRef
-};
+}
 ```
 
 ## Notes

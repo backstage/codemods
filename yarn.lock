@@ -19,7 +19,6 @@ __metadata:
     "@codemod.com/jssg-types": "npm:1.5.2"
     "@jssg/utils": "npm:0.0.5"
     codemod: "npm:1.7.15"
-    typescript: "npm:6.0.3"
   languageName: unknown
   linkType: soft
 
@@ -30,7 +29,6 @@ __metadata:
     "@codemod.com/jssg-types": "npm:1.5.2"
     "@jssg/utils": "npm:0.0.5"
     codemod: "npm:1.7.15"
-    typescript: "npm:6.0.3"
   languageName: unknown
   linkType: soft
 
@@ -41,7 +39,6 @@ __metadata:
     "@codemod.com/jssg-types": "npm:1.5.2"
     "@jssg/utils": "npm:0.0.5"
     codemod: "npm:1.7.15"
-    typescript: "npm:6.0.3"
   languageName: unknown
   linkType: soft
 
@@ -52,7 +49,6 @@ __metadata:
     "@codemod.com/jssg-types": "npm:1.5.2"
     "@jssg/utils": "npm:0.0.5"
     codemod: "npm:1.7.15"
-    typescript: "npm:6.0.3"
   languageName: unknown
   linkType: soft
 
@@ -62,7 +58,6 @@ __metadata:
   dependencies:
     "@codemod.com/jssg-types": "npm:1.5.2"
     codemod: "npm:1.7.15"
-    typescript: "npm:6.0.3"
   languageName: unknown
   linkType: soft
 
@@ -72,7 +67,6 @@ __metadata:
   dependencies:
     "@codemod.com/jssg-types": "npm:1.5.2"
     codemod: "npm:1.7.15"
-    typescript: "npm:6.0.3"
   languageName: unknown
   linkType: soft
 
@@ -83,7 +77,6 @@ __metadata:
     "@codemod.com/jssg-types": "npm:1.5.2"
     "@jssg/utils": "npm:0.0.5"
     codemod: "npm:^1.7.15"
-    typescript: "npm:6.0.3"
   languageName: unknown
   linkType: soft
 
@@ -94,7 +87,6 @@ __metadata:
     "@codemod.com/jssg-types": "npm:1.5.2"
     "@jssg/utils": "npm:0.0.5"
     codemod: "npm:1.7.15"
-    typescript: "npm:6.0.3"
   languageName: unknown
   linkType: soft
 
@@ -105,7 +97,6 @@ __metadata:
     "@codemod.com/jssg-types": "npm:1.5.2"
     "@jssg/utils": "npm:0.0.5"
     codemod: "npm:1.7.15"
-    typescript: "npm:6.0.3"
   languageName: unknown
   linkType: soft
 
@@ -115,7 +106,6 @@ __metadata:
   dependencies:
     "@codemod.com/jssg-types": "npm:1.5.2"
     codemod: "npm:1.7.15"
-    typescript: "npm:6.0.3"
   languageName: unknown
   linkType: soft
 
@@ -126,7 +116,6 @@ __metadata:
     "@codemod.com/jssg-types": "npm:1.5.2"
     "@jssg/utils": "npm:0.0.5"
     codemod: "npm:1.7.15"
-    typescript: "npm:6.0.3"
   languageName: unknown
   linkType: soft
 

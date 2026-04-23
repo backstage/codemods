@@ -4,15 +4,13 @@
   "description": "Rename deprecated SignalService exports to SignalsService in @backstage/plugin-signals-node",
   "type": "module",
   "scripts": {
-    "test": "yarn exec codemod jssg test -l tsx ./scripts/codemod.ts ./tests && yarn exec codemod workflow validate -w workflow.yaml",
-    "check-types": "yarn exec tsc --noEmit"
+    "test": "yarn exec codemod jssg test -l tsx ./scripts/codemod.ts ./tests && yarn exec codemod workflow validate -w workflow.yaml"
   },
   "dependencies": {
     "@jssg/utils": "0.0.5"
   },
   "devDependencies": {
     "@codemod.com/jssg-types": "1.5.2",
-    "codemod": "1.7.15",
-    "typescript": "6.0.3"
+    "codemod": "1.7.15"
   }
 }

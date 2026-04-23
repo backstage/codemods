@@ -92,5 +92,5 @@
     "unicorn/switch-case-braces": "warn",
     "unicorn/catch-error-name": "warn"
   },
-  "ignorePatterns": ["**/node_modules", "**/dist", "**/tests"]
+  "ignorePatterns": ["**/node_modules", "**/dist", "**/tests", "**/tests-*"]
 }

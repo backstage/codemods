@@ -1,39 +1,39 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
 
-version: "1"
+version: '1'
 
 params:
   schema:
     aiFixup:
       type: boolean
       default: false
-      description: "Run an AI-powered fixup step to address complex matchStrategy patterns the AST codemod cannot handle mechanically (computed properties, dynamic assignment)."
+      description: 'Run an AI-powered fixup step to address complex matchStrategy patterns the AST codemod cannot handle mechanically (computed properties, dynamic assignment).'
 
 nodes:
   - id: apply-transforms
     name: Apply AST Transformations
     type: automatic
     steps:
-      - name: "Rename HeaderTab to HeaderNavTabItem and remove matchStrategy property"
+      - name: 'Rename HeaderTab to HeaderNavTabItem and remove matchStrategy property'
         js-ast-grep:
           js_file: scripts/codemod.ts
-          language: "tsx"
+          language: 'tsx'
           semantic_analysis: file
           include:
-            - "**/*.ts"
-            - "**/*.tsx"
+            - '**/*.ts'
+            - '**/*.tsx'
           exclude:
-            - "**/node_modules/**"
+            - '**/node_modules/**'
 
   - id: ai-fixup
     name: AI fixup for edge cases
     type: automatic
     depends_on: [apply-transforms]
     steps:
-      - name: "Fix complex matchStrategy patterns the AST codemod cannot handle"
+      - name: 'Fix complex matchStrategy patterns the AST codemod cannot handle'
         if: params.aiFixup == true
         ai:
-          model: "claude-sonnet-4-6"
+          model: 'claude-sonnet-4-6'
           system_prompt: |
             You are a Backstage migration expert. You are fixing edge cases left over
             from an AST-based codemod that renamed HeaderTab to HeaderNavTabItem and

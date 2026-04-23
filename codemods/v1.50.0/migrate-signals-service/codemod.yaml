@@ -1,14 +1,14 @@
-schema_version: "1.0"
+schema_version: '1.0'
 
-name: "@backstage/migrate-signals-service"
-version: "0.1.0"
-description: "Rename deprecated SignalService exports to SignalsService in @backstage/plugin-signals-node"
-author: "Alex Bit<alex@codemod.com>"
-license: "MIT"
-workflow: "workflow.yaml"
+name: '@backstage/migrate-signals-service'
+version: '0.1.0'
+description: 'Rename deprecated SignalService exports to SignalsService in @backstage/plugin-signals-node'
+author: 'Alex Bit<alex@codemod.com>'
+license: 'MIT'
+workflow: 'workflow.yaml'
 
 targets:
-  languages: ["typescript", "tsx"]
+  languages: ['typescript', 'tsx']
 
 keywords:
   - backstage
@@ -17,7 +17,7 @@ keywords:
   - service
 
 registry:
-  access: "public"
-  visibility: "public"
+  access: 'public'
+  visibility: 'public'
 
 capabilities: []

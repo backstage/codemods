@@ -6,11 +6,7 @@
   "semi": false,
   "trailingComma": "all",
   "endOfLine": "lf",
-  "ignorePatterns": [
-    "dist/",
-    "node_modules/",
-    "**/tests/"
-  ],
+  "ignorePatterns": ["dist/", "node_modules/", "**/tests/", "**/tests-*/"],
   "sortImports": {
     "groups": ["builtin", "external", "internal", ["parent", "sibling", "index"], "style", "unknown"],
     "newlinesBetween": true
