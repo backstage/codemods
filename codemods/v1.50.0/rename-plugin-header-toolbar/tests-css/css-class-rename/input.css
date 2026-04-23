@@ -1,0 +1,8 @@
+.bui-PluginHeaderToolbarWrapper {
+  display: flex;
+  align-items: center;
+}
+
+.other-class .bui-PluginHeaderToolbarWrapper {
+  padding: 8px;
+}

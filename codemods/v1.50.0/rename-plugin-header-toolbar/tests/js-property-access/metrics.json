@@ -1,0 +1,11 @@
+{
+  "plugin-header-toolbar-rename": [
+    {
+      "cardinality": {
+        "action": "renamed",
+        "type": "property-access"
+      },
+      "count": 2
+    }
+  ]
+}
