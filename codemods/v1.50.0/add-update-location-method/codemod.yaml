@@ -1,19 +1,19 @@
-schema_version: "1.0"
+schema_version: '1.0'
 
-name: "@backstage/add-update-location-method"
-version: "0.1.0"
-description: "Backstage 1.50.0: Add required updateLocation method to CatalogApi and CatalogService implementations"
-author: "Paul Schultz<pschultz@redhat.com>"
-license: "MIT"
-workflow: "workflow.yaml"
+name: '@backstage/add-update-location-method'
+version: '0.1.0'
+description: 'Backstage 1.50.0: Add required updateLocation method to CatalogApi and CatalogService implementations'
+author: 'Paul Schultz<pschultz@redhat.com>'
+license: 'MIT'
+workflow: 'workflow.yaml'
 
 targets:
-  languages: ["tsx", "ts"]
+  languages: ['tsx', 'ts']
 
-keywords: ["backstage", "migration", "catalog-api", "catalog-service", "updateLocation", "1.50.0"]
+keywords: ['backstage', 'migration', 'catalog-api', 'catalog-service', 'updateLocation', '1.50.0']
 
 registry:
-  access: "public"
-  visibility: "public"
+  access: 'public'
+  visibility: 'public'
 
 capabilities: []

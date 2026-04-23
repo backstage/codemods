@@ -8,11 +8,11 @@ Backstage 1.50.0 migration codemod that replaces deprecated `humanizeEntityRef` 
 
 The codemod detects the call-site context and applies the appropriate replacement:
 
-| Context | Before | After |
-|---------|--------|-------|
-| JSX expression | `{humanizeEntityRef(ref)}` | `<EntityDisplayName entityRef={ref} />` |
+| Context              | Before                                | After                                                  |
+| -------------------- | ------------------------------------- | ------------------------------------------------------ |
+| JSX expression       | `{humanizeEntityRef(ref)}`            | `<EntityDisplayName entityRef={ref} />`                |
 | React component body | `const name = humanizeEntityRef(ref)` | `const name = useEntityPresentation(ref).primaryTitle` |
-| Non-React / utility | `humanizeEntityRef(ref)` | `entityPresentationSnapshot(ref).primaryTitle` |
+| Non-React / utility  | `humanizeEntityRef(ref)`              | `entityPresentationSnapshot(ref).primaryTitle`         |
 
 ### Options mapping
 

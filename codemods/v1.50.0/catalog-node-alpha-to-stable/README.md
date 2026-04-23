@@ -34,7 +34,7 @@ These exports remain in `@backstage/plugin-catalog-node/alpha` and are left unch
 ### Known limitations
 
 - **Namespace imports** (`import * as Alpha from '...alpha'`) are detected but not transformed — a warning is emitted for manual migration.
-- **Superseded dep variable renaming**: The codemod replaces the dep *value* (e.g., `catalogPermissionExtensionPoint` → `coreServices.permissionsRegistry`) but does not rename the dep *key* or destructured parameter (e.g., `catalog` → `permissions`). Users may want to rename these manually for clarity.
+- **Superseded dep variable renaming**: The codemod replaces the dep _value_ (e.g., `catalogPermissionExtensionPoint` → `coreServices.permissionsRegistry`) but does not rename the dep _key_ or destructured parameter (e.g., `catalog` → `permissions`). Users may want to rename these manually for clarity.
 - **Superseded type exports** (`CatalogPermissionRuleInput`, `CatalogPermissionExtensionPoint`): These are removed from the import since no stable replacement type exists. If used as type annotations in the file body, a warning is emitted and manual migration is required.
 - **Superseded re-exports**: Re-exports of permission-related symbols are removed with a warning, since `coreServices.permissionsRegistry` cannot be re-exported as a named export.
 - **Shorthand properties**: If `catalogPermissionExtensionPoint` is used as a shorthand property (e.g., `{ catalogPermissionExtensionPoint }` instead of `{ key: catalogPermissionExtensionPoint }`), the codemod cannot replace it since `{ coreServices.permissionsRegistry }` is invalid syntax. Use the non-shorthand form.

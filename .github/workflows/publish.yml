@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       codemod_name:
-        description: "Codemod name (directory name under codemods/)"
+        description: 'Codemod name (directory name under codemods/)'
         required: true
         type: string
 
