@@ -262,9 +262,11 @@ function processCallbackFields(
   schemaObject: SgNode<TSX>,
   contentIndent: string,
 ): string | null {
-  const pairs = schemaObject.findAll({
-    rule: { kind: "pair" },
-  });
+  // Use children() to get only DIRECT child pairs, not nested ones.
+  // findAll() would recurse into nested z.object({...}) and hoist their
+  // fields to the top level — e.g., z.object({ tab: z.string() }) inside
+  // a z.union() would incorrectly produce a top-level `tab` field.
+  const pairs = schemaObject.children().filter(c => c.kind() === "pair");
 
   if (pairs.length === 0) return null;
 
