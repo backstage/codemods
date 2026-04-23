@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-for pkg_json in codemods/*/package.json; do
+for pkg_json in codemods/*/*/package.json; do
   dir="$(dirname "$pkg_json")"
   codemod_yaml="$dir/codemod.yaml"
 
