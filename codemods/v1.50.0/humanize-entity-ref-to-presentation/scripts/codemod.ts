@@ -161,7 +161,6 @@ function buildReplacement(
   entityArg: string,
   optionsNode: SgNode<TSX> | null,
   isHumanizeEntity: boolean,
-  isJsxExpression: boolean,
 ): string {
   // For humanizeEntity, the 2nd arg is a fallback name, which the Presentation API handles
   const contextNode = isHumanizeEntity ? null : optionsNode;
@@ -277,7 +276,6 @@ function replaceDeprecatedCall(
     entityArg,
     optionsNode,
     isHumanizeEntity,
-    jsxExpr !== null && jsxExpr !== undefined,
   );
 
   if (context === "jsx" && jsxExpr) {
