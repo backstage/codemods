@@ -1,0 +1,11 @@
+{
+  "plugin-header-toolbar-rename": [
+    {
+      "cardinality": {
+        "action": "renamed",
+        "type": "class-name"
+      },
+      "count": 1
+    }
+  ]
+}

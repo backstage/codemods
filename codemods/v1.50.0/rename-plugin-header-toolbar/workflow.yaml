@@ -18,6 +18,7 @@ nodes:
         js-ast-grep:
           js_file: scripts/codemod.ts
           language: "tsx"
+          semantic_analysis: file
           include:
             - "**/*.ts"
             - "**/*.tsx"
@@ -68,11 +69,6 @@ nodes:
             For selectors that used `.bui-PluginHeaderToolbarWrapper > .child`, verify
             that the child selector still applies correctly now that the wrapper element
             is removed. The toolbar children are now direct children of PluginHeader.
-
-            ## 3. Check styled-components and Emotion
-            Look for any remaining `PluginHeaderToolbarWrapper` references in template
-            literals, styled-components, or Emotion CSS-in-JS that the AST codemod
-            may have missed.
 
             After making changes, verify the files are syntactically valid.
           max_steps: 30
