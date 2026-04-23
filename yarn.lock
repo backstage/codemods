@@ -23,6 +23,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/dialog-api-show-to-open@workspace:codemods/v1.50.0/dialog-api-show-to-open":
+  version: 0.0.0-use.local
+  resolution: "@backstage/dialog-api-show-to-open@workspace:codemods/v1.50.0/dialog-api-show-to-open"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    "@jssg/utils": "npm:0.0.5"
+    codemod: "npm:1.7.15"
+    typescript: "npm:6.0.3"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/migrate-permissioned-route@workspace:codemods/v1.50.0/migrate-permissioned-route":
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-permissioned-route@workspace:codemods/v1.50.0/migrate-permissioned-route"

@@ -1,0 +1,10 @@
+{
+  "dialog-api-show-to-open": [
+    {
+      "cardinality": {
+        "method": "showModal"
+      },
+      "count": 1
+    }
+  ]
+}
