@@ -159,89 +159,67 @@ function isReactComponent(fnNode: SgNode<TSX>): boolean {
 function buildReplacement(
   context: Context,
   entityArg: string,
-  optionsArg: string | null,
+  optionsNode: SgNode<TSX> | null,
   isHumanizeEntity: boolean,
   isJsxExpression: boolean,
 ): string {
   // For humanizeEntity, the 2nd arg is a fallback name, which the Presentation API handles
-  const contextArg = isHumanizeEntity ? null : optionsArg;
+  const contextNode = isHumanizeEntity ? null : optionsNode;
 
   switch (context) {
     case "jsx": {
       let props = `entityRef={${entityArg}}`;
-      let todoPrefix = "";
-      if (contextArg) {
-        const { props: jsxProps, hadNonLiteral } = optionsToJsxProps(contextArg);
+      if (contextNode) {
+        const jsxProps = optionsToJsxProps(contextNode);
         if (jsxProps) {
           props += ` ${jsxProps}`;
         }
-        if (hadNonLiteral) {
-          todoPrefix = `{/* TODO(backstage-codemod): Non-literal options (${contextArg.trim()}) could not be converted to JSX props. Manually spread or pass them. */}`;
-        }
       }
-      const component = `<EntityDisplayName ${props} />`;
-      if (todoPrefix && isJsxExpression) {
-        // When replacing a jsx_expression, we're replacing the outer {}, so output raw JSX
-        return `${todoPrefix}${component}`;
-      }
-      return todoPrefix ? `${todoPrefix}${component}` : component;
+      return `<EntityDisplayName ${props} />`;
     }
     case "react-component": {
-      const args = contextArg ? `${entityArg}, ${contextArg}` : entityArg;
+      const optText = contextNode?.text() ?? null;
+      const args = optText ? `${entityArg}, ${optText}` : entityArg;
       return `useEntityPresentation(${args}).primaryTitle`;
     }
     case "utility": {
-      const args = contextArg ? `${entityArg}, ${contextArg}` : entityArg;
+      const optText = contextNode?.text() ?? null;
+      const args = optText ? `${entityArg}, ${optText}` : entityArg;
       return `entityPresentationSnapshot(${args}).primaryTitle`;
     }
   }
 }
 
 /**
- * Convert an options object like `{ defaultKind: 'Component' }` into JSX props.
- * Returns an object with the converted props string and whether any options were dropped.
+ * Convert an options AST node like `{ defaultKind: 'Component' }` into JSX props.
+ * Walks `pair` children via the AST so all value types (strings, variables,
+ * numbers, booleans, expressions) are handled — no regex needed.
  */
-function optionsToJsxProps(optionsText: string): { props: string | null; hadNonLiteral: boolean } {
-  const trimmed = optionsText.trim();
-  if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) {
-    // Entire options argument is a variable reference or non-literal expression
-    console.log(
-      `[humanize-entity-ref-to-presentation] WARNING: Non-literal options (${trimmed}) could not be converted to JSX props. A TODO comment was added.`,
-    );
-    return { props: null, hadNonLiteral: true };
-  }
+function optionsToJsxProps(optionsNode: SgNode<TSX>): string | null {
+  const pairs = optionsNode.findAll({ rule: { kind: "pair" } });
+  if (pairs.length === 0) return null;
 
   const props: string[] = [];
-  const pairPattern = /(\w+)\s*:\s*(?:'([^']*)'|"([^"]*)")/g;
-  let match: RegExpExecArray | null;
-  while ((match = pairPattern.exec(trimmed)) !== null) {
-    const key = match[1];
-    const value = match[2] ?? match[3];
-    if (key && value !== undefined) {
-      props.push(`${key}="${value}"`);
+  for (const pair of pairs) {
+    const keyNode = pair.field("key");
+    const valueNode = pair.field("value");
+    if (!keyNode || !valueNode) continue;
+
+    const key = keyNode.text();
+    const valueKind = valueNode.kind();
+
+    if (valueKind === "string") {
+      // String literal — extract the inner string_fragment to strip quotes
+      const fragment = valueNode.find({ rule: { kind: "string_fragment" } });
+      const raw = fragment ? fragment.text() : valueNode.text();
+      props.push(`${key}="${raw}"`);
+    } else {
+      // Identifiers, numbers, booleans, template literals, expressions, etc.
+      props.push(`${key}={${valueNode.text()}}`);
     }
   }
 
-  // Check if there were properties we couldn't parse (non-literal values)
-  const allPropsPattern = /(\w+)\s*:/g;
-  let allMatch: RegExpExecArray | null;
-  const allKeys = new Set<string>();
-  while ((allMatch = allPropsPattern.exec(trimmed)) !== null) {
-    if (allMatch[1]) {
-      allKeys.add(allMatch[1]);
-    }
-  }
-  const parsedKeys = new Set(props.map((p) => p.split("=")[0]));
-  const droppedKeys = [...allKeys].filter((k) => !parsedKeys.has(k));
-
-  if (droppedKeys.length > 0) {
-    console.log(
-      `[humanize-entity-ref-to-presentation] WARNING: Non-literal option values for keys (${droppedKeys.join(", ")}) could not be converted to JSX props. A TODO comment was added.`,
-    );
-    return { props: props.length > 0 ? props.join(" ") : null, hadNonLiteral: true };
-  }
-
-  return { props: props.length > 0 ? props.join(" ") : null, hadNonLiteral: false };
+  return props.length > 0 ? props.join(" ") : null;
 }
 
 /**
@@ -287,7 +265,7 @@ function replaceDeprecatedCall(
   }
 
   const entityArg = argChildren[0]?.text() ?? "";
-  const optionsArg = argChildren[1]?.text() ?? null;
+  const optionsNode = argChildren[1] ?? null;
 
   // Check if this call is inside a jsx_expression (for JSX context replacements)
   const jsxExpr = context === "jsx"
@@ -297,7 +275,7 @@ function replaceDeprecatedCall(
   const replacement = buildReplacement(
     context,
     entityArg,
-    optionsArg,
+    optionsNode,
     isHumanizeEntity,
     jsxExpr !== null && jsxExpr !== undefined,
   );

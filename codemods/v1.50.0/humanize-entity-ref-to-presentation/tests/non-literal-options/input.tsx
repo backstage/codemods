@@ -1,8 +1,8 @@
 import React from 'react';
 import { humanizeEntityRef } from '@backstage/plugin-catalog-react';
 
-export function EntityCard({ entityRef, opts }: { entityRef: string; opts: { defaultKind: string } }) {
+export function EntityCard({ entityRef, myKind }: { entityRef: string; myKind: string }) {
   return (
-    <span>{humanizeEntityRef(entityRef, opts)}</span>
+    <span>{humanizeEntityRef(entityRef, { defaultKind: myKind })}</span>
   );
 }
