@@ -1,0 +1,11 @@
+{
+  "add-entity-ref-to-location": [
+    {
+      "cardinality": {
+        "detection": "mock-location-type",
+        "outcome": "added"
+      },
+      "count": 2
+    }
+  ]
+}

@@ -18,6 +18,7 @@ nodes:
         js-ast-grep:
           js_file: scripts/codemod.ts
           language: "tsx"
+          semantic_analysis: file
           include:
             - "**/*.ts"
             - "**/*.tsx"
@@ -34,42 +35,38 @@ nodes:
         ai:
           model: "claude-sonnet-4-6"
           system_prompt: |
-            You are a Backstage migration expert. You are fixing edge cases left over
-            from an AST-based codemod that added the required `entityRef` field to
-            `Location` object literals from `@backstage/catalog-client` in Backstage 1.50.0.
+            You are a Backstage migration expert. You are refining the output of an
+            AST-based codemod that added the required `entityRef` field to `Location`
+            object literals from `@backstage/catalog-client` in Backstage 1.50.0.
 
-            The AST codemod already handled the mechanical parts:
+            The AST codemod already handled all mechanical parts:
             - Location objects with explicit type annotations (`: Location`, `satisfies Location`,
               `as Location`) had `entityRef: 'location:default/example'` added with a TODO comment.
             - Objects using spread from another Location were skipped (they inherit the field).
             - Objects already containing `entityRef` were skipped.
+            - Variables returned from functions with a Location return type were traced via
+              semantic analysis and had `entityRef` added.
+            - Mock implementations (`jest.fn<() => Location>().mockImplementation(...)`) were
+              detected and had `entityRef` added to their returned objects.
+            - Test assertions (`toEqual`, `toMatchObject`) on Location-typed variables were
+              detected and had `entityRef` added to the expected objects.
 
-            Your job is to find and fix the remaining issues that the AST codemod could not
-            handle mechanically. Be precise and conservative — only change what is necessary.
+            Your job is to replace placeholder `entityRef` values with contextually appropriate
+            ones. Be precise and conservative — only change what is necessary.
           prompt: |
-            Search the codebase for remaining Location object literals that need the `entityRef`
-            field added. Address each category below:
+            Search the codebase for Location object literals that have the placeholder
+            `entityRef: 'location:default/example'` with a TODO comment added by the codemod.
 
-            ## 1. Inferred Location types
-            Find object literals assigned to variables or parameters where the type is inferred
-            as `Location` from context (e.g., function return types, generic parameters) rather
-            than explicitly annotated. Add the `entityRef` field with the placeholder value and
-            TODO comment.
-
-            ## 2. Dynamic mock setups
-            Find mock implementations using `jest.fn().mockImplementation()` or
-            `vi.fn().mockImplementation()` that return Location objects without explicit type
-            casts. Add the `entityRef` field to those return values.
-
-            ## 3. Replace placeholder entityRef values
+            ## Replace placeholder entityRef values
             Where possible, replace the placeholder `'location:default/example'` with a more
             contextually appropriate value based on the `target` URL in the same object. The
             format is `location:default/generated-<description>`. Keep the TODO comment.
 
-            ## 4. Verify test assertions
-            Check test files for assertions that reference Location object shapes (e.g.,
-            `expect(result).toEqual({ id, type, target })`) and add `entityRef` to those
-            expected values as well.
+            For example:
+            - `target: 'https://github.com/org/repo/blob/main/catalog-info.yaml'`
+              → `entityRef: 'location:default/generated-org-repo-catalog-info'`
+            - `target: 'https://example.com/mock.yaml'`
+              → `entityRef: 'location:default/generated-mock'`
 
             After making changes, verify the files are syntactically valid TypeScript.
-          max_steps: 50
+          max_steps: 20
