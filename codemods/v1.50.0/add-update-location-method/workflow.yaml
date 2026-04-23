@@ -31,7 +31,7 @@ nodes:
     depends_on: [apply-transforms]
     steps:
       - name: "Fix remaining edge cases that require contextual understanding"
-        if: "${{ params.aiFixup }}"
+        if: params.aiFixup == true
         ai:
           model: "claude-sonnet-4-6"
           system_prompt: |

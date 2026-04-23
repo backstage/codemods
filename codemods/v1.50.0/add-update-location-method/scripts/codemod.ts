@@ -423,6 +423,28 @@ function isInsideKind(
 }
 
 /**
+ * Check whether an object literal is inside a call_expression's arguments,
+ * stopping the walk at a variable_declarator boundary.
+ * Objects that are call arguments are request parameters or config objects,
+ * NOT CatalogApi implementations.
+ */
+function isCallArgument(
+  node: SgNode<TSX>,
+  boundaryKind: string,
+): boolean {
+  let current: SgNode<TSX> | null = node.parent();
+  while (current) {
+    const kind = current.kind();
+    if (kind === "arguments" && current.parent()?.kind() === "call_expression") {
+      return true;
+    }
+    if (kind === boundaryKind) return false;
+    current = current.parent();
+  }
+  return false;
+}
+
+/**
  * Get the return type annotation from an arrow function, avoiding parameter annotations.
  * Uses the `return_type` field if available; otherwise falls back to finding
  * the first `type_annotation` that is a direct child of the arrow function
@@ -653,6 +675,10 @@ const transform: Codemod<TSX> = async (root) => {
     // Find the object literal in the declarator
     const objectLiteral = declarator.find({ rule: { kind: "object" } });
     if (!objectLiteral) continue;
+
+    // Skip objects that are arguments to function/method calls —
+    // they are request parameters or config objects, not CatalogApi implementations
+    if (isCallArgument(objectLiteral, "variable_declarator")) continue;
 
     processObjectLiteral(objectLiteral, matchedInterfaceName, "typed-variable", edits, processedObjectIds);
   }
