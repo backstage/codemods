@@ -741,7 +741,9 @@ const transform: Codemod<TSX> = async (root) => {
   });
 
   for (const funcDecl of functionDeclarations) {
-    const returnType = funcDecl.find({ rule: { kind: "type_annotation" } });
+    // Use the `return_type` field to get ONLY the function's return type annotation,
+    // NOT parameter annotations inside formal_parameters.
+    const returnType = funcDecl.field("return_type");
     if (!returnType) continue;
 
     const matchedInterfaceName = findDirectCatalogType(returnType, importedInterfaces);
