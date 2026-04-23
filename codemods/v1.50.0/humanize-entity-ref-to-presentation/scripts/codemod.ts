@@ -118,6 +118,17 @@ function isInsideTemplateLiteral(callNode: SgNode<TSX>): boolean {
 }
 
 /**
+ * Check if a jsx_expression node is the value of a `key` prop.
+ * The `key` prop requires a string/number value, not a JSX element.
+ */
+function isKeyPropValue(jsxExprNode: SgNode<TSX>): boolean {
+  const parent = jsxExprNode.parent();
+  if (!parent || parent.kind() !== "jsx_attribute") return false;
+  const attrName = parent.find({ rule: { kind: "property_identifier" } });
+  return attrName?.text() === "key";
+}
+
+/**
  * Determine the call-site context for a call_expression node.
  */
 function determineContext(callNode: SgNode<TSX>): Context {
@@ -128,8 +139,13 @@ function determineContext(callNode: SgNode<TSX>): Context {
     // BUT if the call is inside a template literal within that JSX expression,
     // a string value is needed, not a JSX component. Use entityPresentationSnapshot
     // (utility) since it's the lightest-weight synchronous string getter.
+    // Also, if the jsx_expression is the value of a `key` prop, React requires
+    // a string/number — not a JSX element — so use utility context instead.
     if (kind === "jsx_expression") {
       if (isInsideTemplateLiteral(callNode)) {
+        return "utility";
+      }
+      if (isKeyPropValue(ancestor)) {
         return "utility";
       }
       return "jsx";
