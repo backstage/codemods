@@ -50,11 +50,20 @@ function getIndentation(node: SgNode<TSX>, fullSource: string): string {
 }
 
 /**
+ * Escape special regex characters in a string for safe interpolation into a RegExp.
+ */
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
  * Check if a reference node participates in a dismissal check pattern:
  * - `result === undefined` / `result !== undefined`
  * - `result == null` / `result != null`
  * - `if (result)` / `if (!result)` (truthiness check in condition position)
  * - `result ?? fallback` (nullish coalescing)
+ * - `result?.value` (optional chaining)
+ * - `result ? x : y` (ternary with result as the condition)
  */
 function isDismissalCheck(refNode: SgNode<TSX>): boolean {
   const parent = refNode.parent();
@@ -108,6 +117,24 @@ function isDismissalCheck(refNode: SgNode<TSX>): boolean {
     }
   }
 
+  // Pattern: result?.value — optional chaining (member_expression with optional_chain child)
+  if (parentKind === "member_expression") {
+    const hasOptionalChain = parent.children().some(
+      (c) => c.kind() === "optional_chain",
+    );
+    if (hasOptionalChain) return true;
+  }
+
+  // Pattern: result ? x : y — ternary expression where result is the condition
+  if (parentKind === "ternary_expression") {
+    // The condition is the first named child of the ternary_expression
+    const children = parent.children();
+    const firstChild = children.find((c) => c.kind() === "identifier");
+    if (firstChild && firstChild.id() === refNode.id()) {
+      return true;
+    }
+  }
+
   return false;
 }
 
@@ -132,6 +159,75 @@ const transform: Codemod<TSX> = async (root) => {
 
   const edits: Edit[] = [];
   const fullSource = rootNode.text();
+
+  // Collect the set of variable names that are known DialogApi receivers.
+  // Two patterns:
+  //   1. `const dialogApi = useApi(dialogApiRef)` — variable initialized from useApi(dialogApiRef)
+  //   2. `function foo(api: DialogApi)` — parameter typed as DialogApi
+  const dialogApiReceiverNames = new Set<string>();
+
+  // Pattern 1: useApi(dialogApiRef) assignments
+  const useApiCalls = rootNode.findAll({
+    rule: {
+      kind: "call_expression",
+      has: {
+        field: "function",
+        kind: "identifier",
+        regex: "^useApi$",
+      },
+      all: [
+        {
+          has: {
+            field: "arguments",
+            has: {
+              kind: "identifier",
+              regex: "^dialogApiRef$",
+            },
+          },
+        },
+      ],
+    },
+  });
+  for (const useApiCall of useApiCalls) {
+    // Walk up to find the variable_declarator
+    const ancestors = useApiCall.ancestors();
+    const varDecl = ancestors.find((a) => a.kind() === "variable_declarator");
+    if (varDecl) {
+      const nameNode = varDecl.field("name");
+      if (nameNode && nameNode.kind() === "identifier") {
+        dialogApiReceiverNames.add(nameNode.text());
+      }
+    }
+  }
+
+  // Pattern 2: parameters typed as DialogApi
+  // Find all type_identifier nodes matching "DialogApi" and walk up to the parameter
+  const dialogApiTypeIds = rootNode.findAll({
+    rule: {
+      kind: "type_identifier",
+      regex: "^DialogApi$",
+    },
+  });
+  for (const typeId of dialogApiTypeIds) {
+    // Walk up: type_identifier -> type_annotation -> required_parameter/optional_parameter
+    const typeAnnotation = typeId.parent();
+    if (!typeAnnotation || typeAnnotation.kind() !== "type_annotation") continue;
+    const param = typeAnnotation.parent();
+    if (!param) continue;
+    const paramKind = param.kind();
+    if (
+      paramKind !== "required_parameter" &&
+      paramKind !== "optional_parameter"
+    ) {
+      continue;
+    }
+    // field("name") is not available on required_parameter in this runtime,
+    // so find the identifier child directly.
+    const nameNode = param.children().find((c) => c.kind() === "identifier");
+    if (nameNode) {
+      dialogApiReceiverNames.add(nameNode.text());
+    }
+  }
 
   // Track which statements already have a TODO comment inserted,
   // so we don't insert duplicates when multiple calls share a statement.
@@ -166,6 +262,12 @@ const transform: Codemod<TSX> = async (root) => {
 
     const methodName = propertyNode.text();
     if (methodName !== "show" && methodName !== "showModal") continue;
+
+    // Only rename calls on known DialogApi receivers
+    const objectNode = memberExpr.field("object");
+    if (!objectNode) continue;
+    const receiverName = objectNode.text();
+    if (!dialogApiReceiverNames.has(receiverName)) continue;
 
     // Replace the method name with "open"
     edits.push(propertyNode.replace("open"));
@@ -233,7 +335,7 @@ const transform: Codemod<TSX> = async (root) => {
       refNodes = rootNode.findAll({
         rule: {
           kind: "identifier",
-          regex: `^${varName}$`,
+          regex: `^${escapeRegex(varName)}$`,
         },
       });
     }
