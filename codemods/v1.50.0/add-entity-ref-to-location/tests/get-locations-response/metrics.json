@@ -1,0 +1,11 @@
+{
+  "add-entity-ref-to-location": [
+    {
+      "cardinality": {
+        "detection": "get-locations-response",
+        "outcome": "added"
+      },
+      "count": 2
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "add-entity-ref-to-location": [
+    {
+      "cardinality": {
+        "detection": "type-annotation",
+        "outcome": "added"
+      },
+      "count": 1
+    }
+  ]
+}
