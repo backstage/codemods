@@ -8,7 +8,7 @@ license: "MIT"
 workflow: "workflow.yaml"
 
 targets:
-  languages: ["tsx", "ts", "css"]
+  languages: ["tsx", "ts", "js", "jsx", "css"]
 
 keywords: ["backstage", "migration", "PluginHeader", "toolbar", "1.50.0"]
 

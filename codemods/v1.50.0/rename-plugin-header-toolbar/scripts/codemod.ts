@@ -4,8 +4,8 @@ import { useMetricAtom } from "codemod:metrics";
 
 const migrationMetric = useMetricAtom("plugin-header-toolbar-rename");
 
-const OLD_CLASS = "PluginHeaderToolbarWrapper";
-const NEW_CLASS = "PluginHeaderToolbar";
+const OLD_CLASS_NAME = "PluginHeaderToolbarWrapper";
+const NEW_CLASS_NAME = "PluginHeaderToolbar";
 const OLD_PROPERTY = "toolbarWrapper";
 const NEW_PROPERTY = "toolbar";
 
@@ -32,13 +32,16 @@ const transform: Codemod<TSX> = async (root) => {
   const stringFragments = rootNode.findAll({
     rule: {
       kind: "string_fragment",
-      regex: OLD_CLASS,
+      regex: OLD_CLASS_NAME,
     },
   });
 
   for (const fragment of stringFragments) {
     const text = fragment.text();
-    const newText = text.replaceAll(OLD_CLASS, NEW_CLASS);
+    const newText = text.replace(
+      new RegExp(`\\b${OLD_CLASS_NAME}\\b`, "g"),
+      NEW_CLASS_NAME,
+    );
 
     // Check if the string contains a child/descendant combinator
     if (hasDescendantOrChildCombinator(text)) {

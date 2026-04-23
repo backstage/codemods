@@ -62,7 +62,7 @@ nodes:
             Search the codebase for remaining migration issues and fix them:
 
             ## 1. Review TODO comments
-            Find all `/* TODO(backstage-codemod): wrapper element was removed -- review child/descendant selectors */`
+            Find all `/* TODO(backstage-codemod): wrapper element was removed — review child/descendant selectors */`
             comments and assess whether the surrounding selector needs restructuring.
 
             ## 2. Verify selector correctness
