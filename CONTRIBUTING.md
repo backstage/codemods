@@ -5,21 +5,34 @@ Thanks for your interest in contributing to useful-codemods!
 ## Development setup
 
 ```bash
-# Install dependencies
+# Install dependencies (also sets up the pre-commit hook via husky)
 yarn install
+
+# Format all files
+yarn format
+
+# Check formatting without writing
+yarn format:check
+
+# Lint all files (includes type checking)
+yarn lint
+
+# Lint and auto-fix
+yarn lint:fix
 
 # Run all tests
 yarn test
-
-# Type-check all codemods
-yarn check-types
 ```
+
+## Pre-commit hook
+
+A pre-commit hook runs automatically after `yarn install`. It uses lint-staged to run oxfmt and oxlint on staged files before each commit. If a file fails formatting or linting, the commit is blocked until the issues are fixed.
 
 ## Making changes
 
 1. Create a branch from `main`.
 2. Make your changes and add or update tests.
-3. Run `yarn test` and `yarn check-types` to verify everything passes.
+3. Run `yarn lint` and `yarn test` to verify everything passes.
 4. Add a changeset (see below).
 5. Open a pull request.
 
@@ -58,4 +71,4 @@ codemods/<name>/
   package.json
 ```
 
-Use an existing codemod like `debarrel` as a reference when creating a new one.
+Use an existing codemod like `catalog-node-alpha-to-stable` as a reference when creating a new one.
