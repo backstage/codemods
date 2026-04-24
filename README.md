@@ -10,8 +10,11 @@ See the [Codemod docs](https://docs.codemod.com) for more on building and runnin
 
 ### v1.50.0
 
+Run the [`migration-recipe`](./codemods/v1.50.0/migration-recipe) to apply every codemod below in one pass, or run any individual codemod on its own.
+
 | Codemod                                                                                       | Description                                                                                                                    |
 | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| [migration-recipe](./codemods/v1.50.0/migration-recipe)                                       | Orchestration workflow that runs every `@backstage/*` v1.50.0 codemod from the registry in a safe order                        |
 | [add-entity-ref-to-location](./codemods/v1.50.0/add-entity-ref-to-location)                   | Add required `entityRef` field to Location object literals from `@backstage/catalog-client`                                    |
 | [add-update-location-method](./codemods/v1.50.0/add-update-location-method)                   | Add required `updateLocation` method to `CatalogApi` and `CatalogService` implementations                                      |
 | [catalog-node-alpha-to-stable](./codemods/v1.50.0/catalog-node-alpha-to-stable)               | Replace deprecated `@backstage/plugin-catalog-node/alpha` exports with stable equivalents                                      |
