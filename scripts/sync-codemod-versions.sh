@@ -14,7 +14,7 @@ for pkg_json in codemods/*/*/package.json; do
 
   version="$(node -p "require('./$pkg_json').version")"
   # Replace the version line in codemod.yaml
-  sed -i'' -e "s/^version: .*/version: \"$version\"/" "$codemod_yaml"
+  sed -i'' -e "s/^version: .*/version: '$version'/" "$codemod_yaml"
 
   echo "Synced $codemod_yaml to version $version"
 done
