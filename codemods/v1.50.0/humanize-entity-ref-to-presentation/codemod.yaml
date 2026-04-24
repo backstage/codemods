@@ -1,7 +1,7 @@
 schema_version: '1.0'
 
 name: '@backstage/humanize-entity-ref-to-presentation'
-version: '0.1.0'
+version: '0.2.0'
 description: 'Backstage 1.50.0: Replace deprecated humanizeEntityRef/humanizeEntity with Catalog Presentation API'
 author: 'Paul Schultz<pschultz@redhat.com>'
 license: 'MIT'
