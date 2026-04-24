@@ -24,19 +24,19 @@ Each step below is a registry package that you can also run on its own. The reci
 
 ```bash
 # Dry run (preview every step without writing any changes)
-npx codemod run @backstage/v1.50.0-migration-recipe \
+yarn dlx codemod@latest run @backstage/v1.50.0-migration-recipe \
   --target /path/to/backstage-app \
   --dry-run
 
 # Apply the full recipe
-npx codemod run @backstage/v1.50.0-migration-recipe \
+yarn dlx codemod@latest run @backstage/v1.50.0-migration-recipe \
   --target /path/to/backstage-app
 ```
 
 You can also run the recipe directly from this repo:
 
 ```bash
-npx codemod workflow run \
+yarn dlx codemod@latest workflow run \
   -w codemods/v1.50.0/migration-recipe/workflow.yaml \
   --target /path/to/backstage-app \
   --dry-run
@@ -47,7 +47,7 @@ npx codemod workflow run \
 The recipe runs every codemod at its default settings (no AI fixup). Nine of the eleven codemods ship an optional `aiFixup` param that uses an LLM to refine edge cases the AST transform cannot handle mechanically. If you want AI fixup for one of those, run that package on its own after the recipe:
 
 ```bash
-npx codemod run @backstage/humanize-entity-ref-to-presentation \
+yarn dlx codemod@latest run @backstage/humanize-entity-ref-to-presentation \
   --target /path/to/backstage-app \
   --param aiFixup=true
 ```
