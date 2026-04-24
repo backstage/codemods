@@ -119,6 +119,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/v1.50.0-migration-recipe@workspace:codemods/v1.50.0/migration-recipe":
+  version: 0.0.0-use.local
+  resolution: "@backstage/v1.50.0-migration-recipe@workspace:codemods/v1.50.0/migration-recipe"
+  dependencies:
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
 "@changesets/apply-release-plan@npm:^7.1.0":
   version: 7.1.0
   resolution: "@changesets/apply-release-plan@npm:7.1.0"
