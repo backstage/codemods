@@ -8,7 +8,7 @@ license: 'MIT'
 workflow: 'workflow.yaml'
 
 targets:
-  languages: ['tsx', 'ts']
+  languages: ['tsx', 'ts', 'jsx', 'js', 'css', 'scss']
 
 keywords: ['backstage', 'migration', 'recipe', 'workflow', 'upgrade', '1.50.0']
 
