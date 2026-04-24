@@ -14,68 +14,77 @@ nodes:
     name: Run every Backstage 1.50.0 codemod in order
     type: automatic
     steps:
+      # --- BREAKING ALPHA: normalize catalog-node imports first so later
+      #     codemods that touch CatalogApi / CatalogService see a consistent
+      #     import surface (stable package, not /alpha).
+      - name: 'Replace deprecated @backstage/plugin-catalog-node/alpha exports with stable equivalents'
+        codemod:
+          source: '@backstage/catalog-node-alpha-to-stable'
+          args:
+            - 'aiFixup'
+
+      # --- BREAKING PRODUCERS: Location entity refs + updateLocation method.
+      #     Grouped together because both target catalog-client / CatalogService
+      #     implementations.
       - name: 'Add required entityRef field to Location object literals (@backstage/catalog-client)'
         codemod:
           source: '@backstage/add-entity-ref-to-location'
-          # args:
-          #   - 'aiFixup'
+          args:
+            - 'aiFixup'
 
       - name: 'Add required updateLocation method to CatalogApi / CatalogService implementations'
         codemod:
           source: '@backstage/add-update-location-method'
-          # args:
-          #   - 'aiFixup'
+          args:
+            - 'aiFixup'
 
-      - name: 'Replace deprecated @backstage/plugin-catalog-node/alpha exports with stable equivalents'
-        codemod:
-          source: '@backstage/catalog-node-alpha-to-stable'
-          # args:
-          #   - 'aiFixup'
-
-      - name: 'Replace humanizeEntityRef / humanizeEntity with the Catalog Presentation API'
-        codemod:
-          source: '@backstage/humanize-entity-ref-to-presentation'
-          # args:
-          #   - 'aiFixup'
-
+      # --- BREAKING: Removed deprecated signal service exports
       - name: 'Rename SignalService exports to SignalsService in @backstage/plugin-signals-node'
         codemod:
           source: '@backstage/migrate-signals-service'
-          # args:
-          #   - 'aiFixup'
 
-      - name: 'Remove deprecated bootstrapEnvProxyAgents() call and import from @backstage/cli-common'
-        codemod:
-          source: '@backstage/remove-bootstrap-env-proxy'
-          # args:
-          #   - 'aiFixup'
-
-      - name: 'Replace createSchemaFromZod / config.schema with configSchema'
-        codemod:
-          source: '@backstage/replace-create-schema-from-zod'
-          # args:
-          #   - 'aiFixup'
-
-      - name: 'Replace deprecated DialogApi .show() and .showModal() with .open()'
-        codemod:
-          source: '@backstage/dialog-api-show-to-open'
-          # args:
-          #   - 'aiFixup'
-
+      # --- BREAKING: Removed deprecated PermissionedRoute
       - name: 'Migrate PermissionedRoute to Route + RequirePermission (@backstage/plugin-permission-react)'
         codemod:
           source: '@backstage/migrate-permissioned-route'
-          # args:
-          #   - 'aiFixup'
 
+      # --- BREAKING: Standard Schema for new frontend system extension config
+      - name: 'Replace createSchemaFromZod / config.schema with configSchema'
+        codemod:
+          source: '@backstage/replace-create-schema-from-zod'
+          args:
+            - 'aiFixup'
+
+      # --- BREAKING: Backstage UI updates — keep Header tab rename and
+      #     PluginHeader toolbar CSS rename adjacent since both stem from the
+      #     same BUI v0.14 breaking change.
       - name: 'Rename HeaderTab to HeaderNavTabItem and remove matchStrategy in @backstage/ui'
         codemod:
           source: '@backstage/header-tab-to-nav-tab-item'
-          # args:
-          #   - 'aiFixup'
+          args:
+            - 'aiFixup'
 
       - name: 'Rename .bui-PluginHeaderToolbarWrapper to .bui-PluginHeaderToolbar and related classNames'
         codemod:
           source: '@backstage/rename-plugin-header-toolbar'
-          # args:
-          #   - 'aiFixup'
+          args:
+            - 'aiFixup'
+
+      # --- Deprecations (non-breaking in 1.50.0, but recommended to migrate now).
+      - name: 'Replace deprecated DialogApi .show() and .showModal() with .open()'
+        codemod:
+          source: '@backstage/dialog-api-show-to-open'
+          args:
+            - 'aiFixup'
+
+      - name: 'Replace humanizeEntityRef / humanizeEntity with the Catalog Presentation API'
+        codemod:
+          source: '@backstage/humanize-entity-ref-to-presentation'
+          args:
+            - 'aiFixup'
+
+      - name: 'Remove deprecated bootstrapEnvProxyAgents() call and import from @backstage/cli-common'
+        codemod:
+          source: '@backstage/remove-bootstrap-env-proxy'
+          args:
+            - 'aiFixup'
