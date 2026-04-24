@@ -1,10 +1,11 @@
 schema_version: '1.0'
 
 name: '@backstage/catalog-node-alpha-to-stable'
-version: '0.1.0'
+version: '0.1.1'
 description: 'Backstage 1.50.0: Replace deprecated @backstage/plugin-catalog-node/alpha exports with stable equivalents'
 author: 'Paul Schultz<pschultz@redhat.com>'
 license: 'MIT'
+repository: 'https://github.com/backstage/codemods'
 workflow: 'workflow.yaml'
 
 targets:
