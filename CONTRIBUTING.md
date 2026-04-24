@@ -2,7 +2,11 @@
 
 Thanks for your interest in contributing to useful-codemods!
 
+> Using an AI coding agent (Codex, Cursor, Claude Code, Aider, etc.)? See [`AGENTS.md`](./AGENTS.md) — it's a thin pointer back to this file.
+
 ## Development setup
+
+This repo uses Yarn 4 (via Corepack), Changesets for releases, and **oxfmt + oxlint** (not Prettier/ESLint) for formatting and linting.
 
 ```bash
 # Install dependencies (also sets up the pre-commit hook via husky)
@@ -28,17 +32,19 @@ yarn test
 
 A pre-commit hook runs automatically after `yarn install`. It uses lint-staged to run oxfmt and oxlint on staged files before each commit. If a file fails formatting or linting, the commit is blocked until the issues are fixed.
 
+The hook only inspects **staged** files. Format-only changes elsewhere can still fail CI — run `yarn format:check` before pushing.
+
 ## Making changes
 
 1. Create a branch from `main`.
 2. Make your changes and add or update tests.
-3. Run `yarn lint` and `yarn test` to verify everything passes.
+3. Run `yarn format`, `yarn lint`, and `yarn test` to verify everything passes.
 4. Add a changeset (see below).
 5. Open a pull request.
 
 ## Adding a changeset
 
-This repo uses [Changesets](https://github.com/changesets/changesets) for versioning and releases. Every PR that changes a codemod must include a changeset.
+This repo uses [Changesets](https://github.com/changesets/changesets) for versioning and releases. **Every PR that changes a codemod must include a changeset.** CI does not block PRs missing a changeset, so this is enforced by convention — without one, the codemod is not tagged or published.
 
 ```bash
 yarn changeset
@@ -55,20 +61,31 @@ This creates a markdown file in `.changeset/` that should be committed with your
 ## Release workflow
 
 1. Merge a PR with one or more changesets into `main`.
-2. CI automatically opens a **Version Packages** PR that bumps versions in `package.json` and `codemod.yaml`.
-3. Merge the version PR — git tags are created and the updated codemods are published to the Codemod registry.
+2. CI automatically opens (or updates) a **Version Packages** PR that bumps versions in `package.json`, regenerates `CHANGELOG.md`, and syncs `codemod.yaml` versions.
+3. Merge the Version Packages PR — git tags are created and the updated codemods are published to the Codemod registry.
+
+Do not hand-edit the `version` field in `package.json` or `codemod.yaml` to "trigger a release". The Changesets bot owns version bumps; manual edits are overwritten on the next Version Packages PR and may create version drift.
+
+The manual `Publish Codemod (Manual)` workflow (`.github/workflows/publish.yml`) exists for emergencies — don't use it as a normal release path.
 
 ## Adding a new codemod
 
-Each codemod lives in its own directory under `codemods/`:
+Each codemod lives in its own directory under `codemods/<version>/<codemod-name>/`:
 
 ```
-codemods/<name>/
+codemods/<version>/<codemod-name>/
   scripts/codemod.ts   # Codemod logic (jssg / ast-grep)
   tests/               # Input/expected test fixtures
-  codemod.yaml         # Codemod manifest
+  codemod.yaml         # Codemod manifest (version is auto-synced)
   workflow.yaml        # Execution workflow
-  package.json
+  package.json         # Source of truth for name + version
 ```
+
+Conventions to follow:
+
+- The two-level glob `codemods/*/*/` is assumed by `scripts/sync-codemod-versions.sh` and `scripts/tag-and-publish.sh`. Don't flatten or deepen this layout.
+- The `package.json` `name` must be `@backstage/<codemod-name>`. The tagging and publishing scripts assume this scope.
+- The `version` field in `codemod.yaml` is generated from `package.json` by `scripts/sync-codemod-versions.sh`. Don't edit it directly.
+- Use single-quoted scalars in `codemod.yaml` and `workflow.yaml` to match the oxfmt convention.
 
 Use an existing codemod like `catalog-node-alpha-to-stable` as a reference when creating a new one.
