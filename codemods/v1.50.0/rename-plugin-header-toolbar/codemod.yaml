@@ -1,7 +1,7 @@
 schema_version: '1.0'
 
 name: '@backstage/rename-plugin-header-toolbar'
-version: '0.1.0'
+version: '0.2.0'
 description: 'Backstage 1.50.0: Rename .bui-PluginHeaderToolbarWrapper to .bui-PluginHeaderToolbar and classNames.toolbarWrapper to classNames.toolbar'
 author: 'Paul Schultz<pschultz@redhat.com>'
 license: 'MIT'

@@ -1,6 +1,6 @@
 {
   "name": "@backstage/add-entity-ref-to-location",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Backstage 1.50.0: Add required entityRef field to Location object literals from @backstage/catalog-client",
   "type": "module",
   "scripts": {

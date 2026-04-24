@@ -1,7 +1,7 @@
 schema_version: '1.0'
 
 name: '@backstage/migrate-signals-service'
-version: '0.1.0'
+version: '0.2.0'
 description: 'Rename deprecated SignalService exports to SignalsService in @backstage/plugin-signals-node'
 author: 'Alex Bit<alex@codemod.com>'
 license: 'MIT'

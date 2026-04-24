@@ -1,7 +1,7 @@
 schema_version: '1.0'
 
 name: '@backstage/header-tab-to-nav-tab-item'
-version: '0.1.0'
+version: '0.2.0'
 description: 'Backstage 1.50.0: Rename HeaderTab to HeaderNavTabItem and remove matchStrategy property in @backstage/ui'
 author: 'Paul Schultz<pschultz@redhat.com>'
 license: 'MIT'

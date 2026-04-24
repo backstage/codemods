@@ -1,6 +1,6 @@
 {
   "name": "@backstage/remove-bootstrap-env-proxy",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Backstage 1.50.0: Remove deprecated bootstrapEnvProxyAgents() call and import from @backstage/cli-common",
   "type": "module",
   "scripts": {
