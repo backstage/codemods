@@ -4,21 +4,21 @@ One-shot migration recipe for upgrading a Backstage app to 1.50.0. Chains every 
 
 ## What it runs
 
-Each step below is a registry package that you can also run on its own. The recipe executes them sequentially in a safe order: catalog-client/catalog-backend API changes first, then backend service + config cleanups, then frontend plugin + UI changes.
+Each step below is a registry package that you can also run on its own. The recipe executes them sequentially in an order aligned with the [Backstage 1.50.0 release notes](https://backstage.io/docs/releases/v1.50.0/): catalog-node import normalization first, then the remaining breaking changes grouped by domain, then the deprecations.
 
 | #   | Registry package                                                                           | What it does                                                                                           |
 | --- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
-| 1   | [`@backstage/add-entity-ref-to-location`](../add-entity-ref-to-location)                   | Add required `entityRef` field to `Location` object literals from `@backstage/catalog-client`          |
-| 2   | [`@backstage/add-update-location-method`](../add-update-location-method)                   | Add required `updateLocation` method to `CatalogApi` and `CatalogService` implementations              |
-| 3   | [`@backstage/catalog-node-alpha-to-stable`](../catalog-node-alpha-to-stable)               | Replace deprecated `@backstage/plugin-catalog-node/alpha` exports with stable equivalents              |
-| 4   | [`@backstage/humanize-entity-ref-to-presentation`](../humanize-entity-ref-to-presentation) | Replace deprecated `humanizeEntityRef` / `humanizeEntity` with the Catalog Presentation API            |
-| 5   | [`@backstage/migrate-signals-service`](../migrate-signals-service)                         | Rename `SignalService` exports to `SignalsService` in `@backstage/plugin-signals-node`                 |
-| 6   | [`@backstage/remove-bootstrap-env-proxy`](../remove-bootstrap-env-proxy)                   | Remove deprecated `bootstrapEnvProxyAgents()` call and import from `@backstage/cli-common`             |
-| 7   | [`@backstage/replace-create-schema-from-zod`](../replace-create-schema-from-zod)           | Replace `createSchemaFromZod` and `config.schema` with `configSchema`                                  |
-| 8   | [`@backstage/dialog-api-show-to-open`](../dialog-api-show-to-open)                         | Replace deprecated `DialogApi` `.show()` / `.showModal()` with `.open()`                               |
-| 9   | [`@backstage/migrate-permissioned-route`](../migrate-permissioned-route)                   | Migrate `PermissionedRoute` to `Route` + `RequirePermission` from `@backstage/plugin-permission-react` |
-| 10  | [`@backstage/header-tab-to-nav-tab-item`](../header-tab-to-nav-tab-item)                   | Rename `HeaderTab` to `HeaderNavTabItem` and remove `matchStrategy` in `@backstage/ui`                 |
-| 11  | [`@backstage/rename-plugin-header-toolbar`](../rename-plugin-header-toolbar)               | Rename `.bui-PluginHeaderToolbarWrapper` to `.bui-PluginHeaderToolbar` and related `classNames` keys   |
+| 1   | [`@backstage/catalog-node-alpha-to-stable`](../catalog-node-alpha-to-stable)               | Replace deprecated `@backstage/plugin-catalog-node/alpha` exports with stable equivalents              |
+| 2   | [`@backstage/add-entity-ref-to-location`](../add-entity-ref-to-location)                   | Add required `entityRef` field to `Location` object literals from `@backstage/catalog-client`          |
+| 3   | [`@backstage/add-update-location-method`](../add-update-location-method)                   | Add required `updateLocation` method to `CatalogApi` and `CatalogService` implementations              |
+| 4   | [`@backstage/migrate-signals-service`](../migrate-signals-service)                         | Rename `SignalService` exports to `SignalsService` in `@backstage/plugin-signals-node`                 |
+| 5   | [`@backstage/migrate-permissioned-route`](../migrate-permissioned-route)                   | Migrate `PermissionedRoute` to `Route` + `RequirePermission` from `@backstage/plugin-permission-react` |
+| 6   | [`@backstage/replace-create-schema-from-zod`](../replace-create-schema-from-zod)           | Replace `createSchemaFromZod` and `config.schema` with `configSchema`                                  |
+| 7   | [`@backstage/header-tab-to-nav-tab-item`](../header-tab-to-nav-tab-item)                   | Rename `HeaderTab` to `HeaderNavTabItem` and remove `matchStrategy` in `@backstage/ui`                 |
+| 8   | [`@backstage/rename-plugin-header-toolbar`](../rename-plugin-header-toolbar)               | Rename `.bui-PluginHeaderToolbarWrapper` to `.bui-PluginHeaderToolbar` and related `classNames` keys   |
+| 9   | [`@backstage/dialog-api-show-to-open`](../dialog-api-show-to-open)                         | Replace deprecated `DialogApi` `.show()` / `.showModal()` with `.open()`                               |
+| 10  | [`@backstage/humanize-entity-ref-to-presentation`](../humanize-entity-ref-to-presentation) | Replace deprecated `humanizeEntityRef` / `humanizeEntity` with the Catalog Presentation API            |
+| 11  | [`@backstage/remove-bootstrap-env-proxy`](../remove-bootstrap-env-proxy)                   | Remove deprecated `bootstrapEnvProxyAgents()` call and import from `@backstage/cli-common`             |
 
 ## Usage
 
