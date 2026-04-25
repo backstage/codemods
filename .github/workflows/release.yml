@@ -65,6 +65,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
+      # Don't cancel sibling publishes if one codemod fails — each
+      # codemod's tag and registry version is independent, so a single
+      # bad package shouldn't take down the rest of the release.
+      fail-fast: false
       matrix:
         dir: ${{ fromJson(needs.release.outputs.changed_dirs) }}
     steps:

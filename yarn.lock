@@ -119,9 +119,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@backstage/v1.50.0-migration-recipe@workspace:codemods/v1.50.0/migration-recipe":
+"@backstage/v1-50-0-migration-recipe@workspace:codemods/v1.50.0/migration-recipe":
   version: 0.0.0-use.local
-  resolution: "@backstage/v1.50.0-migration-recipe@workspace:codemods/v1.50.0/migration-recipe"
+  resolution: "@backstage/v1-50-0-migration-recipe@workspace:codemods/v1.50.0/migration-recipe"
   dependencies:
     codemod: "npm:1.7.15"
   languageName: unknown
