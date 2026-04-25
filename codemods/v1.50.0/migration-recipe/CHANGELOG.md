@@ -1,5 +1,11 @@
 # @backstage/v1-50-0-migration-recipe
 
+## 0.3.1
+
+### Patch Changes
+
+- 97e410c: Rename package from `@backstage/v1.50.0-migration-recipe` to `@backstage/v1-50-0-migration-recipe`. The Codemod registry only allows lowercase letters, numbers, hyphens, and underscores in package names, so the dotted form failed to publish. The directory layout, version-per-Backstage-release intent, and workflow contents are unchanged — only the registry slug.
+
 ## 0.3.0
 
 ### Minor Changes
