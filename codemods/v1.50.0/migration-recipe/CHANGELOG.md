@@ -1,5 +1,11 @@
 # @backstage/v1-50-0-migration-recipe
 
+## 0.3.2
+
+### Patch Changes
+
+- c7c6734: docs: link each step in the migration recipe README to its Codemod registry page instead of the sibling repo directory
+
 ## 0.3.1
 
 ### Patch Changes
