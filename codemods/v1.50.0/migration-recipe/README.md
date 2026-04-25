@@ -24,12 +24,12 @@ Each step below is a registry package that you can also run on its own. The reci
 
 ```bash
 # Dry run (preview every step without writing any changes)
-yarn dlx codemod@latest run @backstage/v1.50.0-migration-recipe \
+yarn dlx codemod@latest run @backstage/v1-50-0-migration-recipe \
   --target /path/to/backstage-app \
   --dry-run
 
 # Apply the full recipe
-yarn dlx codemod@latest run @backstage/v1.50.0-migration-recipe \
+yarn dlx codemod@latest run @backstage/v1-50-0-migration-recipe \
   --target /path/to/backstage-app
 ```
 
