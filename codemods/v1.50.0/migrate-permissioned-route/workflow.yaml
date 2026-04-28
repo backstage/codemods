@@ -2,6 +2,13 @@
 
 version: '1'
 
+params:
+  schema:
+    aiFixup:
+      type: boolean
+      default: false
+      description: 'Run an AI-powered fixup step to address edge cases the AST codemod cannot handle mechanically (dynamic element props, conditional rendering, type annotations).'
+
 nodes:
   - id: apply-transforms
     name: Apply AST Transformations
@@ -16,3 +23,54 @@ nodes:
             - '**/*.tsx'
           exclude:
             - '**/node_modules/**'
+
+  - id: ai-fixup
+    name: AI fixup for edge cases
+    type: automatic
+    depends_on: [apply-transforms]
+    steps:
+      - name: 'Fix remaining edge cases that require contextual understanding'
+        if: params.aiFixup == true
+        ai:
+          model: 'claude-sonnet-4-6'
+          system_prompt: |
+            You are a Backstage migration expert. You are fixing edge cases left over
+            from an AST-based codemod that migrated PermissionedRoute to Route +
+            RequirePermission in Backstage 1.50.0.
+
+            The AST codemod already handled the mechanical parts:
+            - Replaced <PermissionedRoute> with <Route> + <RequirePermission> wrapper
+            - Moved path and caseSensitive props to the outer <Route>
+            - Moved permission and resourceRef props to <RequirePermission>
+            - Renamed errorComponent to errorPage
+            - Preserved nested route children on the outer <Route>
+            - Updated imports: removed PermissionedRoute, added RequirePermission
+              and Route (from react-router-dom)
+            - Detected already-migrated patterns where element already wraps
+              RequirePermission with matching permission/resourceRef
+
+            Your job is to find and fix remaining issues that the AST codemod could
+            not handle mechanically. Be precise and conservative — only change what
+            is necessary.
+          prompt: |
+            Search the codebase for remaining PermissionedRoute migration issues:
+
+            ## 1. Missed PermissionedRoute usages
+            Find any remaining references to PermissionedRoute in imports, JSX, type
+            annotations, or comments. The AST codemod only transforms direct JSX
+            usages — re-exports, type references, and dynamic rendering patterns
+            (e.g., variable-based component selection) may have been missed.
+
+            ## 2. Dynamic element props
+            Find any migrated <Route> + <RequirePermission> patterns where the
+            original element prop contained a conditional expression (ternary,
+            logical AND, function call). Verify the wrapping is correct — the
+            RequirePermission should wrap the entire conditional, not just one branch.
+
+            ## 3. Type annotation cleanup
+            Find type annotations or generic parameters that reference
+            PermissionedRoute (e.g., ComponentProps<typeof PermissionedRoute>) and
+            update them to reference the new pattern.
+
+            After making changes, verify the files are syntactically valid TypeScript/TSX.
+          max_steps: 50
