@@ -66,3 +66,55 @@ jobs:
           for dir in ${{ steps.codemods.outputs.dirs }}; do
             (cd "$dir" && yarn test)
           done
+
+  changeset-check:
+    name: Changeset Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Check for changeset
+        env:
+          SKIP_LABEL: skip-changeset
+          PR_LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
+        run: |
+          # Find codemod source files that changed (excluding tests)
+          changed_sources=$(git diff --name-only --diff-filter=ACMR origin/main...HEAD -- 'codemods/' \
+            | grep -v '/tests/' \
+            || true)
+
+          if [ -z "$changed_sources" ]; then
+            echo "No codemod source files changed. Changeset not required."
+            exit 0
+          fi
+
+          echo "Changed codemod source files:"
+          echo "$changed_sources"
+
+          # Check for skip-changeset label
+          if echo "$PR_LABELS" | grep -q "$SKIP_LABEL"; then
+            echo "skip-changeset label found. Skipping changeset requirement."
+            exit 0
+          fi
+
+          # Check for changeset files (any .md in .changeset/ except README.md)
+          changeset_files=$(git diff --name-only --diff-filter=ACMR origin/main...HEAD -- '.changeset/*.md' \
+            | grep -v 'README.md' \
+            || true)
+
+          if [ -n "$changeset_files" ]; then
+            echo "Changeset found:"
+            echo "$changeset_files"
+            exit 0
+          fi
+
+          echo "::error::Missing changeset. Codemod source files were changed but no changeset was found."
+          echo ""
+          echo "You have three options:"
+          echo "  1. Run 'yarn changeset' to add a changeset describing your changes"
+          echo "  2. Add an empty changeset (no packages selected) if no version bump is needed"
+          echo "  3. Add the 'skip-changeset' label to this PR"
+          exit 1
