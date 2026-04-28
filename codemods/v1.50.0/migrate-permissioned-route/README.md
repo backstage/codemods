@@ -17,7 +17,21 @@ yarn dlx codemod@latest run @backstage/migrate-permissioned-route -t /path/to/ta
 yarn dlx codemod@latest workflow run \
   -w codemods/v1.50.0/migrate-permissioned-route/workflow.yaml \
   -t /path/to/your/backstage-repo
+
+# With AI fixup for edge cases
+yarn dlx codemod@latest workflow run \
+  -w codemods/v1.50.0/migrate-permissioned-route/workflow.yaml \
+  -t /path/to/your/backstage-repo \
+  --param aiFixup=true
 ```
+
+### Optional: AI fixup step
+
+Enable with `--param aiFixup=true` to address edge cases the AST codemod cannot handle mechanically:
+
+- Remaining `PermissionedRoute` references in re-exports, type annotations, or dynamic rendering patterns
+- Dynamic element props with conditional expressions where the `RequirePermission` wrapping needs verification
+- Type annotations or generic parameters referencing `PermissionedRoute`
 
 ## Development
 

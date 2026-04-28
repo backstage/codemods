@@ -44,7 +44,7 @@ yarn dlx codemod@latest workflow run \
 
 ## AI fixup
 
-The recipe runs every codemod at its default settings (no AI fixup). Nine of the eleven codemods ship an optional `aiFixup` param that uses an LLM to refine edge cases the AST transform cannot handle mechanically. If you want AI fixup for one of those, run that package on its own after the recipe:
+The recipe runs every codemod at its default settings (no AI fixup). Ten of the eleven codemods ship an optional `aiFixup` param that uses an LLM to refine edge cases the AST transform cannot handle mechanically. If you want AI fixup for one of those, run that package on its own after the recipe:
 
 ```bash
 yarn dlx codemod@latest run @backstage/humanize-entity-ref-to-presentation \
