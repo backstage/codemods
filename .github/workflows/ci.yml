@@ -66,3 +66,95 @@ jobs:
           for dir in ${{ steps.codemods.outputs.dirs }}; do
             (cd "$dir" && yarn test)
           done
+
+  changeset-check:
+    name: Changeset Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Check for changeset
+        env:
+          SKIP_LABEL: skip-changeset
+          PR_LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
+        run: |
+          # Find changed codemod package directories (excluding tests)
+          changed_dirs=$(git diff --name-only --diff-filter=ACMR origin/main...HEAD -- 'codemods/' \
+            | grep -v '/tests/' \
+            | awk -F/ 'NF>=3 {print $1"/"$2"/"$3}' | sort -u)
+
+          if [ -z "$changed_dirs" ]; then
+            echo "No codemod source files changed. Changeset not required."
+            exit 0
+          fi
+
+          # Resolve changed directories to package names
+          changed_packages=""
+          for dir in $changed_dirs; do
+            if [ -f "$dir/package.json" ]; then
+              pkg=$(node -p "require('./$dir/package.json').name")
+              changed_packages="$changed_packages $pkg"
+            fi
+          done
+          changed_packages=$(echo "$changed_packages" | xargs)
+
+          if [ -z "$changed_packages" ]; then
+            echo "Changed directories have no package.json. Changeset not required."
+            exit 0
+          fi
+
+          echo "Changed packages:"
+          echo "$changed_packages" | tr ' ' '\n'
+
+          # Check for skip-changeset label
+          if echo "$PR_LABELS" | grep -q "$SKIP_LABEL"; then
+            echo "skip-changeset label found. Skipping changeset requirement."
+            exit 0
+          fi
+
+          # Collect package names mentioned in new changeset files
+          changeset_files=$(git diff --name-only --diff-filter=ACMR origin/main...HEAD -- '.changeset/*.md' \
+            | grep -v 'README.md' \
+            || true)
+
+          covered_packages=""
+          for f in $changeset_files; do
+            # Extract package names from YAML frontmatter (between --- delimiters)
+            pkgs=$(sed -n '/^---$/,/^---$/{ /^---$/d; s/['\''"]//g; s/:.*//; p; }' "$f")
+            covered_packages="$covered_packages $pkgs"
+          done
+          covered_packages=$(echo "$covered_packages" | xargs)
+
+          # Check each changed package is covered
+          missing=""
+          for pkg in $changed_packages; do
+            if ! echo "$covered_packages" | grep -qw "$pkg"; then
+              missing="$missing $pkg"
+            fi
+          done
+          missing=$(echo "$missing" | xargs)
+
+          if [ -z "$missing" ]; then
+            echo "All changed packages have changesets."
+            exit 0
+          fi
+
+          echo "::error::Missing changeset for: $missing"
+          echo ""
+          echo "The following packages were changed but not covered by a changeset:"
+          for pkg in $missing; do
+            echo "  - $pkg"
+          done
+          echo ""
+          echo "You have three options:"
+          echo "  1. Run 'yarn changeset' to add a changeset covering the missing packages"
+          echo "  2. Add an empty changeset (no packages selected) if no version bump is needed"
+          echo "  3. Add the 'skip-changeset' label to this PR"
+          exit 1
