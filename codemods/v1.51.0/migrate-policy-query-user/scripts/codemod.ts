@@ -11,8 +11,19 @@ const TODO_TOKEN = '// TODO(backstage-codemod): migrate to credentials via coreS
 
 const migrationMetric = useMetricAtom('migrate-policy-query-user')
 
-function escapeRegex(str: string): string {
+function exactMatchRegex(str: string): string {
   return `^${str.replaceAll(/[.*+?^${}()|[\]\\/]/g, '\\$&')}$`
+}
+
+function getDirectPairs(objectNode: SgNode<TSX>): SgNode<TSX, 'pair'>[] {
+  return objectNode.children().filter((c) => c.kind() === 'pair') as SgNode<TSX, 'pair'>[]
+}
+
+function getDirectPropertyNames(objectNode: SgNode<TSX>): string[] {
+  return getDirectPairs(objectNode)
+    .map((pair) => pair.field('key'))
+    .filter((key): key is SgNode<TSX, 'property_identifier'> => key.is('property_identifier'))
+    .map((key) => key.text())
 }
 
 function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode<TSX, 'import_statement'>[] {
@@ -23,7 +34,7 @@ function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode
         kind: 'string',
         has: {
           kind: 'string_fragment',
-          regex: escapeRegex(source),
+          regex: exactMatchRegex(source),
         },
       },
     },
@@ -34,9 +45,11 @@ function importsFromPermissionNode(rootNode: SgNode<TSX>): boolean {
   return findImportStatementsFrom(rootNode, PERMISSION_NODE).length > 0
 }
 
-function getStatementIndent(source: string, startIndex: number): string {
+function getLineIndent(source: string, startIndex: number): string {
   const lineStart = source.lastIndexOf('\n', startIndex - 1) + 1
-  return source.slice(lineStart, startIndex)
+  const lineEnd = source.indexOf('\n', startIndex)
+  const line = source.slice(lineStart, lineEnd === -1 ? undefined : lineEnd)
+  return line.match(/^(\s*)/)?.[1] ?? ''
 }
 
 function consumeTrailingNewline(source: string, endIndex: number): number {
@@ -50,7 +63,7 @@ function isPolicyQueryUserTypeAnnotation(typeNode: SgNode<TSX> | null): boolean 
   if (typeNode.text() === 'PolicyQueryUser') {
     return true
   }
-  return typeNode.find({ rule: { kind: 'type_identifier', regex: escapeRegex('PolicyQueryUser') } }) !== null
+  return typeNode.find({ rule: { kind: 'type_identifier', regex: exactMatchRegex('PolicyQueryUser') } }) !== null
 }
 
 function trackPolicyQueryUserBindings(rootNode: SgNode<TSX>): Set<string> {
@@ -200,14 +213,14 @@ function isPolicyQueryUserObjectLiteral(objectNode: SgNode<TSX>): boolean {
     }
   }
 
-  const properties = objectNode.findAll({ rule: { kind: 'property_identifier' } }).map((p) => p.text())
+  const properties = getDirectPropertyNames(objectNode)
   const hasCredentials = properties.includes('credentials')
   const hasRemovedField = properties.some((p) => REMOVED_FIELDS.has(p) || p === IDENTITY_FIELD)
   return hasCredentials && hasRemovedField
 }
 
 function rebuildObjectLiteral(objectNode: SgNode<TSX>): string | null {
-  const properties = objectNode.findAll({ rule: { kind: 'pair' } })
+  const properties = getDirectPairs(objectNode)
   if (properties.length === 0) {
     return null
   }
@@ -217,7 +230,7 @@ function rebuildObjectLiteral(objectNode: SgNode<TSX>): string | null {
 
   for (const pair of properties) {
     const keyNode = pair.field('key')
-    if (!keyNode?.is('property_identifier')) {
+    if (!keyNode.is('property_identifier')) {
       kept.push(pair.text())
       continue
     }
@@ -239,8 +252,9 @@ function rebuildObjectLiteral(objectNode: SgNode<TSX>): string | null {
 
   const multiline = objectNode.text().includes('\n')
   if (multiline) {
-    const indent = objectNode.text().match(/\n(\s+)/)?.[1] ?? '  '
-    return `{\n${indent}${kept.join(`,\n${indent}`)},\n${indent.slice(2)}${indent.slice(0, 2)}}`
+    const propertyIndent = objectNode.text().match(/\n(\s+)/)?.[1] ?? '  '
+    const parentIndent = propertyIndent.length >= 2 ? propertyIndent.slice(0, propertyIndent.length - 2) : ''
+    return `{\n${propertyIndent}${kept.join(`,\n${propertyIndent}`)},\n${parentIndent}}`
   }
 
   return `{ ${kept.join(', ')} }`
@@ -259,14 +273,14 @@ function findMemberAccessOnBinding(
           has: {
             field: 'object',
             kind: 'identifier',
-            regex: escapeRegex(binding),
+            regex: exactMatchRegex(binding),
           },
         },
         {
           has: {
             field: 'property',
             kind: 'property_identifier',
-            regex: escapeRegex(property),
+            regex: exactMatchRegex(property),
           },
         },
       ],
@@ -278,7 +292,7 @@ function findIdentifierUsages(rootNode: SgNode<TSX>, name: string): SgNode<TSX, 
   return rootNode.findAll({
     rule: {
       kind: 'identifier',
-      regex: escapeRegex(name),
+      regex: exactMatchRegex(name),
     },
   }) as SgNode<TSX, 'identifier'>[]
 }
@@ -316,11 +330,12 @@ function getEnclosingStatement(node: SgNode<TSX>): SgNode<TSX> | null {
 
 function replaceStatementWithTodo(statement: SgNode<TSX>, source: string, edits: Edit[]): void {
   const range = statement.range()
-  const indent = getStatementIndent(source, range.start.index)
+  const lineStart = source.lastIndexOf('\n', range.start.index - 1) + 1
+  const indent = getLineIndent(source, range.start.index)
   const endPos = consumeTrailingNewline(source, range.end.index)
 
   edits.push({
-    startPos: range.start.index,
+    startPos: lineStart,
     endPos,
     insertedText: `${indent}${TODO_TOKEN}\n`,
   })

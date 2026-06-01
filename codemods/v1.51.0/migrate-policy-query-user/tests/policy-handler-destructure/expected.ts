@@ -14,7 +14,7 @@ class CustomPermissionPolicy implements PermissionPolicy {
     { info, credentials }: PolicyQueryUser,
   ): Promise<PolicyDecision> {
     const sub = info.userEntityRef;
-        // TODO(backstage-codemod): migrate to credentials via coreServices.auth
+    // TODO(backstage-codemod): migrate to credentials via coreServices.auth
     return { result: AuthorizeResult.ALLOW };
   }
 }
