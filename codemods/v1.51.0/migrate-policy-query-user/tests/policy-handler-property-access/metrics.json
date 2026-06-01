@@ -1,0 +1,10 @@
+{
+  "migrate-policy-query-user": [
+    {
+      "cardinality": {
+        "action": "identity-member-renamed"
+      },
+      "count": 1
+    }
+  ]
+}

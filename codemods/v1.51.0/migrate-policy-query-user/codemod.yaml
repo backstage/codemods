@@ -1,0 +1,20 @@
+schema_version: '1.0'
+
+name: '@backstage/migrate-policy-query-user'
+version: '0.1.0'
+description: 'Backstage 1.51.0: Migrate PolicyQueryUser off removed token, expiresInSeconds, and identity fields'
+author: 'Paul Schultz<pschultz@redhat.com>'
+license: 'MIT'
+repository: 'https://github.com/backstage/codemods'
+workflow: 'workflow.yaml'
+
+targets:
+  languages: ['tsx', 'ts']
+
+keywords: ['backstage', 'migration', 'permission-node', 'PolicyQueryUser', '1.51.0']
+
+registry:
+  access: 'public'
+  visibility: 'public'
+
+capabilities: []

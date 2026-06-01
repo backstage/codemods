@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+params:
+  schema:
+    aiFixup:
+      type: boolean
+      default: false
+      description: 'Complete migration off removed PolicyQueryUser fields; migrate token usage to credentials / coreServices.auth.'
+
+nodes:
+  - id: apply-transforms
+    name: Apply AST Transformations
+    type: automatic
+    steps:
+      - name: 'Migrate PolicyQueryUser off removed token, expiresInSeconds, and identity fields'
+        js-ast-grep:
+          js_file: scripts/codemod.ts
+          language: 'tsx'
+          semantic_analysis: file
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+
+  - id: ai-fixup
+    name: AI fixup for edge cases
+    type: automatic
+    depends_on: [apply-transforms]
+    steps:
+      - name: 'Fix remaining edge cases that require contextual understanding'
+        if: params.aiFixup == true
+        ai:
+          model: 'claude-sonnet-4-6'
+          system_prompt: |
+            You are a Backstage migration expert. You are fixing edge cases left over
+            from an AST-based codemod that migrates PolicyQueryUser usage in
+            @backstage/plugin-permission-node for Backstage 1.51.0.
+
+            The AST codemod already handled the mechanical parts:
+            - Removed token, expiresInSeconds, and identity from destructuring patterns
+            - Renamed identity to info in destructuring and property access
+            - Removed removed fields from PolicyQueryUser object literals in tests/mocks
+            - Added TODO comments where token was passed to downstream APIs
+
+            Your job is to find and fix remaining issues that the AST codemod could
+            not handle mechanically. Be precise and conservative — only change what
+            is necessary. Do not remove required info or credentials fields.
+          prompt: |
+            Search the codebase for remaining PolicyQueryUser migration issues:
+
+            ## 1. Remaining token usage
+            Find any remaining user.token or .token access on policy query objects,
+            destructured token bindings, or PolicyQueryUser mocks. Replace token
+            validation with credentials + coreServices.auth patterns where the backend
+            module context makes that possible.
+
+            ## 2. Auth service migration
+            Where coreServices.auth is available in the permission policy backend
+            module, replace manual token validation or token forwarding with
+            credentials-based auth using the AuthService API documented at
+            https://backstage.io/docs/backend-system/core-services/auth
+
+            ## 3. Test and mock cleanup
+            Find permission policy tests and mocks still constructing PolicyQueryUser
+            with token, expiresInSeconds, or identity fields and remove them.
+
+            ## 4. Preserve required fields
+            Do not remove info or credentials from PolicyQueryUser usage — both
+            remain required.
+
+            After making changes, verify the files are syntactically valid TypeScript.
+          max_steps: 40
