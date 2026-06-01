@@ -314,7 +314,7 @@ const transform: Codemod<TSX> = async (root) => {
   }
 
   const callEdits: Edit[] = []
-  let migratedAnyCall = false
+  let migratedCount = 0
 
   for (const call of renderCalls) {
     const [, optionsArg] = getCallArguments(call)
@@ -327,20 +327,24 @@ const transform: Codemod<TSX> = async (root) => {
     const replacement = buildRenderTestAppCall(call, 'renderTestApp', hasNavFeatures, navBlueprintImported)
     callEdits.push(call.replace(replacement))
     callsMigrated.increment({ pattern: hasNavFeatures ? 'nav-item-features' : 'sidebar-assertions' })
-    migratedAnyCall = true
+    migratedCount++
   }
 
-  if (!migratedAnyCall) {
+  if (migratedCount === 0) {
     return null
   }
 
-  const removeRenderInTestAppEdit = removeImport(rootNode, {
-    type: 'named',
-    specifiers: ['renderInTestApp'],
-    from: FRONTEND_TEST_UTILS,
-  })
-  if (removeRenderInTestAppEdit) {
-    callEdits.push(removeRenderInTestAppEdit)
+  // Only remove the renderInTestApp import when ALL calls were migrated;
+  // otherwise un-migrated calls would reference an undefined identifier.
+  if (migratedCount === renderCalls.length) {
+    const removeRenderInTestAppEdit = removeImport(rootNode, {
+      type: 'named',
+      specifiers: ['renderInTestApp'],
+      from: FRONTEND_TEST_UTILS,
+    })
+    if (removeRenderInTestAppEdit) {
+      callEdits.push(removeRenderInTestAppEdit)
+    }
   }
 
   const todoCommentedStmtIds = new Set<number>()
@@ -399,8 +403,7 @@ const transform: Codemod<TSX> = async (root) => {
     out = `import { renderTestApp } from '${FRONTEND_TEST_UTILS}';\n\n${phase1Source.replace(/^\s+/, '')}`
   }
 
-  const result = await Promise.resolve(finalizeSource(out))
-  return result
+  return finalizeSource(out)
 }
 
 export default transform
