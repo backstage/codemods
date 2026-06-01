@@ -1,0 +1,10 @@
+{
+  "nav-item-to-page-migration": [
+    {
+      "cardinality": {
+        "outcome": "todo-ambiguous"
+      },
+      "count": 1
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+schema_version: '1.0'
+
+name: '@backstage/migrate-nav-item-to-page'
+version: '0.1.0'
+description: 'Migrate NavItemBlueprint to PageBlueprint title/icon params for Backstage 1.51.0'
+author: 'Paul Schultz<schultzp2020@users.noreply.github.com>'
+license: 'MIT'
+repository: 'https://github.com/backstage/codemods'
+workflow: 'workflow.yaml'
+
+targets:
+  languages: ['typescript', 'tsx']
+
+keywords: ['backstage', 'migration', 'frontend-plugin-api', 'NavItemBlueprint', 'PageBlueprint', '1.51.0']
+
+registry:
+  access: 'public'
+  visibility: 'public'
+
+capabilities: []

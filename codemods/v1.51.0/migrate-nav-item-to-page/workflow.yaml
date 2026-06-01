@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+params:
+  schema:
+    aiFixup:
+      type: boolean
+      default: false
+      description: 'Run an AI-powered fixup step to pair NavItemBlueprint with PageBlueprint, convert nav icons to IconElement, and remove orphaned nav extensions.'
+
+nodes:
+  - id: apply-transforms
+    name: Apply AST Transformations
+    type: automatic
+    steps:
+      - name: 'Migrate NavItemBlueprint into matching PageBlueprint extensions'
+        js-ast-grep:
+          js_file: scripts/codemod.ts
+          language: tsx
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+
+  - id: ai-fixup
+    name: AI fixup for edge cases
+    type: automatic
+    depends_on: [apply-transforms]
+    steps:
+      - name: 'Fix remaining NavItemBlueprint migration edge cases'
+        if: params.aiFixup == true
+        ai:
+          model: 'claude-sonnet-4-6'
+          system_prompt: |
+            You are a Backstage migration expert. You are fixing edge cases left over
+            from an AST-based codemod that migrated NavItemBlueprint to PageBlueprint
+            in Backstage 1.51.0.
+
+            The AST codemod already handled the mechanical parts:
+            - Removed NavItemBlueprint.make where statically paired with PageBlueprint
+              (same routeRef)
+            - Copied title / icon into PageBlueprint.params or makeWithOverrides factory
+            - Wrapped MUI icon identifiers as <Icon fontSize="inherit" />
+            - Removed nav item variables from extensions arrays
+            - Removed unused NavItemBlueprint imports
+            - Left TODO(backstage-codemod) for unpaired or dynamic routeRef values
+
+            Your job is to find and fix remaining issues that the AST codemod could
+            not handle mechanically. Be precise and conservative — only change what
+            is necessary.
+          prompt: |
+            Search the codebase for remaining NavItemBlueprint migration issues:
+
+            ## 1. Unpaired NavItemBlueprint or legacy nav-item extensions
+            Find NavItemBlueprint.make calls, NavItemBlueprint imports, or legacy
+            nav-item extensions still registered in createFrontendPlugin /
+            createFrontendModule extension arrays.
+
+            ## 2. Wrong page pairing
+            When multiple PageBlueprint extensions share similar routeRef patterns,
+            verify title and icon were merged into the correct page extension.
+
+            ## 3. Icon migration
+            Convert Material UI icon components used only for navigation to
+            @remixicon/react IconElement JSX where appropriate. PageBlueprint.icon
+            must be IconElement (JSX), not IconComponent.
+
+            ## 4. Extension registration cleanup
+            Ensure createFrontendModule / createFrontendPlugin extensions arrays
+            no longer export removed NavItemBlueprint extensions.
+
+            ## 5. Valid TSX
+            Verify icon values are JSX elements and files compile as valid TSX.
+
+            After making changes, verify the files are syntactically valid TypeScript/TSX.
+          max_steps: 50

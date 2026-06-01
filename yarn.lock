@@ -88,6 +88,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/migrate-nav-item-to-page@workspace:codemods/v1.51.0/migrate-nav-item-to-page":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-nav-item-to-page@workspace:codemods/v1.51.0/migrate-nav-item-to-page"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    "@jssg/utils": "npm:0.0.5"
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/migrate-permissioned-route@workspace:codemods/v1.50.0/migrate-permissioned-route":
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-permissioned-route@workspace:codemods/v1.50.0/migrate-permissioned-route"
