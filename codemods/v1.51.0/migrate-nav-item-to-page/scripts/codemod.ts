@@ -462,25 +462,25 @@ function insertNavPropsIntoObject(paramsObject: SgNode<TSX>, title: string | nul
   return `${beforeInner}\n${additions.join('\n')}${normalizedAfter}`
 }
 
-function removeIdentifierFromArray(arrayNode: SgNode<TSX>, identifier: string): string | null {
-  const text = arrayNode.text()
-  const patterns = [
-    new RegExp(`\\s*${escapeRegex(identifier)}\\s*,`),
-    new RegExp(`,\\s*${escapeRegex(identifier)}(?=\\s*[\\],])`),
-  ]
+function removeIdentifierFromArray(arrayNode: SgNode<TSX>, identifier: string): Edit[] {
+  const elements = arrayNode.children().filter(
+    (c) => c.kind() !== '[' && c.kind() !== ']' && c.kind() !== ',',
+  )
 
-  let updated = text
-  for (const pattern of patterns) {
-    const next = updated.replace(pattern, '')
-    if (next !== updated) {
-      updated = next
-      break
-    }
+  const target = elements.find(
+    (el) => el.kind() === 'identifier' && el.text() === identifier,
+  )
+  if (!target) {
+    return []
   }
 
-  updated = updated.replace(/\[\s+/, '[').replace(/\s+\]/, ']')
+  const remaining = elements.filter((el) => el !== target)
+  if (remaining.length === 0) {
+    return [arrayNode.replace('[]')]
+  }
 
-  return updated !== text ? updated : null
+  const rebuilt = `[${remaining.map((el) => el.text()).join(', ')}]`
+  return [arrayNode.replace(rebuilt)]
 }
 
 function removeFromExtensionsArrays(rootNode: SgNode<TSX>, varName: string): Edit[] {
@@ -501,10 +501,7 @@ function removeFromExtensionsArrays(rootNode: SgNode<TSX>, varName: string): Edi
       continue
     }
 
-    const updated = removeIdentifierFromArray(array, varName)
-    if (updated) {
-      edits.push(array.replace(updated))
-    }
+    edits.push(...removeIdentifierFromArray(array, varName))
   }
 
   return edits
