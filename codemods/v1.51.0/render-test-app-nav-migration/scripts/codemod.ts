@@ -280,7 +280,7 @@ function findSidebarAssertionCalls(rootNode: SgNode<TSX>): SgNode<TSX>[] {
   return rootNode.findAll({ rule: { kind: 'call_expression' } }).filter((call) => isSidebarAssertionCall(call))
 }
 
-const transform: Codemod<TSX> = (root) => {
+const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root()
   const fullSource = rootNode.text()
 
@@ -403,7 +403,8 @@ const transform: Codemod<TSX> = (root) => {
     out = `import { renderTestApp } from '${FRONTEND_TEST_UTILS}';\n\n${phase1Source.replace(/^\s+/, '')}`
   }
 
-  return finalizeSource(out)
+  const result = await Promise.resolve(finalizeSource(out))
+  return result
 }
 
 export default transform
