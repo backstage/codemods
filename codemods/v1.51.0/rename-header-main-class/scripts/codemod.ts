@@ -9,12 +9,12 @@ const NEW_CLASS_NAME = 'bui-HeaderContent'
 const OLD_PROPERTY = 'root'
 const NEW_PROPERTY = 'content'
 
-const OLD_CLASS_PATTERN = new RegExp(`\\b${OLD_CLASS_NAME}(?![A-Za-z])`, 'g')
+const OLD_CLASS_PATTERN = new RegExp(`\\b${OLD_CLASS_NAME}\\b`, 'g')
 
 const TODO_COMMENT = '/* TODO(backstage-codemod): Header root class removed — review selector intent */'
 
 function containsExactHeaderClass(text: string): boolean {
-  return new RegExp(`\\b${OLD_CLASS_NAME}(?![A-Za-z])`).test(text)
+  return new RegExp(`\\b${OLD_CLASS_NAME}\\b`).test(text)
 }
 
 /**
@@ -23,7 +23,7 @@ function containsExactHeaderClass(text: string): boolean {
  * Header DOM element was removed in Backstage 1.51.0.
  */
 function hasDescendantOrChildCombinator(value: string): boolean {
-  const pattern = /bui-Header(?![A-Za-z])\s*(?:>|\s+(?!\s*[{,'"`]))\s*\S/
+  const pattern = /\bbui-Header\b\s*(?:>|\s+(?!\s*[{,'"`]))\s*\S/
   return pattern.test(value)
 }
 
@@ -81,10 +81,10 @@ const transform: Codemod<TSX> = async (root) => {
     edits.push(fragment.replace(newText))
   }
 
-  // 2. Rename classNames.root property accesses to classNames.content
+  // 2. Rename HeaderDefinition/HeaderPageDefinition classNames.root to classNames.content
   const classNameAccesses = rootNode.findAll({
     rule: {
-      any: [{ pattern: '$OBJ.classNames.root' }, { pattern: 'classNames.root' }],
+      any: [{ pattern: 'HeaderDefinition.classNames.root' }, { pattern: 'HeaderPageDefinition.classNames.root' }],
     },
   })
 

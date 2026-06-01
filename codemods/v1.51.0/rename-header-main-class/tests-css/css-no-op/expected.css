@@ -10,6 +10,10 @@
   padding: 8px;
 }
 
+.bui-Header2 {
+  opacity: 1;
+}
+
 .some-other-class {
   color: blue;
 }
