@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+params:
+  schema:
+    aiFixup:
+      type: boolean
+      default: false
+      description: 'Finish test migrations from renderInTestApp + nav-item features to renderTestApp and fix sidebar assertions.'
+
+nodes:
+  - id: apply-transforms
+    name: Apply AST Transformations
+    type: automatic
+    steps:
+      - name: 'Scan TS/TSX and migrate renderInTestApp nav-item tests'
+        js-ast-grep:
+          js_file: scripts/codemod.ts
+          language: tsx
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+
+  - id: ai-fixup
+    name: AI fixup for edge cases
+    type: automatic
+    depends_on: [apply-transforms]
+    steps:
+      - name: 'Fix remaining edge cases that require contextual understanding'
+        if: params.aiFixup == true
+        ai:
+          model: 'claude-sonnet-4-6'
+          system_prompt: |
+            You are a Backstage migration expert. You are fixing edge cases left over
+            from an AST-based codemod that migrated renderInTestApp nav-item tests to
+            renderTestApp in Backstage 1.51.0.
+
+            The AST codemod already handled the mechanical parts:
+            - Replaced renderInTestApp with renderTestApp when features includes nav-item
+            - Removed nav-item-only features from options
+            - Left TODO(backstage-codemod) on sidebar/link assertions
+
+            Your job is to find and fix remaining issues that the AST codemod could
+            not handle mechanically. Be precise and conservative — only change what
+            is necessary.
+          prompt: |
+            Search the codebase for remaining renderInTestApp nav-item migration issues:
+
+            ## 1. Missed renderInTestApp usages with nav features
+            Find tests still using renderInTestApp with features arrays that include
+            nav-item extensions, NavItemBlueprint-backed features, or legacy nav
+            feature factories. Migrate them to renderTestApp.
+
+            ## 2. Sidebar and nav assertions
+            Rewrite assertions (getByRole('link', …), sidebar selectors, nav labels)
+            so they work against renderTestApp's real app shell instead of the old
+            stub sidebar from renderInTestApp.
+
+            ## 3. Preserve non-nav options
+            Keep mountedRoutes, APIs, and other non-nav options from the original
+            renderInTestApp call when they are still needed.
+
+            ## 4. Skip unaffected tests
+            Do not change tests that only use renderInTestApp without nav features
+            and without sidebar/nav assertions.
+
+            After making changes, verify the files are syntactically valid TypeScript/TSX.
+          max_steps: 50

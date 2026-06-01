@@ -1,0 +1,16 @@
+{
+  "nav-assertions-flagged": [
+    {
+      "cardinality": {},
+      "count": 1
+    }
+  ],
+  "render-test-app-calls-migrated": [
+    {
+      "cardinality": {
+        "pattern": "nav-item-features"
+      },
+      "count": 1
+    }
+  ]
+}
