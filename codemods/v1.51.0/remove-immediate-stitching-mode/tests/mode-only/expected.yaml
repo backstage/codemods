@@ -1,0 +1,4 @@
+app:
+  title: Example App
+catalog:
+  # Migrated by @backstage/remove-immediate-stitching-mode — immediate mode deprecated in 1.51

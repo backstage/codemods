@@ -1,0 +1,6 @@
+catalog:
+  stitchingStrategy:
+    mode: deferred
+    debounceDelayMs: 100
+
+  # Migrated by @backstage/remove-immediate-stitching-mode — immediate mode deprecated in 1.51

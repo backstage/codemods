@@ -1,0 +1,10 @@
+{
+  "remove-immediate-stitching-mode": [
+    {
+      "cardinality": {
+        "action": "block-removed"
+      },
+      "count": 1
+    }
+  ]
+}

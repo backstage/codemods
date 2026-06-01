@@ -1,0 +1,5 @@
+catalog:
+  # Migrated by @backstage/remove-immediate-stitching-mode — immediate mode deprecated in 1.51
+# Keep this root-level comment
+app:
+  title: Example App
