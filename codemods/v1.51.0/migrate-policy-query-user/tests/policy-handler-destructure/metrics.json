@@ -1,0 +1,22 @@
+{
+  "migrate-policy-query-user": [
+    {
+      "cardinality": {
+        "action": "identity-local-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "object-pattern-updated"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "token-usage-todo"
+      },
+      "count": 1
+    }
+  ]
+}

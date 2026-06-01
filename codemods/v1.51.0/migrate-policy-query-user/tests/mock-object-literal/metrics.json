@@ -1,0 +1,10 @@
+{
+  "migrate-policy-query-user": [
+    {
+      "cardinality": {
+        "action": "object-literal-updated"
+      },
+      "count": 1
+    }
+  ]
+}
