@@ -1,0 +1,13 @@
+{
+  "name": "@backstage/experimental-form-decorators-to-stable",
+  "version": "0.1.0",
+  "description": "Rename EXPERIMENTAL_formDecorators to formDecorators in Backstage template specs for 1.51.0",
+  "type": "module",
+  "scripts": {
+    "test": "yarn exec codemod jssg test -l tsx ./scripts/codemod.ts ./tests && yarn exec codemod jssg test -l yaml ./scripts/codemod-yaml.ts ./tests-yaml && yarn exec codemod workflow validate -w workflow.yaml"
+  },
+  "devDependencies": {
+    "@codemod.com/jssg-types": "1.5.2",
+    "codemod": "1.7.15"
+  }
+}

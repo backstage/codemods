@@ -1,0 +1,8 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: example
+spec:
+  type: service
+  # EXPERIMENTAL_formDecorators was renamed in Backstage 1.51.0
+  parameters: []

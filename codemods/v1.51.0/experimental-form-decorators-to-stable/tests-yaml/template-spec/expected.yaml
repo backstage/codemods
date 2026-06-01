@@ -1,0 +1,21 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: example
+  title: Example Template
+spec:
+  type: service
+  parameters:
+    - title: Basic info
+      required:
+        - name
+      properties:
+        name:
+          type: string
+  formDecorators:
+    - decorator: my-decorator
+      schema:
+        type: object
+        properties:
+          enabled:
+            type: boolean
