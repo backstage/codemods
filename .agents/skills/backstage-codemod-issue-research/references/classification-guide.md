@@ -1,6 +1,6 @@
 # Classification guide — codemod vs document-only
 
-Use when a changelog entry might need automation. When in doubt, bias toward **document-only** — a bad codemod is worse than a README note.
+Use when a changelog entry might need automation. Aligns with [Codemod Issue Generator eligibility](codemod-issue-generator.md). When in doubt, bias toward **document-only** — a bad codemod is worse than a README note.
 
 ## Codemod — file these issues
 
@@ -19,6 +19,8 @@ Use when a changelog entry might need automation. When in doubt, bias toward **d
 If yes → codemod issue with explicit Detection Criteria.
 
 ## Document-only — recipe README / out-of-scope
+
+Maps to Issue Generator **skip** rules (behavioral/runtime-only/docs/policy/domain knowledge):
 
 | Signal                                   | Example                                                            |
 | ---------------------------------------- | ------------------------------------------------------------------ |

@@ -92,9 +92,11 @@ For each changelog entry, capture:
 
 Include **deprecations** that are mechanical renames (symbol or prop renames, stable export replacements). Skip entries that are purely additive or internal refactors with "no user-facing API changes."
 
+Apply [Codemod Issue Generator eligibility](references/codemod-issue-generator.md): only keep candidates that are statically detectable, have a clear before/after, and do not require business-logic judgment for the common case.
+
 ### Step 3: Classify
 
-Load [`references/classification-guide.md`](references/classification-guide.md) when unsure. Summary:
+Load [`references/classification-guide.md`](references/classification-guide.md) and [`references/codemod-issue-generator.md`](references/codemod-issue-generator.md) when unsure. Summary:
 
 | Verdict                      | Signals                                                                                                       |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------- |
@@ -103,7 +105,7 @@ Load [`references/classification-guide.md`](references/classification-guide.md) 
 | **Merge with another issue** | Same package + same file types + transform can run in one pass without conflicting edits                      |
 | **Split issues**             | Unrelated domains (frontend JSX vs app-config YAML) or conflicting transform order                            |
 
-**One issue = one codemod package.** Do not bundle unrelated breaking changes.
+**One issue = one atomic migration.** If a changelog bullet lists multiple independent changes, split them. Do not bundle unrelated breaking changes. Prefer smaller composable codemods over multi-step monsters.
 
 Document **out-of-scope** items explicitly in the recipe issue README section — they are as important as the codemods.
 
@@ -111,7 +113,7 @@ Document **out-of-scope** items explicitly in the recipe issue README section �
 
 Package name: `@backstage/<kebab-case-descriptive-name>` — verb-led when possible (`migrate-nav-item-to-page`, `rename-header-main-class`).
 
-Issue title format (match prior releases):
+Issue title format (Backstage variant of [Codemod Issue Generator title](references/codemod-issue-generator.md)):
 
 ```
 feat: Backstage 1.<minor>.0 migration - <short human description>
@@ -134,16 +136,18 @@ Wait for user confirmation on the inventory. Adjust before filing.
 
 ### Step 6: File codemod issues
 
-Use [`references/issue-template.md`](references/issue-template.md) for each row. Required sections:
+Use [`references/issue-template.md`](references/issue-template.md) for each row. **Section order** follows [Codemod Issue Generator](references/codemod-issue-generator.md), plus Backstage extensions:
 
-1. **Summary** — what broke, for whom, replacement API
-2. **Detection Criteria** — bullet list of grep/AST patterns (imports, calls, JSX, config keys, CSS selectors)
-3. **Transformation Logic** — numbered steps the implementer will encode
-4. **Before / After Example** — at least one realistic snippet; add variants for non-trivial cases (error props, nested routes, etc.)
-5. **Notes / Edge Cases** — skip conditions, TODO markers, conflation warnings with other migrations
+1. **Summary** — what changes; why required for the migration (state if NOT a drop-in rename)
+2. **Detection Criteria** — implementation-ready bullets (imports, calls, JSX, config keys, CSS selectors; note test vs prod if relevant)
+3. **Transformation Logic** — numbered steps; add **Prop mapping** subsection when props rename or move between nodes
+4. **Before / After Example** — required unless no illustrative code applies; use labeled variants for structural migrations (e.g. basic / with error prop / nested routes)
+5. **Notes / Edge Cases** — skip conditions, TODO markers, conflation warnings
 6. **Optional: AI fixup step** — only when warranted (see below)
 7. **Changeset (when implementing)** — package name, **minor** bump for initial release, example summary line
 8. **Implementation notes** — worktree path, one PR per codemod
+
+When filing: issue bodies are **spec only** — no inventory commentary. Do **not invent** migrations unsupported by the changelog. Use source terminology. Write for a senior implementer.
 
 Create issues via:
 
@@ -202,6 +206,8 @@ An issue is ready to implement when:
 - [ ] Edge cases call out **skip** conditions and **TODO(backstage-codemod)** placement
 - [ ] No overlap with another issue in the same release inventory
 - [ ] Changeset notes use **minor** for new packages
+- [ ] Migration is explicitly supported by changelog/release notes — nothing invented
+- [ ] Terminology matches the source document
 
 ## Common mistakes
 
@@ -213,10 +219,13 @@ An issue is ready to implement when:
 
 **Missing prior-release diff.** Always read at least two closed v1.(N-1) codemod issues before filing — one with aiFixup, one without — plus that release's migration-recipe issue for section depth and tone.
 
+**Inventing migrations.** If the changelog does not support a transform, do not file an issue — note it in the inventory or recipe out-of-scope instead.
+
 ## References
 
-| File                                                                       | Load when                                  |
-| -------------------------------------------------------------------------- | ------------------------------------------ |
-| [`references/issue-template.md`](references/issue-template.md)             | Writing issue bodies (Step 6)              |
-| [`references/classification-guide.md`](references/classification-guide.md) | Unsure codemod vs out-of-scope (Step 3)    |
-| [`scripts/scan-changelog.py`](scripts/scan-changelog.py)                   | Initial BREAKING/deprecated sweep (Step 1) |
+| File                                                                             | Load when                                     |
+| -------------------------------------------------------------------------------- | --------------------------------------------- |
+| [`references/codemod-issue-generator.md`](references/codemod-issue-generator.md) | Eligibility, granularity, generic issue shape |
+| [`references/issue-template.md`](references/issue-template.md)                   | Writing issue bodies (Step 6)                 |
+| [`references/classification-guide.md`](references/classification-guide.md)       | Unsure codemod vs out-of-scope (Step 3)       |
+| [`scripts/scan-changelog.py`](scripts/scan-changelog.py)                         | Initial BREAKING/deprecated sweep (Step 1)    |

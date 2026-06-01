@@ -1,20 +1,23 @@
 # Codemod issue body template
 
-Copy and fill for each codemod. Remove sections that do not apply (e.g. drop **Optional: AI fixup step** when aiFixup is not recommended).
+Copy and fill for each codemod. Section order follows [Codemod Issue Generator](codemod-issue-generator.md) plus Backstage extensions below. Remove sections that do not apply (e.g. drop **Optional: AI fixup step** when aiFixup is not recommended).
 
 <!-- markdownlint-disable MD046 -->
 
 ````markdown
 ### Summary
 
-<What was removed/changed, in which package, and what consumers must do instead.
+<What changes and why it is required for the Backstage 1.<minor>.0 migration.
 State clearly if this is NOT a drop-in rename. Link to release notes if helpful.>
 
 ### Detection Criteria
 
+Implementation-ready bullets:
+
 - <Import pattern, e.g. `NavItemBlueprint` from `@backstage/frontend-plugin-api`>
 - <Call/site pattern, e.g. `NavItemBlueprint.make({...})`>
 - <Additional patterns: JSX tags, config keys, CSS classes, interface implementations>
+- <Scope: e.g. skip test files, or only `app-config*.yaml`>
 
 ### Transformation Logic
 
@@ -23,7 +26,16 @@ State clearly if this is NOT a drop-in rename. Link to release notes if helpful.
 3. <Cleanup: remove unused imports, extension registrations, etc.>
 4. <Flag ambiguous cases with `TODO(backstage-codemod)` and note aiFixup if applicable>
 
+**Prop mapping** (when props rename or move between nodes):
+
+- `<oldProp>` → `<newProp>` on `<Component>`
+- `<routeProp>` → outer `<Route>`; `<permissionProp>` → `<RequirePermission>`
+
 ### Before / After Example
+
+<Omit only when no illustrative code applies. Use labeled variants for structural migrations.>
+
+**Basic usage:**
 
 ```ts
 // Before
@@ -35,11 +47,22 @@ State clearly if this is NOT a drop-in rename. Link to release notes if helpful.
 <expected result>
 ```
 
-<Add a second example variant when props map differently, nested children move, or error prop renames.>
+**<Variant label, e.g. With errorComponent / With nested routes>:**
+
+```ts
+// Before
+...
+```
+
+```ts
+// After
+...
+```
 
 ### Notes / Edge Cases
 
 - <Skip files already migrated>
+- <Do not transform code inside comments or strings>
 - <Do not conflate with other v1.X migrations — name the related issue if users might confuse them>
 - <Built-in plugins in main repo already migrated — target consumer apps>
 - <Re-exports, namespace imports, dynamic values>
