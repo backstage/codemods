@@ -1,0 +1,10 @@
+{
+  "render-test-app-calls-migrated": [
+    {
+      "cardinality": {
+        "pattern": "nav-item-features"
+      },
+      "count": 1
+    }
+  ]
+}
