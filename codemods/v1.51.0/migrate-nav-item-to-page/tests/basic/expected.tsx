@@ -4,9 +4,9 @@ import ExampleIcon from '@material-ui/icons/Extension';
 const routeRef = createRouteRef();
 
 const page = PageBlueprint.make({
-  params: {    title: 'Example',
+  params: {
+    title: 'Example',
     icon: <ExampleIcon fontSize="inherit" />,
-
     routeRef,
     path: '/example',
     loader: () => import('./Page').then(m => <m.Page />),

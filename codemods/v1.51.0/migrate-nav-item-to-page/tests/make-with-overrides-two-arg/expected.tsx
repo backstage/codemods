@@ -14,8 +14,8 @@ export const devToolsPage = PageBlueprint.makeWithOverrides({
   },
   factory(originalFactory, { inputs }) {
     return originalFactory(
-      {        icon: <BuildIcon fontSize="inherit" />,
-
+      {
+        icon: <BuildIcon fontSize="inherit" />,
         path: '/devtools',
         routeRef: rootRouteRef,
         title: 'DevTools',

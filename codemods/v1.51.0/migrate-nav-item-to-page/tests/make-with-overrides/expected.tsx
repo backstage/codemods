@@ -12,9 +12,9 @@ export const searchPage = PageBlueprint.makeWithOverrides({
     items: createExtensionInput([]),
   },
   factory(originalFactory) {
-    return originalFactory({      title: 'Search',
+    return originalFactory({
+      title: 'Search',
       icon: <SearchIcon fontSize="inherit" />,
-
       path: '/search',
       routeRef: rootRouteRef,
       loader: async () => null,

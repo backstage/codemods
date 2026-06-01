@@ -13,6 +13,7 @@ const TODO_AMBIGUOUS =
   '// TODO(backstage-codemod): Ambiguous NavItemBlueprint pairing — multiple PageBlueprint extensions share the same routeRef'
 const TODO_DYNAMIC =
   '// TODO(backstage-codemod): NavItemBlueprint uses a dynamic routeRef — merge title/icon into PageBlueprint manually'
+const TODO_ICON = '// TODO(backstage-codemod): Convert nav icon to IconElement JSX manually'
 
 function escapeRegex(str: string): string {
   return str.replaceAll(/[.*+?^${}()|[\]\\/]/g, '\\$&')
@@ -399,7 +400,10 @@ function collectPages(rootNode: SgNode<TSX>, pageBlueprintName: string): PageInf
   return pages
 }
 
-function convertIconToJsx(icon: { text: string; node: SgNode<TSX> }): { jsx: string; ambiguous: boolean } {
+function convertIconToJsx(
+  icon: { text: string; node: SgNode<TSX> },
+  allowJsx: boolean,
+): { jsx: string; ambiguous: boolean } {
   const { text, node } = icon
 
   if (node.is('jsx_element') || node.is('jsx_self_closing_element')) {
@@ -407,7 +411,10 @@ function convertIconToJsx(icon: { text: string; node: SgNode<TSX> }): { jsx: str
   }
 
   if (node.is('identifier')) {
-    return { jsx: `<${node.text()} fontSize="inherit" />`, ambiguous: false }
+    if (allowJsx) {
+      return { jsx: `<${node.text()} fontSize="inherit" />`, ambiguous: false }
+    }
+    return { jsx: text, ambiguous: true }
   }
 
   return { jsx: text, ambiguous: true }
@@ -422,7 +429,7 @@ function detectObjectInnerIndent(objectNode: SgNode<TSX>): string {
   return ' '.repeat(objectNode.range().start.column + 2)
 }
 
-function insertNavPropsIntoObject(paramsObject: SgNode<TSX>, title: string | null, iconJsx: string): string {
+function insertNavPropsIntoObject(paramsObject: SgNode<TSX>, title: string | null, iconJsx: string | null): string {
   const text = paramsObject.text()
   const braceIndex = text.indexOf('{')
   if (braceIndex < 0) {
@@ -435,7 +442,7 @@ function insertNavPropsIntoObject(paramsObject: SgNode<TSX>, title: string | nul
   if (title && !hasPairInObject(paramsObject, 'title')) {
     additions.push(`${indent}title: ${title},`)
   }
-  if (!hasPairInObject(paramsObject, 'icon')) {
+  if (iconJsx !== null && !hasPairInObject(paramsObject, 'icon')) {
     additions.push(`${indent}icon: ${iconJsx},`)
   }
 
@@ -451,9 +458,8 @@ function insertNavPropsIntoObject(paramsObject: SgNode<TSX>, title: string | nul
     return `${beforeInner}\n${additions.join('\n')}\n${indent.slice(2) || ''}}`
   }
 
-  const leadingNewline = afterInner.startsWith('\n') ? '' : `\n${indent}`
   const normalizedAfter = afterInner.startsWith('\n') ? afterInner : `\n${indent}${afterInner.trimStart()}`
-  return `${beforeInner}${leadingNewline}${additions.join('\n')}\n${normalizedAfter}`
+  return `${beforeInner}\n${additions.join('\n')}${normalizedAfter}`
 }
 
 function removeIdentifierFromArray(arrayNode: SgNode<TSX>, identifier: string): string | null {
@@ -587,6 +593,7 @@ function findBlueprintCallsForName(rootNode: SgNode<TSX>, blueprintRef: string):
 
 const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root()
+  const allowJsx = root.filename().endsWith('.tsx')
   const navBlueprintRef = resolveNavBlueprintName(rootNode)
   if (!navBlueprintRef) {
     return null
@@ -661,23 +668,29 @@ const transform: Codemod<TSX> = async (root) => {
       continue
     }
 
-    let iconJsx = 'undefined'
+    let iconJsx: string | null = null
     let iconAmbiguous = false
     if (navItem.icon) {
-      const converted = convertIconToJsx(navItem.icon)
+      const converted = convertIconToJsx(navItem.icon, allowJsx)
       iconJsx = converted.jsx
       iconAmbiguous = converted.ambiguous
     }
 
     const updatedParams = insertNavPropsIntoObject(page.paramsObject, navItem.title, iconJsx)
-    edits.push(page.paramsObject.replace(updatedParams))
-    migrationMetric.increment({ outcome: 'merged' })
 
-    if (iconAmbiguous && navItem.declaration) {
-      edits.push(
-        prependTodo(navItem.declaration, '// TODO(backstage-codemod): Convert nav icon to IconElement JSX manually'),
-      )
+    if (iconAmbiguous) {
+      const pageStatement = getStatementForMakeCall(page.makeCall)
+      if (pageStatement) {
+        const updatedStatement = `${TODO_ICON}\n${pageStatement.text().replace(page.paramsObject.text(), updatedParams)}`
+        edits.push(pageStatement.replace(updatedStatement))
+      } else {
+        edits.push(page.paramsObject.replace(updatedParams))
+      }
+    } else {
+      edits.push(page.paramsObject.replace(updatedParams))
     }
+
+    migrationMetric.increment({ outcome: 'merged' })
 
     if (navItem.declaration) {
       declarationsToRemove.add(navItem.declaration)
