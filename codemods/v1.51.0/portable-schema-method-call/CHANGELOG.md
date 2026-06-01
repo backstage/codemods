@@ -1,5 +1,11 @@
 # @backstage/portable-schema-method-call
 
+## 0.2.0
+
+### Minor Changes
+
+- ae82072: Add codemod to call PortableSchema.schema() as a method for Backstage 1.51.0
+
 ## 0.1.0
 
 ### Minor Changes
