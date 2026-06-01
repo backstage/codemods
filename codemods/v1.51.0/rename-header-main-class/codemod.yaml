@@ -1,0 +1,20 @@
+schema_version: '1.0'
+
+name: '@backstage/rename-header-main-class'
+version: '0.1.0'
+description: 'Backstage 1.51.0: Rename removed .bui-Header to .bui-HeaderContent and classNames.root to classNames.content'
+author: 'Paul Schultz<pschultz@redhat.com>'
+license: 'MIT'
+repository: 'https://github.com/backstage/codemods'
+workflow: 'workflow.yaml'
+
+targets:
+  languages: ['tsx', 'ts', 'js', 'jsx', 'css']
+
+keywords: ['backstage', 'migration', 'Header', '1.51.0']
+
+registry:
+  access: 'public'
+  visibility: 'public'
+
+capabilities: []

@@ -1,0 +1,7 @@
+.bui-Header {
+  margin-top: var(--bui-space-6);
+}
+
+.other-class .bui-Header {
+  padding: 8px;
+}
