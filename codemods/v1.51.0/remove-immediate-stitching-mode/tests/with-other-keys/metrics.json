@@ -1,0 +1,10 @@
+{
+  "remove-immediate-stitching-mode": [
+    {
+      "cardinality": {
+        "action": "mode-changed"
+      },
+      "count": 1
+    }
+  ]
+}
