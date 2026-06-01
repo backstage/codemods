@@ -1,0 +1,7 @@
+.unrelated {
+  color: red;
+}
+
+[data-loading-unrelated] {
+  opacity: 1;
+}

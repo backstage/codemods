@@ -1,0 +1,39 @@
+{
+  "loading-to-is-pending": [
+    {
+      "cardinality": {
+        "action": "prop-renamed",
+        "component": "Alert"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "prop-renamed",
+        "component": "Button"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "prop-renamed",
+        "component": "ButtonIcon"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "prop-renamed",
+        "component": "Table"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "prop-renamed",
+        "component": "TableRoot"
+      },
+      "count": 1
+    }
+  ]
+}

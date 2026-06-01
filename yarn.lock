@@ -70,6 +70,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/loading-to-is-pending@workspace:codemods/v1.51.0/loading-to-is-pending":
+  version: 0.0.0-use.local
+  resolution: "@backstage/loading-to-is-pending@workspace:codemods/v1.51.0/loading-to-is-pending"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/migrate-permissioned-route@workspace:codemods/v1.50.0/migrate-permissioned-route":
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-permissioned-route@workspace:codemods/v1.50.0/migrate-permissioned-route"

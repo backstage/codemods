@@ -1,0 +1,11 @@
+{
+  "loading-to-is-pending": [
+    {
+      "cardinality": {
+        "action": "prop-renamed",
+        "component": "BuiButton"
+      },
+      "count": 1
+    }
+  ]
+}

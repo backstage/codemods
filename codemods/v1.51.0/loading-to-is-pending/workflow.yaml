@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+params:
+  schema:
+    aiFixup:
+      type: boolean
+      default: false
+      description: 'Run an AI-powered fixup step to rename remaining loading props and data-loading CSS on BUI components; skip non-BUI.'
+
+nodes:
+  - id: apply-transforms
+    name: Apply AST Transformations
+    type: automatic
+    steps:
+      - name: 'Rename loading prop to isPending on @backstage/ui components'
+        js-ast-grep:
+          js_file: scripts/codemod.ts
+          language: 'tsx'
+          semantic_analysis: file
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+
+      - name: 'Rename data-loading to data-ispending in CSS/SCSS files'
+        js-ast-grep:
+          js_file: scripts/codemod-css.ts
+          language: 'css'
+          include:
+            - '**/*.css'
+            - '**/*.scss'
+          exclude:
+            - '**/node_modules/**'
+
+  - id: ai-fixup
+    name: AI fixup for edge cases
+    type: automatic
+    depends_on: [apply-transforms]
+    steps:
+      - name: 'Fix remaining loading prop and data-loading CSS edge cases'
+        if: params.aiFixup == true
+        ai:
+          model: 'claude-sonnet-4-6'
+          system_prompt: |
+            You are a Backstage migration expert. You are fixing edge cases left over
+            from an AST-based codemod that renamed the deprecated `loading` prop to
+            `isPending` on Alert, Button, ButtonIcon, Table, and TableRoot from
+            `@backstage/ui` in v0.15.0 (Backstage 1.51.0), and renamed CSS
+            `[data-loading]` selectors to `[data-ispending]`.
+
+            The AST codemod already handled:
+            - Named imports: `loading` -> `isPending` on in-scope BUI components
+            - Namespace imports: `UI.Button loading={...}` -> `UI.Button isPending={...}`
+            - CSS attribute selectors: `[data-loading]` -> `[data-ispending]`
+            - Skipped non-BUI `loading` props (MUI, custom components)
+
+            Your job is ONLY to fix complex patterns that the AST codemod could not
+            handle mechanically. Be precise and conservative.
+          prompt: |
+            Search the codebase for remaining migration issues and fix them:
+
+            ## 1. Spread props on BUI components
+            Find `{...props}` patterns on Alert, Button, ButtonIcon, Table, or TableRoot
+            from `@backstage/ui` where `loading` may be passed dynamically. Rename to
+            `isPending` where safe, or add a TODO comment when static renaming is impossible.
+
+            ## 2. Aliased and namespace imports
+            Verify `UI.Button`, aliased imports, and re-exports still using `loading`
+            on BUI components were migrated to `isPending`.
+
+            ## 3. CSS pending-state selectors
+            Find custom CSS still targeting only `data-loading` for BUI pending styles
+            and update to `data-ispending`.
+
+            ## 4. Do not rename unrelated APIs
+            Do NOT rename MUI `loading` props, React Query `isLoading`, or other
+            non-BUI loading props.
+
+            After making changes, verify the files are syntactically valid.
+          max_steps: 20
