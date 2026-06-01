@@ -102,6 +102,15 @@ function isNavItemFeature(expr: SgNode<TSX>): boolean {
   return isNavItemFeatureText(expr.text())
 }
 
+function isNavBlueprintBackedFeature(element: SgNode<TSX>, navBlueprintImported: boolean): boolean {
+  if (!navBlueprintImported || element.kind() !== 'identifier') {
+    return false
+  }
+
+  const name = element.text()
+  return /nav/i.test(name) || name.includes('NavItem')
+}
+
 function fileImportsNavItemBlueprint(program: SgNode<TSX, 'program'>): boolean {
   return Boolean(
     getImport(program, {
@@ -138,7 +147,7 @@ function optionsHasNavItemFeatures(optionsNode: SgNode<TSX>, navBlueprintImporte
       if (isNavItemFeature(element)) {
         return true
       }
-      if (navBlueprintImported && element.kind() === 'identifier') {
+      if (isNavBlueprintBackedFeature(element, navBlueprintImported)) {
         return true
       }
     }
@@ -175,7 +184,7 @@ function rebuildOptionsWithoutNavItems(optionsNode: SgNode<TSX>, navBlueprintImp
       if (isNavItemFeature(element)) {
         return false
       }
-      if (navBlueprintImported && element.kind() === 'identifier') {
+      if (isNavBlueprintBackedFeature(element, navBlueprintImported)) {
         return false
       }
       return true
