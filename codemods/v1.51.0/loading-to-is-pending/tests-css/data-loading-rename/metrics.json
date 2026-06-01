@@ -1,0 +1,10 @@
+{
+  "loading-to-is-pending": [
+    {
+      "cardinality": {
+        "action": "css-attribute-renamed"
+      },
+      "count": 3
+    }
+  ]
+}

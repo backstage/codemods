@@ -1,0 +1,11 @@
+.myButton[data-loading] {
+  opacity: 0.6;
+}
+
+[data-loading='true'] {
+  pointer-events: none;
+}
+
+.parent [data-loading] .spinner {
+  display: block;
+}

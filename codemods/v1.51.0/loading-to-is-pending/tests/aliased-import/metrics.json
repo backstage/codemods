@@ -1,0 +1,11 @@
+{
+  "loading-to-is-pending": [
+    {
+      "cardinality": {
+        "action": "prop-renamed",
+        "component": "SaveButton"
+      },
+      "count": 1
+    }
+  ]
+}

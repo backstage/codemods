@@ -1,0 +1,11 @@
+.myButton[data-ispending] {
+  opacity: 0.6;
+}
+
+[data-ispending='true'] {
+  pointer-events: none;
+}
+
+.parent [data-ispending] .spinner {
+  display: block;
+}
