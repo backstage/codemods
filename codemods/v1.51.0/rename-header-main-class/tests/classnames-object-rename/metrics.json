@@ -1,0 +1,25 @@
+{
+  "header-main-class-rename": [
+    {
+      "cardinality": {
+        "action": "renamed",
+        "type": "class-name"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "renamed",
+        "type": "object-key"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "renamed",
+        "type": "property-access"
+      },
+      "count": 1
+    }
+  ]
+}

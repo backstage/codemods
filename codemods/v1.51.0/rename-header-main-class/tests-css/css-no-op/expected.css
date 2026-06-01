@@ -1,0 +1,19 @@
+.bui-HeaderContent {
+  display: flex;
+}
+
+.bui-HeaderTop {
+  align-items: center;
+}
+
+.bui-HeaderBottom {
+  padding: 8px;
+}
+
+.bui-Header2 {
+  opacity: 1;
+}
+
+.some-other-class {
+  color: blue;
+}

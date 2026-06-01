@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+params:
+  schema:
+    aiFixup:
+      type: boolean
+      default: false
+      description: 'Review Header root-class TODOs and fix descendant selectors after .bui-Header removal.'
+
+nodes:
+  - id: apply-transforms
+    name: 'Apply AST Transformations'
+    type: automatic
+    steps:
+      - name: 'Rename bui-Header to bui-HeaderContent in JS/TS files'
+        js-ast-grep:
+          js_file: scripts/codemod.ts
+          language: 'tsx'
+          semantic_analysis: file
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+            - '**/*.js'
+            - '**/*.jsx'
+          exclude:
+            - '**/node_modules/**'
+
+      - name: 'Rename .bui-Header to .bui-HeaderContent in CSS/SCSS files'
+        js-ast-grep:
+          js_file: scripts/codemod-css.ts
+          language: 'css'
+          include:
+            - '**/*.css'
+            - '**/*.scss'
+          exclude:
+            - '**/node_modules/**'
+
+  - id: ai-fixup
+    name: 'AI fixup for edge cases'
+    type: automatic
+    depends_on: [apply-transforms]
+    steps:
+      - name: 'Fix remaining edge cases that require contextual understanding'
+        if: params.aiFixup == true
+        ai:
+          model: 'claude-sonnet-4-6'
+          system_prompt: |
+            You are a Backstage migration expert. You are fixing edge cases left over
+            from an AST-based codemod that renamed .bui-Header to .bui-HeaderContent
+            and classNames.root to classNames.content in Backstage 1.51.0 (BUI v0.15.0).
+
+            The root Header DOM element was removed and split into section classes
+            (headerTop, headerBottom, content, titleStack, tags, etc.), so child/descendant
+            selectors targeting `.bui-Header > ...` may need to be restructured. The AST
+            codemod added TODO comments for these cases.
+
+            Your job is to find and fix the remaining issues that the AST codemod could not
+            handle mechanically. Be precise and conservative.
+          prompt: |
+            Search the codebase for remaining migration issues and fix them:
+
+            ## 1. Review TODO comments
+            Find all `/* TODO(backstage-codemod): Header root class removed — review selector intent */`
+            comments and assess whether the surrounding selector needs restructuring.
+
+            ## 2. Verify selector correctness
+            For selectors that used `.bui-Header > .child`, verify that the child selector
+            still applies correctly now that the root wrapper element was removed. Target the
+            appropriate section class (content, headerTop, headerBottom) when needed.
+
+            ## 3. Fix styled-components / CSS modules
+            Check for broken specificity or incorrect renames in styled-components, Emotion,
+            and CSS modules. Revert any incorrect renames of section classes like
+            bui-HeaderTop or bui-HeaderContent.
+
+            After making changes, verify the files are syntactically valid.
+          max_steps: 30

@@ -1,0 +1,9 @@
+/* TODO(backstage-codemod): Header root class removed — review selector intent */
+.bui-HeaderContent > .title {
+  font-weight: bold;
+}
+
+/* TODO(backstage-codemod): Header root class removed — review selector intent */
+.bui-HeaderContent .icon {
+  font-size: 16px;
+}
