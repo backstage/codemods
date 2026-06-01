@@ -1,0 +1,6 @@
+catalog:
+  stitchingStrategy:
+    mode: immediate
+# Keep this root-level comment
+app:
+  title: Example App

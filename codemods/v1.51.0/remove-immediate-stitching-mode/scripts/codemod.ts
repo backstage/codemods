@@ -7,6 +7,7 @@ const migrationMetric = useMetricAtom('remove-immediate-stitching-mode')
 const MIGRATION_COMMENT = '# Migrated by @backstage/remove-immediate-stitching-mode — immediate mode deprecated in 1.51'
 
 const IMMEDIATE_MODE_VALUE = /^\s*mode:\s*['"]?immediate['"]?\s*(?:#.*)?$/
+const DOTTED_IMMEDIATE_MODE_VALUE = /^\s*catalog\.stitchingStrategy\.mode:\s*['"]?immediate['"]?\s*(?:#.*)?$/
 
 function getLineIndent(line: string): string {
   const match = line.match(/^(\s*)/)
@@ -32,6 +33,16 @@ function isKeyLine(line: string, key: string, expectedIndent: string): boolean {
   return keyMatch?.[1] === key
 }
 
+function findNextContentLine(lines: string[], startLine: number): number {
+  for (let lineIndex = startLine; lineIndex < lines.length; lineIndex += 1) {
+    if (!isBlankOrComment(lines[lineIndex] ?? '')) {
+      return lineIndex
+    }
+  }
+
+  return lines.length
+}
+
 function findBlockEnd(lines: string[], keyLine: number): number {
   const keyIndent = getLineIndent(lines[keyLine] ?? '')
   let endLine = keyLine + 1
@@ -39,6 +50,17 @@ function findBlockEnd(lines: string[], keyLine: number): number {
   while (endLine < lines.length) {
     const line = lines[endLine] ?? ''
     if (isBlankOrComment(line)) {
+      const nextContentLine = findNextContentLine(lines, endLine + 1)
+      if (nextContentLine >= lines.length) {
+        endLine += 1
+        continue
+      }
+
+      const nextIndent = getLineIndent(lines[nextContentLine] ?? '')
+      if (nextIndent.length <= keyIndent.length) {
+        break
+      }
+
       endLine += 1
       continue
     }
@@ -66,19 +88,29 @@ function replaceImmediateModeLine(line: string): string {
   return line.replace(/^(\s*mode:\s*)['"]?immediate['"]?(\s*(?:#.*)?)$/, '$1deferred$2')
 }
 
+function replaceDottedImmediateModeLine(line: string): string {
+  return line.replace(/^(\s*catalog\.stitchingStrategy\.mode:\s*)['"]?immediate['"]?(\s*(?:#.*)?)$/, '$1deferred$2')
+}
+
+function isOtherDottedStitchingKey(line: string): boolean {
+  const keyMatch = line.trim().match(/^catalog\.stitchingStrategy\.([A-Za-z0-9_.-]+):/)
+  return keyMatch !== null && keyMatch[1] !== 'mode'
+}
+
 function hasMigrationComment(lines: string[]): boolean {
   return lines.some((line) => line.includes('@backstage/remove-immediate-stitching-mode'))
 }
 
-interface StitchingStrategyBlock {
+interface StitchingStrategyMatch {
   startLine: number
   endLine: number
-  catalogChildIndent: string
+  commentIndent: string
   modeLine: number
   hasOtherKeys: boolean
+  form: 'nested' | 'dotted'
 }
 
-function findStitchingStrategyBlock(lines: string[]): StitchingStrategyBlock | null {
+function findNestedStitchingStrategyBlock(lines: string[]): StitchingStrategyMatch | null {
   const catalogLine = lines.findIndex((line) => isKeyLine(line, 'catalog', ''))
   if (catalogLine === -1) {
     return null
@@ -126,13 +158,52 @@ function findStitchingStrategyBlock(lines: string[]): StitchingStrategyBlock | n
     return {
       startLine: lineIndex,
       endLine,
-      catalogChildIndent,
+      commentIndent: catalogChildIndent,
       modeLine,
       hasOtherKeys,
+      form: 'nested',
     }
   }
 
   return null
+}
+
+function findDottedStitchingStrategy(lines: string[]): StitchingStrategyMatch | null {
+  let modeLine: number | null = null
+  let hasOtherKeys = false
+
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+    const line = lines[lineIndex] ?? ''
+    if (isBlankOrComment(line)) {
+      continue
+    }
+
+    if (DOTTED_IMMEDIATE_MODE_VALUE.test(line)) {
+      modeLine = lineIndex
+      continue
+    }
+
+    if (isOtherDottedStitchingKey(line)) {
+      hasOtherKeys = true
+    }
+  }
+
+  if (modeLine === null) {
+    return null
+  }
+
+  return {
+    startLine: modeLine,
+    endLine: modeLine + 1,
+    commentIndent: getLineIndent(lines[modeLine] ?? ''),
+    modeLine,
+    hasOtherKeys,
+    form: 'dotted',
+  }
+}
+
+function findStitchingStrategyMatch(lines: string[]): StitchingStrategyMatch | null {
+  return findNestedStitchingStrategyBlock(lines) ?? findDottedStitchingStrategy(lines)
 }
 
 function normalizeSource(source: string): string {
@@ -143,24 +214,25 @@ const transform: Codemod<YAML> = async (root) => {
   const rootNode = root.root()
   const source = normalizeSource(rootNode.text())
   const lines = source.split('\n')
-  const block = findStitchingStrategyBlock(lines)
+  const match = findStitchingStrategyMatch(lines)
 
-  if (!block) {
+  if (!match) {
     return null
   }
 
-  const startPos = lineOffset(lines, block.startLine)
-  const endPos = lineOffset(lines, block.endLine)
-  const commentLine = `${block.catalogChildIndent}${MIGRATION_COMMENT}\n`
+  const startPos = lineOffset(lines, match.startLine)
+  const endPos = lineOffset(lines, match.endLine)
+  const commentLine = `${match.commentIndent}${MIGRATION_COMMENT}\n`
   const includeComment = !hasMigrationComment(lines)
 
   let insertedText: string
   let action: string
 
-  if (block.hasOtherKeys) {
+  if (match.hasOtherKeys) {
     const updatedLines = [...lines]
-    updatedLines[block.modeLine] = replaceImmediateModeLine(lines[block.modeLine] ?? '')
-    const blockText = `${updatedLines.slice(block.startLine, block.endLine).join('\n')}\n`
+    const replaceModeLine = match.form === 'dotted' ? replaceDottedImmediateModeLine : replaceImmediateModeLine
+    updatedLines[match.modeLine] = replaceModeLine(lines[match.modeLine] ?? '')
+    const blockText = `${updatedLines.slice(match.startLine, match.endLine).join('\n')}\n`
     insertedText = includeComment ? `${blockText}${commentLine}` : blockText
     action = 'mode-changed'
   } else {
