@@ -33,10 +33,10 @@ Renames `identity` member access to `info`:
 
 ```ts
 // Before
-const refs = user?.identity.ownershipEntityRefs;
+const refs = user?.identity.ownershipEntityRefs
 
 // After
-const refs = user?.info.ownershipEntityRefs;
+const refs = user?.info.ownershipEntityRefs
 ```
 
 ### Mock object literals
@@ -49,13 +49,13 @@ const user = {
   token: 'mock-token',
   credentials: { $$type: '@backstage/BackstageCredentials', principal: {} },
   identity: { userEntityRef: 'user:default/guest', ownershipEntityRefs: [] },
-};
+}
 
 // After
 const user = {
   credentials: { $$type: '@backstage/BackstageCredentials', principal: {} },
   info: { userEntityRef: 'user:default/guest', ownershipEntityRefs: [] },
-};
+}
 ```
 
 ### TODO comments
