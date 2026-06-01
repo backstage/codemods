@@ -245,31 +245,48 @@ function getQueryMethodName(call: SgNode<TSX>): string | null {
   return null
 }
 
+function callHasStringArgument(call: SgNode<TSX>, value: string): boolean {
+  return (
+    call.find({
+      rule: {
+        kind: 'string_fragment',
+        regex: `^${value}$`,
+      },
+    }) !== null
+  )
+}
+
+function callHasSidebarReference(call: SgNode<TSX>): boolean {
+  return (
+    call.find({
+      rule: {
+        kind: 'string_fragment',
+        regex: 'sidebar',
+      },
+    }) !== null
+  )
+}
+
 function isSidebarAssertionCall(call: SgNode<TSX>): boolean {
   const method = getQueryMethodName(call)
   if (!method) {
     return false
   }
 
-  const text = call.text()
   const isRoleQuery = /^(getByRole|queryByRole|findByRole|getAllByRole|queryAllByRole|findAllByRole)$/.test(method)
   const isSidebarQuery =
     /^(getByTestId|queryByTestId|findByTestId|getAllByTestId|queryAllByTestId|findAllByTestId)$/.test(method)
 
   if (isRoleQuery) {
-    if (/['"]link['"]/.test(text)) {
+    if (callHasStringArgument(call, 'link') || callHasStringArgument(call, 'navigation')) {
       return true
     }
-    if (/['"]navigation['"]/.test(text)) {
+    if (callHasSidebarReference(call)) {
       return true
     }
   }
 
-  if (isSidebarQuery && /sidebar/i.test(text)) {
-    return true
-  }
-
-  if (isRoleQuery && /sidebar/i.test(text)) {
+  if (isSidebarQuery && callHasSidebarReference(call)) {
     return true
   }
 
