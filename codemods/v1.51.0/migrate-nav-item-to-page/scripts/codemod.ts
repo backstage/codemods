@@ -591,7 +591,7 @@ function findBlueprintCallsForName(rootNode: SgNode<TSX>, blueprintRef: string):
   })
 }
 
-const transform: Codemod<TSX> = async (root) => {
+const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const allowJsx = root.filename().endsWith('.tsx')
   const navBlueprintRef = resolveNavBlueprintName(rootNode)
