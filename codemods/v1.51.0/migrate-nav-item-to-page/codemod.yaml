@@ -1,7 +1,7 @@
 schema_version: '1.0'
 
 name: '@backstage/migrate-nav-item-to-page'
-version: '0.1.0'
+version: '0.2.0'
 description: 'Migrate NavItemBlueprint to PageBlueprint title/icon params for Backstage 1.51.0'
 author: 'Paul Schultz<schultzp2020@users.noreply.github.com>'
 license: 'MIT'
