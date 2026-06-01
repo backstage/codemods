@@ -11,7 +11,7 @@ params:
 
 nodes:
   - id: apply-transforms
-    name: Apply AST Transformations
+    name: 'Apply AST Transformations'
     type: automatic
     steps:
       - name: 'Rename bui-Header to bui-HeaderContent in JS/TS files'
@@ -38,7 +38,7 @@ nodes:
             - '**/node_modules/**'
 
   - id: ai-fixup
-    name: AI fixup for edge cases
+    name: 'AI fixup for edge cases'
     type: automatic
     depends_on: [apply-transforms]
     steps:
