@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+nodes:
+  - id: apply-recipe
+    name: Run every Backstage 1.51.0 codemod in order
+    type: automatic
+    steps:
+      # --- BREAKING: frontend-plugin-api nav model + PortableSchema access.
+      #     Nav item migration first so page extensions expose title/icon before
+      #     test utilities assume the new nav discovery model.
+      - name: 'Migrate NavItemBlueprint title/icon into matching PageBlueprint params'
+        codemod:
+          source: '@backstage/migrate-nav-item-to-page'
+
+      - name: 'Call PortableSchema.schema() as a method instead of property access'
+        codemod:
+          source: '@backstage/portable-schema-method-call'
+
+      # --- BREAKING: permission-node PolicyQueryUser field cleanup
+      - name: 'Migrate PolicyQueryUser off removed token/identity fields'
+        codemod:
+          source: '@backstage/migrate-policy-query-user'
+
+      # --- BREAKING: @backstage/ui Header root class removal
+      - name: 'Rename removed .bui-Header root class and HeaderDefinition.classNames.root'
+        codemod:
+          source: '@backstage/rename-header-main-class'
+
+      # --- BREAKING: frontend-test-utils renderInTestApp nav shell change
+      - name: 'Migrate renderInTestApp nav-item tests to renderTestApp'
+        codemod:
+          source: '@backstage/render-test-app-nav-migration'
+
+      # --- Deprecations (non-breaking in 1.51.0, but recommended to migrate now).
+      - name: 'Rename deprecated loading prop to isPending on @backstage/ui components'
+        codemod:
+          source: '@backstage/loading-to-is-pending'
+
+      - name: 'Rename EXPERIMENTAL_formDecorators to formDecorators on scaffolder templates'
+        codemod:
+          source: '@backstage/experimental-form-decorators-to-stable'
+
+      - name: 'Migrate catalog immediate stitching mode to deferred in app-config'
+        codemod:
+          source: '@backstage/remove-immediate-stitching-mode'
