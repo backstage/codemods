@@ -2,6 +2,8 @@
 
 Copy and fill for each codemod. Remove sections that do not apply (e.g. drop **Optional: AI fixup step** when aiFixup is not recommended).
 
+<!-- markdownlint-disable MD046 -->
+
 ````markdown
 ### Summary
 
@@ -27,7 +29,6 @@ State clearly if this is NOT a drop-in rename. Link to release notes if helpful.
 // Before
 <minimal realistic snippet>
 ```
-````
 
 ```ts
 // After
@@ -77,7 +78,6 @@ yarn dlx codemod@latest run @backstage/<package-name> -t /path/to/target --param
 
 - Branch/worktree: `.worktrees/feat/v1.<minor>.0/<codemod-name>`
 - Open PR when ready; one PR per codemod
-
 ````
 
 ## Recipe issue template (separate issue, filed last)
@@ -99,10 +99,10 @@ Recipe workflow steps must use `source: '@backstage/<package>'` (registry resolu
 
 Align with [Backstage 1.<minor>.0 release notes](https://backstage.io/docs/releases/v1.<minor>.0):
 
-| # | Package | Domain |
-|---|---------|--------|
-| 1 | `@backstage/<name>` | <domain> |
-| ... | ... | ... |
+| #   | Package             | Domain   |
+| --- | ------------------- | -------- |
+| 1   | `@backstage/<name>` | <domain> |
+| ... | ...                 | ...      |
 
 ### Deliverables
 
@@ -143,4 +143,6 @@ Document dry-run against sample monorepo: `../backstage` (<absolute path if know
 
 - Branch/worktree: `.worktrees/feat/v1.<minor>.0/migration-recipe`
 - One PR; merge **after** codemod issues are merged and published
-````
+```
+
+<!-- markdownlint-enable MD046 -->
