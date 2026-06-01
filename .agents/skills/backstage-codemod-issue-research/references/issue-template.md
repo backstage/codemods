@@ -2,7 +2,7 @@
 
 Copy and fill for each codemod. Remove sections that do not apply (e.g. drop **Optional: AI fixup step** when aiFixup is not recommended).
 
-```markdown
+````markdown
 ### Summary
 
 <What was removed/changed, in which package, and what consumers must do instead.
@@ -27,6 +27,7 @@ State clearly if this is NOT a drop-in rename. Link to release notes if helpful.
 // Before
 <minimal realistic snippet>
 ```
+````
 
 ```ts
 // After
@@ -49,10 +50,12 @@ Ship `params.aiFixup` (boolean, default `false`) and an `ai-fixup` workflow node
 **`params.schema.aiFixup` description:** <one-line param description for workflow UI>
 
 **AST step already handles:**
+
 - <bullet>
 - <bullet>
 
 **AI fixup prompt should address:**
+
 1. <residual case>
 2. <residual case>
 
@@ -74,7 +77,8 @@ yarn dlx codemod@latest run @backstage/<package-name> -t /path/to/target --param
 
 - Branch/worktree: `.worktrees/feat/v1.<minor>.0/<codemod-name>`
 - Open PR when ready; one PR per codemod
-```
+
+````
 
 ## Recipe issue template (separate issue, filed last)
 
@@ -139,4 +143,4 @@ Document dry-run against sample monorepo: `../backstage` (<absolute path if know
 
 - Branch/worktree: `.worktrees/feat/v1.<minor>.0/migration-recipe`
 - One PR; merge **after** codemod issues are merged and published
-```
+````

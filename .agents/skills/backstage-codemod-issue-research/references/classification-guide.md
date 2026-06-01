@@ -4,15 +4,15 @@ Use when a changelog entry might need automation. When in doubt, bias toward **d
 
 ## Codemod — file these issues
 
-| Signal | Example |
-|--------|---------|
-| Removed export with stable replacement | `NavItemBlueprint` → merge into `PageBlueprint` |
-| Property → method shape change | `PortableSchema.schema.type` → `schema().type` |
-| Removed fields on a typed object | `PolicyQueryUser` field cleanup |
-| CSS class / `classNames` key rename | `.bui-Header` removal |
-| Test helper behavior change with detectable call sites | `renderInTestApp` + `nav-item` features → `renderTestApp` |
-| Deprecation: symbol rename in source | `loading` → `isPending`, `EXPERIMENTAL_formDecorators` → `formDecorators` |
-| Config key removed with known path | `catalog.stitchingStrategy.mode: immediate` |
+| Signal                                                 | Example                                                                   |
+| ------------------------------------------------------ | ------------------------------------------------------------------------- |
+| Removed export with stable replacement                 | `NavItemBlueprint` → merge into `PageBlueprint`                           |
+| Property → method shape change                         | `PortableSchema.schema.type` → `schema().type`                            |
+| Removed fields on a typed object                       | `PolicyQueryUser` field cleanup                                           |
+| CSS class / `classNames` key rename                    | `.bui-Header` removal                                                     |
+| Test helper behavior change with detectable call sites | `renderInTestApp` + `nav-item` features → `renderTestApp`                 |
+| Deprecation: symbol rename in source                   | `loading` → `isPending`, `EXPERIMENTAL_formDecorators` → `formDecorators` |
+| Config key removed with known path                     | `catalog.stitchingStrategy.mode: immediate`                               |
 
 **Ask:** Can an agent write a grep/AST rule that matches >80% of real usages without false positives on unrelated code?
 
@@ -20,15 +20,15 @@ If yes → codemod issue with explicit Detection Criteria.
 
 ## Document-only — recipe README / out-of-scope
 
-| Signal | Example |
-|--------|---------|
-| Default behavior change, no code pattern | Catalog pagination sort-field semantics |
-| Security / ops configuration | OIDC CIMD/DCR default pattern |
-| External service filtering default | MS Graph disabled-user filtering |
-| Dependency version constraint | `@remixicon/react` cap, Zod v4-only bump |
-| Optional large migration | React Aria monopackage (could be future codemod — note separately) |
-| Deprecated but not removed | `Header.breadcrumbs` still present in target release |
-| Upgrade Helper-only dependency bumps | Version pins across `package.json` files |
+| Signal                                   | Example                                                            |
+| ---------------------------------------- | ------------------------------------------------------------------ |
+| Default behavior change, no code pattern | Catalog pagination sort-field semantics                            |
+| Security / ops configuration             | OIDC CIMD/DCR default pattern                                      |
+| External service filtering default       | MS Graph disabled-user filtering                                   |
+| Dependency version constraint            | `@remixicon/react` cap, Zod v4-only bump                           |
+| Optional large migration                 | React Aria monopackage (could be future codemod — note separately) |
+| Deprecated but not removed               | `Header.breadcrumbs` still present in target release               |
+| Upgrade Helper-only dependency bumps     | Version pins across `package.json` files                           |
 
 **Ask:** Would automation require understanding runtime semantics or org-specific policy?
 

@@ -32,12 +32,12 @@ Hand off with: the approved inventory table, filed issue numbers/links, and the 
 
 ## Setup
 
-| Gate | Check | If fail |
-|------|-------|---------|
-| Repo | Working in `backstage/codemods` | Clone or note repo URL for `gh issue create` |
-| Release | Know target version (e.g. `1.<minor>.0`) | Ask user |
-| Changelog | Consolidated changelog file available locally | Fetch from `backstage/backstage` — see Sources |
-| Prior art | Closed issues for previous release exist | `gh issue list --repo backstage/codemods --state closed --search "Backstage 1.<N-1>"` |
+| Gate      | Check                                         | If fail                                                                               |
+| --------- | --------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Repo      | Working in `backstage/codemods`               | Clone or note repo URL for `gh issue create`                                          |
+| Release   | Know target version (e.g. `1.<minor>.0`)      | Ask user                                                                              |
+| Changelog | Consolidated changelog file available locally | Fetch from `backstage/backstage` — see Sources                                        |
+| Prior art | Closed issues for previous release exist      | `gh issue list --repo backstage/codemods --state closed --search "Backstage 1.<N-1>"` |
 
 Read [`CONTRIBUTING.md`](../../../CONTRIBUTING.md) for package naming (`@backstage/<kebab-name>`) and directory layout (`codemods/<version>/<name>/`).
 
@@ -61,14 +61,14 @@ digraph research {
 
 Use **all** of these — they disagree in useful ways:
 
-| Source | Path / command | What it gives you |
-|--------|----------------|-------------------|
-| Consolidated changelog | `backstage/backstage/docs/releases/v1.<minor>.0-changelog.md` | Per-package entries, diff blocks, **BREAKING** markers |
-| Published release notes | `https://backstage.io/docs/releases/v1.<minor>.0` | User-facing framing, migration prose |
-| GitHub release | `gh release view v1.<minor>.0 --repo backstage/backstage` | Same content, sometimes different emphasis |
-| Upgrade Helper | `https://backstage.github.io/upgrade-helper/?to=1.<minor>.0` | Dependency bumps (usually not codemod targets) |
-| Prior release issues | `gh issue view <n> --repo backstage/codemods` for closed v1.(N-1) issues | Issue section order, aiFixup pattern, tone |
-| Existing codemods | `codemods/v1.<prior>/` in this repo + `npx codemod search "backstage"` | Avoid duplicate issues |
+| Source                  | Path / command                                                           | What it gives you                                      |
+| ----------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------ |
+| Consolidated changelog  | `backstage/backstage/docs/releases/v1.<minor>.0-changelog.md`            | Per-package entries, diff blocks, **BREAKING** markers |
+| Published release notes | `https://backstage.io/docs/releases/v1.<minor>.0`                        | User-facing framing, migration prose                   |
+| GitHub release          | `gh release view v1.<minor>.0 --repo backstage/backstage`                | Same content, sometimes different emphasis             |
+| Upgrade Helper          | `https://backstage.github.io/upgrade-helper/?to=1.<minor>.0`             | Dependency bumps (usually not codemod targets)         |
+| Prior release issues    | `gh issue view <n> --repo backstage/codemods` for closed v1.(N-1) issues | Issue section order, aiFixup pattern, tone             |
+| Existing codemods       | `codemods/v1.<prior>/` in this repo + `npx codemod search "backstage"`   | Avoid duplicate issues                                 |
 
 Quick scan for breaking markers (from repo root):
 
@@ -96,12 +96,12 @@ Include **deprecations** that are mechanical renames (symbol or prop renames, st
 
 Load [`references/classification-guide.md`](references/classification-guide.md) when unsure. Summary:
 
-| Verdict | Signals |
-|---------|---------|
-| **Codemod issue** | AST-detectable pattern in TS/TSX/YAML; mechanical or semi-mechanical transform; repeated across consumer apps |
-| **Recipe README only** | Manual config / ops change; semantic behavior change; dependency resolution; no stable search pattern |
-| **Merge with another issue** | Same package + same file types + transform can run in one pass without conflicting edits |
-| **Split issues** | Unrelated domains (frontend JSX vs app-config YAML) or conflicting transform order |
+| Verdict                      | Signals                                                                                                       |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **Codemod issue**            | AST-detectable pattern in TS/TSX/YAML; mechanical or semi-mechanical transform; repeated across consumer apps |
+| **Recipe README only**       | Manual config / ops change; semantic behavior change; dependency resolution; no stable search pattern         |
+| **Merge with another issue** | Same package + same file types + transform can run in one pass without conflicting edits                      |
+| **Split issues**             | Unrelated domains (frontend JSX vs app-config YAML) or conflicting transform order                            |
 
 **One issue = one codemod package.** Do not bundle unrelated breaking changes.
 
@@ -123,8 +123,8 @@ Worktree path (for Implementation notes): `.worktrees/feat/v1.<minor>.0/<codemod
 
 Present a markdown table **before** filing issues:
 
-| # | Package | Type | Source package | aiFixup? | Notes |
-|---|---------|------|----------------|----------|-------|
+| #   | Package | Type | Source package | aiFixup? | Notes |
+| --- | ------- | ---- | -------------- | -------- | ----- |
 
 - **Type:** breaking | deprecation
 - **aiFixup?:** yes | no | maybe — decide using criteria below
@@ -207,7 +207,7 @@ An issue is ready to implement when:
 
 **Import-only specs.** If the breaking change affects JSX structure or config shape, the Transformation Logic must describe usage rewrites — not just import path swaps.
 
-**Conflating related migrations.** Same release may remove an API *and* change test utilities that referenced it. Separate issues unless one codemod safely handles both.
+**Conflating related migrations.** Same release may remove an API _and_ change test utilities that referenced it. Separate issues unless one codemod safely handles both.
 
 **Config / semantics as codemods.** Catalog pagination behavior, OIDC hardening, dependency caps — document in recipe out-of-scope, do not file codemod issues.
 
@@ -215,8 +215,8 @@ An issue is ready to implement when:
 
 ## References
 
-| File | Load when |
-|------|-----------|
-| [`references/issue-template.md`](references/issue-template.md) | Writing issue bodies (Step 6) |
-| [`references/classification-guide.md`](references/classification-guide.md) | Unsure codemod vs out-of-scope (Step 3) |
-| [`scripts/scan-changelog.py`](scripts/scan-changelog.py) | Initial BREAKING/deprecated sweep (Step 1) |
+| File                                                                       | Load when                                  |
+| -------------------------------------------------------------------------- | ------------------------------------------ |
+| [`references/issue-template.md`](references/issue-template.md)             | Writing issue bodies (Step 6)              |
+| [`references/classification-guide.md`](references/classification-guide.md) | Unsure codemod vs out-of-scope (Step 3)    |
+| [`scripts/scan-changelog.py`](scripts/scan-changelog.py)                   | Initial BREAKING/deprecated sweep (Step 1) |
