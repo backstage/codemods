@@ -1,0 +1,25 @@
+{
+  "portable-schema-method-call": [
+    {
+      "cardinality": {
+        "action": "schema-method-call-inserted",
+        "property": "properties"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "schema-method-call-inserted",
+        "property": "required"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "schema-method-call-inserted",
+        "property": "type"
+      },
+      "count": 1
+    }
+  ]
+}

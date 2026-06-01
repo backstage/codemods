@@ -1,0 +1,11 @@
+{
+  "portable-schema-method-call": [
+    {
+      "cardinality": {
+        "action": "schema-method-call-inserted",
+        "property": "properties"
+      },
+      "count": 1
+    }
+  ]
+}

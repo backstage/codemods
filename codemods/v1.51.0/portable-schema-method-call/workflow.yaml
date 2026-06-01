@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+params:
+  schema:
+    aiFixup:
+      type: boolean
+      default: false
+      description: 'Run an AI-powered fixup step to address missed or incorrect PortableSchema.schema property access and ambiguous .schema members.'
+
+nodes:
+  - id: apply-transforms
+    name: Apply AST Transformations
+    type: automatic
+    steps:
+      - name: 'Rewrite PortableSchema.schema property access to schema() method calls'
+        js-ast-grep:
+          js_file: scripts/codemod.ts
+          language: 'tsx'
+          semantic_analysis: file
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+
+  - id: ai-fixup
+    name: AI fixup for edge cases
+    type: automatic
+    depends_on: [apply-transforms]
+    steps:
+      - name: 'Fix remaining PortableSchema.schema property access patterns'
+        if: params.aiFixup == true
+        ai:
+          model: 'claude-sonnet-4-6'
+          system_prompt: |
+            You are a Backstage migration expert. You are fixing edge cases left over
+            from an AST-based codemod that rewrites PortableSchema.schema property access
+            to method calls in Backstage 1.51.0.
+
+            The deprecated property form of PortableSchema.schema has been removed from
+            @backstage/frontend-plugin-api. Callers must use schema() instead of reading
+            schema properties directly.
+
+            The AST codemod already handled:
+            - X.schema.<jsonSchemaProp> -> X.schema().<jsonSchemaProp> for known JSON Schema properties
+            - Optional chaining: schema?.type -> schema()?.type
+            - Skipping unrelated .schema members when no PortableSchema context is present
+            - Skipping expressions where schema is already invoked as schema()
+
+            Your job is ONLY to fix remaining or incorrect patterns the AST codemod could
+            not handle mechanically. Be precise and conservative.
+          prompt: |
+            Search the codebase for remaining PortableSchema.schema issues:
+
+            1. Remaining .schema.type / .schema.properties without () on PortableSchema values
+            2. Assignments like `const s = portable.schema` (value, not call) — migrate to schema() or add TODO
+            3. False positives on non-PortableSchema .schema members — revert incorrect transforms
+            4. Type annotations referencing the old property form
+
+            After making changes, verify the files are syntactically valid TypeScript.
+          max_steps: 25

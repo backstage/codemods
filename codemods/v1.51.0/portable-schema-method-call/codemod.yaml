@@ -1,0 +1,20 @@
+schema_version: '1.0'
+
+name: '@backstage/portable-schema-method-call'
+version: '0.1.0'
+description: 'Backstage 1.51.0: Call PortableSchema.schema() as a method instead of property access'
+author: 'Paul Schultz<pschultz@redhat.com>'
+license: 'MIT'
+repository: 'https://github.com/backstage/codemods'
+workflow: 'workflow.yaml'
+
+targets:
+  languages: ['tsx', 'ts']
+
+keywords: ['backstage', 'migration', 'PortableSchema', 'schema', 'frontend-plugin-api', '1.51.0']
+
+registry:
+  access: 'public'
+  visibility: 'public'
+
+capabilities: []
