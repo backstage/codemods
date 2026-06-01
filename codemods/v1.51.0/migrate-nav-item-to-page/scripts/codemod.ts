@@ -714,8 +714,7 @@ const transform: Codemod<TSX> = async (root) => {
     return null
   }
 
-  const result = await Promise.resolve(finalizeSource(rootNode.commitEdits(edits)))
-  return result
+  return finalizeSource(rootNode.commitEdits(edits))
 }
 
 export default transform

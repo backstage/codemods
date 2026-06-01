@@ -17,7 +17,7 @@ nodes:
       - name: 'Migrate NavItemBlueprint into matching PageBlueprint extensions'
         js-ast-grep:
           js_file: scripts/codemod.ts
-          language: tsx
+          language: 'tsx'
           include:
             - '**/*.ts'
             - '**/*.tsx'
