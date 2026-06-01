@@ -10,7 +10,7 @@ const NEW_PROP = 'isPending'
 const UI_SOURCE = '@backstage/ui'
 
 function escapeRegex(str: string): string {
-  return `^${str.replaceAll(/[.*+?^${}()|[\]\\/]/g, '\\$&')}$`
+  return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode<TSX, 'import_statement'>[] {
@@ -21,7 +21,7 @@ function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode
         kind: 'string',
         has: {
           kind: 'string_fragment',
-          regex: escapeRegex(source),
+          regex: `^${escapeRegex(source)}$`,
         },
       },
     },
@@ -118,7 +118,7 @@ function renameLoadingAttribute(opening: SgNode<TSX>, componentLabel: string, ed
       kind: 'jsx_attribute',
       has: {
         kind: 'property_identifier',
-        regex: escapeRegex(OLD_PROP),
+        regex: `^${escapeRegex(OLD_PROP)}$`,
       },
     },
   })
@@ -130,7 +130,7 @@ function renameLoadingAttribute(opening: SgNode<TSX>, componentLabel: string, ed
   const propNode = loadingAttr.find({
     rule: {
       kind: 'property_identifier',
-      regex: escapeRegex(OLD_PROP),
+      regex: `^${escapeRegex(OLD_PROP)}$`,
     },
   })
 
