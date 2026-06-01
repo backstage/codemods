@@ -463,13 +463,9 @@ function insertNavPropsIntoObject(paramsObject: SgNode<TSX>, title: string | nul
 }
 
 function removeIdentifierFromArray(arrayNode: SgNode<TSX>, identifier: string): Edit[] {
-  const elements = arrayNode.children().filter(
-    (c) => c.kind() !== '[' && c.kind() !== ']' && c.kind() !== ',',
-  )
+  const elements = arrayNode.children().filter((c) => c.kind() !== '[' && c.kind() !== ']' && c.kind() !== ',')
 
-  const target = elements.find(
-    (el) => el.kind() === 'identifier' && el.text() === identifier,
-  )
+  const target = elements.find((el) => el.kind() === 'identifier' && el.text() === identifier)
   if (!target) {
     return []
   }
