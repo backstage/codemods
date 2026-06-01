@@ -12,7 +12,7 @@ This codemod rewrites:
 - `config.schema.properties` -> `config.schema().properties`
 - Optional chaining: `schema?.type` -> `schema()?.type`
 
-The codemod only runs in files that import from `@backstage/frontend-plugin-api` or reference the `PortableSchema` type, to avoid false positives on unrelated `.schema` properties.
+The codemod only rewrites `.schema.<jsonSchemaProp>` when the receiver is typed as `PortableSchema` (or a local alias), and only in files that import or reference `PortableSchema`. Unrelated `.schema` members — including config objects in files that import other symbols from `@backstage/frontend-plugin-api` — are left unchanged.
 
 ### What is NOT migrated (AST step)
 

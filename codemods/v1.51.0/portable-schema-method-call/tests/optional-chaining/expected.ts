@@ -1,11 +1,6 @@
-import { createExtension } from '@backstage/frontend-plugin-api';
+import type { PortableSchema } from '@backstage/frontend-plugin-api';
 
-export default createExtension({
-  name: 'example',
-  attachTo: { id: 'app', input: 'routes' },
-  output: [],
-  factory: ({ config }) => {
-    const maybeType = config.schema()?.type;
-    return [];
-  },
-});
+function readOptionalType(portable: PortableSchema<unknown>) {
+  const maybeType = portable.schema()?.type;
+  return maybeType;
+}

@@ -1,11 +1,6 @@
-import { createExtension } from '@backstage/frontend-plugin-api';
+import type { PortableSchema } from '@backstage/frontend-plugin-api';
 
-export default createExtension({
-  name: 'example',
-  attachTo: { id: 'app', input: 'routes' },
-  output: [],
-  factory: ({ config }) => {
-    const titleProp = config.schema.properties.title;
-    return [];
-  },
-});
+function readNestedProperty(portable: PortableSchema<unknown>) {
+  const titleProp = portable.schema.properties.title;
+  return titleProp;
+}

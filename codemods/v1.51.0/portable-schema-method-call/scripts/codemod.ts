@@ -65,25 +65,123 @@ function findStatementsFrom<K extends 'import_statement' | 'export_statement'>(
   }) as SgNode<TSX, K>[]
 }
 
+function resolvePortableSchemaLocalNames(rootNode: SgNode<TSX>): Set<string> {
+  const names = new Set<string>([PORTABLE_SCHEMA_TYPE])
+
+  for (const imp of findStatementsFrom(rootNode, 'import_statement', FRONTEND_PLUGIN_API)) {
+    for (const spec of imp.findAll({ rule: { kind: 'import_specifier' } })) {
+      const importedName = spec.field('name')?.text()
+      if (importedName !== PORTABLE_SCHEMA_TYPE) {
+        continue
+      }
+
+      names.add(spec.field('alias')?.text() ?? importedName)
+    }
+  }
+
+  return names
+}
+
+function importsPortableSchema(rootNode: SgNode<TSX>): boolean {
+  for (const imp of findStatementsFrom(rootNode, 'import_statement', FRONTEND_PLUGIN_API)) {
+    for (const spec of imp.findAll({ rule: { kind: 'import_specifier' } })) {
+      if (spec.field('name')?.text() === PORTABLE_SCHEMA_TYPE) {
+        return true
+      }
+    }
+  }
+
+  return false
+}
+
+function referencesPortableSchemaType(rootNode: SgNode<TSX>, portableSchemaNames: Set<string>): boolean {
+  for (const name of portableSchemaNames) {
+    const refs = rootNode.findAll({
+      rule: {
+        any: [
+          { kind: 'type_identifier', regex: `^${escapeRegex(name)}$` },
+          { kind: 'identifier', regex: `^${escapeRegex(name)}$` },
+        ],
+        not: { inside: { kind: 'import_specifier', stopBy: 'neighbor' } },
+      },
+    })
+
+    if (refs.length > 0) {
+      return true
+    }
+  }
+
+  return false
+}
+
 /**
  * Returns true when the file likely contains PortableSchema usage.
  */
 function hasPortableSchemaContext(rootNode: SgNode<TSX>): boolean {
-  const frontendApiImports = findStatementsFrom(rootNode, 'import_statement', FRONTEND_PLUGIN_API)
-  if (frontendApiImports.length > 0) {
-    return true
+  const portableSchemaNames = resolvePortableSchemaLocalNames(rootNode)
+  return importsPortableSchema(rootNode) || referencesPortableSchemaType(rootNode, portableSchemaNames)
+}
+
+function typeAnnotationReferencesPortableSchema(
+  typeAnnotation: SgNode<TSX>,
+  portableSchemaNames: Set<string>,
+): boolean {
+  for (const name of portableSchemaNames) {
+    const match = typeAnnotation.find({
+      rule: {
+        kind: 'type_identifier',
+        regex: `^${escapeRegex(name)}$`,
+      },
+    })
+
+    if (match) {
+      return true
+    }
   }
 
-  const portableSchemaRefs = rootNode.findAll({
-    rule: {
-      any: [
-        { kind: 'type_identifier', regex: `^${escapeRegex(PORTABLE_SCHEMA_TYPE)}$` },
-        { kind: 'identifier', regex: `^${escapeRegex(PORTABLE_SCHEMA_TYPE)}$` },
-      ],
-    },
-  })
+  return false
+}
 
-  return portableSchemaRefs.length > 0
+function isIdentifierTypedAsPortableSchema(identifier: SgNode<TSX>, portableSchemaNames: Set<string>): boolean {
+  const def = identifier.definition()
+  if (def?.kind === 'local') {
+    const declarator = def.node
+    if (declarator.kind() === 'variable_declarator') {
+      const typeAnn = declarator.field('type')
+      if (typeAnn && typeAnnotationReferencesPortableSchema(typeAnn, portableSchemaNames)) {
+        return true
+      }
+    }
+
+    if (declarator.kind() === 'required_parameter' || declarator.kind() === 'optional_parameter') {
+      const typeAnn = declarator.field('type')
+      if (typeAnn && typeAnnotationReferencesPortableSchema(typeAnn, portableSchemaNames)) {
+        return true
+      }
+    }
+  }
+
+  let current: SgNode<TSX> | null = identifier.parent()
+  while (current) {
+    if (current.kind() === 'required_parameter' || current.kind() === 'optional_parameter') {
+      const typeAnn = current.field('type')
+      if (typeAnn && typeAnnotationReferencesPortableSchema(typeAnn, portableSchemaNames)) {
+        return true
+      }
+    }
+
+    current = current.parent()
+  }
+
+  return false
+}
+
+function isPortableSchemaReceiver(objectNode: SgNode<TSX>, portableSchemaNames: Set<string>): boolean {
+  if (objectNode.kind() !== 'identifier') {
+    return false
+  }
+
+  return isIdentifierTypedAsPortableSchema(objectNode, portableSchemaNames)
 }
 
 function isJsonSchemaPropertyAccess(node: SgNode<TSX>): boolean {
@@ -103,7 +201,7 @@ function isJsonSchemaPropertyAccess(node: SgNode<TSX>): boolean {
  * Rewrite `X.schema.<jsonSchemaProp>` to `X.schema().<jsonSchemaProp>`.
  * Handles optional chaining on the property access: `X.schema?.type` -> `X.schema()?.type`.
  */
-function transformSchemaPropertyAccess(rootNode: SgNode<TSX>, edits: Edit[]): void {
+function transformSchemaPropertyAccess(rootNode: SgNode<TSX>, portableSchemaNames: Set<string>, edits: Edit[]): void {
   const schemaPropertyAccesses = rootNode.findAll({
     rule: {
       kind: 'member_expression',
@@ -135,6 +233,11 @@ function transformSchemaPropertyAccess(rootNode: SgNode<TSX>, edits: Edit[]): vo
       continue
     }
 
+    const receiver = schemaMember.field('object')
+    if (!receiver || !isPortableSchemaReceiver(receiver, portableSchemaNames)) {
+      continue
+    }
+
     edits.push({
       startPos: schemaProp.range().end.index,
       endPos: schemaProp.range().end.index,
@@ -156,7 +259,8 @@ const transform: Codemod<TSX> = async (root) => {
     return null
   }
 
-  transformSchemaPropertyAccess(rootNode, edits)
+  const portableSchemaNames = resolvePortableSchemaLocalNames(rootNode)
+  transformSchemaPropertyAccess(rootNode, portableSchemaNames, edits)
 
   const result = await Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
   return result
