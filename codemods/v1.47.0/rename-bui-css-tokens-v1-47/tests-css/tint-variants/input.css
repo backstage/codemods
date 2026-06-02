@@ -1,0 +1,7 @@
+:root {
+  --bui-bg: #ffffff;
+  --bui-bg-tint: #f5f5f5;
+  --bui-bg-tint-hover: #eeeeee;
+  --bui-bg-tint-pressed: #e0e0e0;
+  --bui-bg-tint-disabled: #fafafa;
+}

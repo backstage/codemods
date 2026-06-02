@@ -1,0 +1,11 @@
+{
+  "bui-css-token-rename": [
+    {
+      "cardinality": {
+        "action": "renamed",
+        "type": "string-fragment"
+      },
+      "count": 4
+    }
+  ]
+}

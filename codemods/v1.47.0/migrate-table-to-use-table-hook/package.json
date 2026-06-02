@@ -1,0 +1,13 @@
+{
+  "name": "@backstage/migrate-table-to-use-table-hook",
+  "version": "0.0.0",
+  "description": "Backstage 1.47.0: Migrate Table component to new useTable hook API from @backstage/ui",
+  "type": "module",
+  "scripts": {
+    "test": "yarn exec codemod jssg test -l tsx ./scripts/codemod.ts ./tests && yarn exec codemod workflow validate -w workflow.yaml"
+  },
+  "devDependencies": {
+    "@codemod.com/jssg-types": "1.5.2",
+    "codemod": "1.7.15"
+  }
+}

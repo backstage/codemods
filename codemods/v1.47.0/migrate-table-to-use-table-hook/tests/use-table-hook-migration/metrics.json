@@ -1,0 +1,11 @@
+{
+  "table-to-use-table-hook": [
+    {
+      "cardinality": {
+        "action": "migrated",
+        "type": "useTable-hook"
+      },
+      "count": 1
+    }
+  ]
+}

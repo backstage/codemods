@@ -1,0 +1,19 @@
+.my-component {
+  background: var(--bui-bg-surface-0);
+}
+
+.my-tinted {
+  background: var(--bui-bg-neutral-on-surface-0);
+}
+
+.my-tinted:hover {
+  background: var(--bui-bg-neutral-on-surface-0-hover);
+}
+
+.my-tinted:active {
+  background: var(--bui-bg-neutral-on-surface-0-pressed);
+}
+
+.my-tinted:disabled {
+  background: var(--bui-bg-neutral-on-surface-0-disabled);
+}

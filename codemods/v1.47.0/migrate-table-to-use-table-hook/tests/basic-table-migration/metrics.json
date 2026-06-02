@@ -1,0 +1,32 @@
+{
+  "table-to-use-table-hook": [
+    {
+      "cardinality": {
+        "action": "TableBody",
+        "type": "import-removed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "TableHeader",
+        "type": "import-removed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "TablePagination",
+        "type": "import-removed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "migrated",
+        "type": "useTable-hook"
+      },
+      "count": 1
+    }
+  ]
+}

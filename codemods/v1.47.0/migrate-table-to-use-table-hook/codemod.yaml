@@ -1,0 +1,20 @@
+schema_version: '1.0'
+
+name: '@backstage/migrate-table-to-use-table-hook'
+version: '0.0.0'
+description: 'Backstage 1.47.0: Migrate Table component to new useTable hook API from @backstage/ui'
+author: 'Paul Schultz<pschultz@redhat.com>'
+license: 'MIT'
+repository: 'https://github.com/backstage/codemods'
+workflow: 'workflow.yaml'
+
+targets:
+  languages: ['tsx', 'ts']
+
+keywords: ['backstage', 'migration', 'Table', 'useTable', '1.47.0']
+
+registry:
+  access: 'public'
+  visibility: 'public'
+
+capabilities: []
