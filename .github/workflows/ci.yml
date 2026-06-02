@@ -44,6 +44,9 @@ jobs:
         run: |
           files=$(git diff --name-only --diff-filter=ACMR origin/main...HEAD | tr '\n' ' ')
           echo "files=$files" >> "$GITHUB_OUTPUT"
+          lint_files=$(git diff --name-only --diff-filter=ACMR origin/main...HEAD \
+            | grep -E '\.(ts|js|mts|mjs|tsx|jsx)$' | tr '\n' ' ')
+          echo "lint_files=$lint_files" >> "$GITHUB_OUTPUT"
 
       - name: Get changed codemods
         id: codemods
@@ -57,8 +60,8 @@ jobs:
         run: yarn format:check ${{ steps.changed.outputs.files }}
 
       - name: Lint (changed files)
-        if: steps.changed.outputs.files != ''
-        run: yarn lint ${{ steps.changed.outputs.files }}
+        if: steps.changed.outputs.lint_files != ''
+        run: yarn lint ${{ steps.changed.outputs.lint_files }}
 
       - name: Test (changed codemods)
         if: steps.codemods.outputs.dirs != ''
