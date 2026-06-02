@@ -172,6 +172,9 @@ const transform: Codemod<TSX> = async (root) => {
                   edits.push(objLiteral.replace(`{ modules: [${MODULE_NAME}] }`))
                 }
               }
+            } else {
+              // No arguments — replace empty call with options containing modules
+              edits.push(argsNode.replace(`({ modules: [${MODULE_NAME}] })`))
             }
           }
         } else {

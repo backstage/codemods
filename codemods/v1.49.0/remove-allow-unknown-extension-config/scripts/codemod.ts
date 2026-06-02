@@ -9,6 +9,22 @@ const PROPERTY_NAME = 'allowUnknownExtensionConfig'
 const removedProps = useMetricAtom('allow-unknown-extension-config-removals')
 
 /**
+ * Detect the indentation used for properties in an object literal
+ * by examining the original text.
+ */
+function detectIndent(objectText: string): string {
+  const lines = objectText.split('\n')
+  // Look for the first property line (skip the opening brace line)
+  for (let i = 1; i < lines.length; i++) {
+    const match = lines[i]?.match(/^(\s+)\S/)
+    if (match?.[1]) {
+      return match[1]
+    }
+  }
+  return '  '
+}
+
+/**
  * Remove a property from an object literal by rebuilding the parent object
  * without it, so commas and whitespace stay correct.
  */
@@ -26,9 +42,11 @@ function removeProperty(propNode: SgNode<TSX>): Edit {
     return parent.replace('{}')
   }
 
-  const isMultiLine = parent.text().includes('\n')
+  const parentText = parent.text()
+  const isMultiLine = parentText.includes('\n')
   if (isMultiLine) {
-    return parent.replace(`{\n  ${remaining.map((p) => p.text()).join(',\n  ')},\n}`)
+    const indent = detectIndent(parentText)
+    return parent.replace(`{\n${indent}${remaining.map((p) => p.text()).join(`,\n${indent}`)},\n}`)
   }
   return parent.replace(`{ ${remaining.map((p) => p.text()).join(', ')} }`)
 }
