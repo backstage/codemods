@@ -54,18 +54,18 @@ const transform: Codemod<TSX> = async (root) => {
 
     // Consume trailing comma + whitespace
     let trailingPos = endPos
-    while (trailingPos < fullSource.length && /[ \t\n]/.test(fullSource[trailingPos]!)) {
+    while (trailingPos < fullSource.length && /[ \t\n]/.test(fullSource[trailingPos] ?? '')) {
       trailingPos++
     }
     if (trailingPos < fullSource.length && fullSource[trailingPos] === ',') {
       endPos = trailingPos + 1
-      while (endPos < fullSource.length && /[ \t\n]/.test(fullSource[endPos]!)) {
+      while (endPos < fullSource.length && /[ \t\n]/.test(fullSource[endPos] ?? '')) {
         endPos++
       }
     } else {
       // Remove leading comma
       let leadingPos = startPos - 1
-      while (leadingPos >= 0 && /[ \t\n]/.test(fullSource[leadingPos]!)) {
+      while (leadingPos >= 0 && /[ \t\n]/.test(fullSource[leadingPos] ?? '')) {
         leadingPos--
       }
       if (leadingPos >= 0 && fullSource[leadingPos] === ',') {
@@ -162,7 +162,7 @@ const transform: Codemod<TSX> = async (root) => {
                 // Walk back from } to find end of last content
                 const bracePos = objLiteral.range().end.index - 1
                 let insertPos = bracePos
-                while (insertPos > 0 && /[ \t]/.test(fullSource[insertPos - 1]!)) {
+                while (insertPos > 0 && /[ \t]/.test(fullSource[insertPos - 1] ?? '')) {
                   insertPos--
                 }
                 edits.push({

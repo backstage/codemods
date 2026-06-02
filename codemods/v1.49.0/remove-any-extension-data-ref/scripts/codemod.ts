@@ -52,19 +52,19 @@ const transform: Codemod<TSX> = async (root) => {
 
       // Try to consume trailing comma + whitespace
       let trailingPos = endPos
-      while (trailingPos < fullSource.length && /[ \t\n]/.test(fullSource[trailingPos]!)) {
+      while (trailingPos < fullSource.length && /[ \t\n]/.test(fullSource[trailingPos] ?? '')) {
         trailingPos++
       }
       if (trailingPos < fullSource.length && fullSource[trailingPos] === ',') {
         endPos = trailingPos + 1
         // Consume whitespace after comma
-        while (endPos < fullSource.length && /[ \t\n]/.test(fullSource[endPos]!)) {
+        while (endPos < fullSource.length && /[ \t\n]/.test(fullSource[endPos] ?? '')) {
           endPos++
         }
       } else {
         // Remove leading comma + whitespace
         let leadingPos = startPos - 1
-        while (leadingPos >= 0 && /[ \t\n]/.test(fullSource[leadingPos]!)) {
+        while (leadingPos >= 0 && /[ \t\n]/.test(fullSource[leadingPos] ?? '')) {
           leadingPos--
         }
         if (leadingPos >= 0 && fullSource[leadingPos] === ',') {

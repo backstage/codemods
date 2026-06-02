@@ -18,7 +18,7 @@ function removeProperty(propNode: SgNode<TSX>, fullSource: string): Edit {
 
   // Check for trailing comma first
   let trailingCommaPos = endPos
-  while (trailingCommaPos < fullSource.length && /[ \t]/.test(fullSource[trailingCommaPos]!)) {
+  while (trailingCommaPos < fullSource.length && /[ \t]/.test(fullSource[trailingCommaPos] ?? '')) {
     trailingCommaPos++
   }
   const hasTrailingComma = trailingCommaPos < fullSource.length && fullSource[trailingCommaPos] === ','
@@ -26,7 +26,7 @@ function removeProperty(propNode: SgNode<TSX>, fullSource: string): Edit {
   if (hasTrailingComma) {
     // Remove property + trailing comma + whitespace after comma
     endPos = trailingCommaPos + 1
-    while (endPos < fullSource.length && /[ \t]/.test(fullSource[endPos]!)) {
+    while (endPos < fullSource.length && /[ \t]/.test(fullSource[endPos] ?? '')) {
       endPos++
     }
     if (endPos < fullSource.length && fullSource[endPos] === '\n') {
@@ -34,7 +34,7 @@ function removeProperty(propNode: SgNode<TSX>, fullSource: string): Edit {
     }
     // Also consume leading whitespace on the line
     let lineStart = startPos
-    while (lineStart > 0 && /[ \t]/.test(fullSource[lineStart - 1]!)) {
+    while (lineStart > 0 && /[ \t]/.test(fullSource[lineStart - 1] ?? '')) {
       lineStart--
     }
     if (lineStart > 0 && fullSource[lineStart - 1] === '\n') {
@@ -43,7 +43,7 @@ function removeProperty(propNode: SgNode<TSX>, fullSource: string): Edit {
   } else {
     // No trailing comma — remove leading comma + whitespace instead
     let leadingPos = startPos - 1
-    while (leadingPos >= 0 && /[ \t]/.test(fullSource[leadingPos]!)) {
+    while (leadingPos >= 0 && /[ \t]/.test(fullSource[leadingPos] ?? '')) {
       leadingPos--
     }
     if (leadingPos >= 0 && fullSource[leadingPos] === ',') {
@@ -51,7 +51,7 @@ function removeProperty(propNode: SgNode<TSX>, fullSource: string): Edit {
     }
     // Also consume leading whitespace on the line for multi-line
     let lineStart = startPos
-    while (lineStart > 0 && /[ \t]/.test(fullSource[lineStart - 1]!)) {
+    while (lineStart > 0 && /[ \t]/.test(fullSource[lineStart - 1] ?? '')) {
       lineStart--
     }
     if (lineStart > 0 && fullSource[lineStart - 1] === '\n') {

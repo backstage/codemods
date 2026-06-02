@@ -60,7 +60,7 @@ const transform: Codemod<TSX> = async (root) => {
       const imp = getImport(rootNode, { type: 'named', name: component, from: pkg })
       if (imp && !imp.isNamespace) {
         // Use the local alias (or original name if not aliased)
-        knownVariantComponents.add(imp.alias ?? component)
+        knownVariantComponents.add(imp.alias || component)
       }
     }
   }
@@ -70,7 +70,7 @@ const transform: Codemod<TSX> = async (root) => {
   for (const [component, config] of Object.entries(EXTRA_PROP_REMOVALS)) {
     const imp = getImport(rootNode, { type: 'named', name: component, from: config.pkg })
     if (imp && !imp.isNamespace) {
-      knownExtraPropComponents.set(imp.alias ?? component, config.props)
+      knownExtraPropComponents.set(imp.alias || component, config.props)
     }
   }
 
