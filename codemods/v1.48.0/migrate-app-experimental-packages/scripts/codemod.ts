@@ -169,13 +169,25 @@ const transform: Codemod<YAML> = async (root) => {
     return null
   }
 
-  // If app.packages already exists, add TODO instead of overwriting
+  // If app.packages already exists, add TODO and only remove packages from experimental
   if (hasExistingAppPackages(lines)) {
-    const indent = getLineIndent(lines[match.experimentalLine] ?? '')
-    const todoComment = `${indent}# TODO(backstage-codemod): app.packages already exists — manually merge app.experimental.packages value`
-    const startPos = lineOffset(lines, match.experimentalLine)
-    const endPos = lineOffset(lines, match.experimentalEnd)
-    const result = `${source.slice(0, startPos)}${todoComment}\n${source.slice(endPos)}`
+    let result: string
+    if (match.hasOtherExperimentalKeys) {
+      // Remove only the packages key, keep experimental with its other keys
+      const packagesStart = lineOffset(lines, match.packagesLine)
+      const packagesEndOffset = lineOffset(lines, match.packagesEnd)
+      const indent = getLineIndent(lines[match.packagesLine] ?? '')
+      const todoComment = `${indent}# TODO(backstage-codemod): app.packages already exists — manually merge app.experimental.packages value`
+      result = `${source.slice(0, packagesStart)}${todoComment}\n${source.slice(packagesEndOffset)}`
+    } else {
+      // No other keys under experimental — remove the entire experimental block
+      const experimentalStart = lineOffset(lines, match.experimentalLine)
+      const experimentalEnd = lineOffset(lines, match.experimentalEnd)
+      const indent = getLineIndent(lines[match.experimentalLine] ?? '')
+      const todoComment = `${indent}# TODO(backstage-codemod): app.packages already exists — manually merge app.experimental.packages value`
+      result = `${source.slice(0, experimentalStart)}${todoComment}\n${source.slice(experimentalEnd)}`
+    }
+
     migrationMetric.increment({ action: 'todo-added-conflict' })
     await Promise.resolve()
     return result

@@ -179,15 +179,14 @@ function transformSurfaceProp(
   const stringValue = getAttributeStringValue(surfaceAttr)
 
   if (stringValue === null) {
-    // Dynamic value — add TODO and remove prop
+    // Dynamic value — rename prop and add TODO comment
     const propIdNode = surfaceAttr.find({
       rule: { kind: 'property_identifier', regex: '^surface$' },
     })
     if (propIdNode) {
-      edits.push(propIdNode.replace('bg'))
+      edits.push(propIdNode.replace('bg /* TODO(backstage-codemod): verify dynamic surface→bg value mapping */'))
     }
 
-    // Add TODO comment before the element
     migrationMetric.increment({ action: 'dynamic-value-todo' })
     return
   }
@@ -195,12 +194,12 @@ function transformSurfaceProp(
   const bgValue = SURFACE_TO_BG[stringValue]
 
   if (bgValue === undefined) {
-    // Unknown value — add TODO
+    // Unknown value — rename prop and add TODO comment
     const propIdNode = surfaceAttr.find({
       rule: { kind: 'property_identifier', regex: '^surface$' },
     })
     if (propIdNode) {
-      edits.push(propIdNode.replace('bg'))
+      edits.push(propIdNode.replace('bg /* TODO(backstage-codemod): unknown surface value, verify bg mapping */'))
     }
     migrationMetric.increment({ action: 'unknown-value-todo' })
     return

@@ -1,0 +1,6 @@
+app:
+  title: Example App
+  packages: none
+  experimental:
+    # TODO(backstage-codemod): app.packages already exists — manually merge app.experimental.packages value
+    otherSetting: true

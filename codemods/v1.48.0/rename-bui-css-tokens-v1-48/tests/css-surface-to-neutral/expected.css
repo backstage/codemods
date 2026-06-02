@@ -1,0 +1,8 @@
+.card {
+  background: var(--bui-bg-app);
+}
+
+.panel {
+  background: var(--bui-bg-neutral-1);
+  border-color: var(--bui-bg-neutral-2);
+}

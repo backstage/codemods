@@ -67,7 +67,7 @@ function extractSpecifiers(node: SgNode<TSX>, kind: 'import_specifier' | 'export
 }
 
 function isTypeOnlyStatement(node: SgNode<TSX>): boolean {
-  return node.children().some((c) => c.text() === 'type')
+  return /^(import|export)\s+type\s/.test(node.text())
 }
 
 function buildNamedStatement(

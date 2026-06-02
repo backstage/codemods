@@ -17,3 +17,13 @@ nodes:
             - '**/*.tsx'
           exclude:
             - '**/node_modules/**'
+
+      - name: 'Rename deprecated BUI CSS tokens in CSS/SCSS files'
+        js-ast-grep:
+          js_file: scripts/codemod-css.ts
+          language: 'css'
+          include:
+            - '**/*.css'
+            - '**/*.scss'
+          exclude:
+            - '**/node_modules/**'

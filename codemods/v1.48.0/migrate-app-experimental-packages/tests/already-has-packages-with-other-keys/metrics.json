@@ -1,0 +1,10 @@
+{
+  "migrate-app-experimental-packages": [
+    {
+      "cardinality": {
+        "action": "todo-added-conflict"
+      },
+      "count": 1
+    }
+  ]
+}

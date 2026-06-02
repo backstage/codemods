@@ -1,0 +1,16 @@
+{
+  "rename-bui-css-tokens": [
+    {
+      "cardinality": {
+        "action": "border-hover-todo"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "border-renamed"
+      },
+      "count": 1
+    }
+  ]
+}
