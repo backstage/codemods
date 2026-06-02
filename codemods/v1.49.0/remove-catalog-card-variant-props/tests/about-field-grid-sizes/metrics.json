@@ -1,0 +1,11 @@
+{
+  "catalog-card-variant-prop-removals": [
+    {
+      "cardinality": {
+        "component": "AboutField",
+        "prop": "gridSizes"
+      },
+      "count": 1
+    }
+  ]
+}

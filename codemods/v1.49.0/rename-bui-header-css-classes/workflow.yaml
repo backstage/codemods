@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+nodes:
+  - id: apply-transforms
+    name: Apply AST Transformations
+    type: automatic
+    steps:
+      - name: 'Rename bui-HeaderPage* to bui-Header* in JS/TS files'
+        js-ast-grep:
+          js_file: scripts/codemod.ts
+          language: 'tsx'
+          semantic_analysis: file
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+            - '**/*.js'
+            - '**/*.jsx'
+          exclude:
+            - '**/node_modules/**'
+
+      - name: 'Rename bui-HeaderPage* to bui-Header* in CSS/SCSS files'
+        js-ast-grep:
+          js_file: scripts/codemod-css.ts
+          language: 'css'
+          include:
+            - '**/*.css'
+            - '**/*.scss'
+          exclude:
+            - '**/node_modules/**'

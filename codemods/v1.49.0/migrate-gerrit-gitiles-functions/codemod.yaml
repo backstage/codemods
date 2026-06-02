@@ -1,0 +1,20 @@
+schema_version: '1.0'
+
+name: '@backstage/migrate-gerrit-gitiles-functions'
+version: '0.0.1'
+description: 'Backstage 1.49.0: Rename deprecated Gerrit Gitiles functions in @backstage/integration'
+author: 'Paul Schultz<pschultz@redhat.com>'
+license: 'MIT'
+repository: 'https://github.com/backstage/codemods'
+workflow: 'workflow.yaml'
+
+targets:
+  languages: ['tsx', 'ts']
+
+keywords: ['backstage', 'migration', 'gerrit', 'gitiles', 'integration', '1.49.0']
+
+registry:
+  access: 'public'
+  visibility: 'public'
+
+capabilities: []

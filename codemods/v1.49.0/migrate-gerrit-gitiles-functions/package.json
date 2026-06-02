@@ -1,0 +1,16 @@
+{
+  "name": "@backstage/migrate-gerrit-gitiles-functions",
+  "version": "0.0.1",
+  "description": "Backstage 1.49.0: Rename deprecated Gerrit Gitiles functions in @backstage/integration",
+  "type": "module",
+  "scripts": {
+    "test": "yarn exec codemod jssg test -l tsx ./scripts/codemod.ts ./tests && yarn exec codemod workflow validate -w workflow.yaml"
+  },
+  "dependencies": {
+    "@jssg/utils": "0.0.5"
+  },
+  "devDependencies": {
+    "@codemod.com/jssg-types": "1.5.2",
+    "codemod": "1.7.15"
+  }
+}
