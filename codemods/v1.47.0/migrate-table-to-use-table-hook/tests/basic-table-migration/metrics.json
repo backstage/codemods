@@ -3,27 +3,27 @@
     {
       "cardinality": {
         "action": "TableBody",
-        "type": "import-removed"
+        "type": "jsx-todo-added"
       },
       "count": 1
     },
     {
       "cardinality": {
         "action": "TableHeader",
-        "type": "import-removed"
+        "type": "jsx-todo-added"
       },
       "count": 1
     },
     {
       "cardinality": {
         "action": "TablePagination",
-        "type": "import-removed"
+        "type": "jsx-todo-added"
       },
       "count": 1
     },
     {
       "cardinality": {
-        "action": "migrated",
+        "action": "todo-added",
         "type": "useTable-hook"
       },
       "count": 1

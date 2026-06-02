@@ -44,9 +44,9 @@ nodes:
             `tableProps` and a simplified `<Table {...tableProps} columns={columns} />`.
 
             The AST codemod already handled the mechanical parts:
-            - Renamed import `Table` → `TableRoot` when used as the low-level wrapper
-            - Updated `useTable` hook signatures
-            - Added TODO comments for complex cases
+            - Kept existing imports intact (TableHeader, TableBody, TablePagination)
+            - Added TODO comments above useTable hook calls that use old destructuring patterns
+            - Added TODO comments before JSX elements using TableHeader/TableBody/TablePagination
 
             Your job is to find and fix the remaining issues that the AST codemod could not
             handle mechanically. Be precise and conservative.

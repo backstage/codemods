@@ -9,9 +9,9 @@ const migrationMetric = useMetricAtom('bui-css-token-rename')
  * e.g. --bui-bg-tint-hover must be replaced before --bui-bg-tint.
  */
 const TOKEN_MAP: [RegExp, string][] = [
-  [/--bui-bg-tint-hover/g, '--bui-bg-neutral-on-surface-0-hover'],
-  [/--bui-bg-tint-pressed/g, '--bui-bg-neutral-on-surface-0-pressed'],
-  [/--bui-bg-tint-disabled/g, '--bui-bg-neutral-on-surface-0-disabled'],
+  [/--bui-bg-tint-hover(?![-\w])/g, '--bui-bg-neutral-on-surface-0-hover'],
+  [/--bui-bg-tint-pressed(?![-\w])/g, '--bui-bg-neutral-on-surface-0-pressed'],
+  [/--bui-bg-tint-disabled(?![-\w])/g, '--bui-bg-neutral-on-surface-0-disabled'],
   [/--bui-bg-tint(?![-\w])/g, '--bui-bg-neutral-on-surface-0'],
   [/--bui-bg(?![-\w])/g, '--bui-bg-surface-0'],
 ]
@@ -58,10 +58,6 @@ const transform: Codemod<TSX> = async (root) => {
       })
     }
   }
-
-  // Also handle template string content (template_string > string nodes)
-  // In tree-sitter, template literal content lives in `string_fragment` nodes
-  // within `template_string`, but let's also check `template_content` for safety.
 
   const result = await Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
   return result

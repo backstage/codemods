@@ -72,48 +72,25 @@ const transform: Codemod<TSX> = async (root) => {
     return null
   }
 
-  // 1. Rename import specifiers: remove TableHeader, TableBody, TablePagination
-  //    from the import and ensure Table stays (it will be the new high-level component)
+  // 1. Find TableHeader/TableBody/TablePagination usage and add TODO comments.
+  //    Keep imports intact — the AI fixup step handles the actual rewrite.
+  const tableComponents = new Set(['TableHeader', 'TableBody', 'TablePagination'])
+
   for (const imp of buiImports) {
     const specifiers = imp.findAll({ rule: { kind: 'import_specifier' } })
-    const specsToRemove = new Set(['TableHeader', 'TableBody', 'TablePagination'])
-    const removedSpecs: string[] = []
-    const keptSpecs: string[] = []
+    const foundComponents: string[] = []
 
     for (const spec of specifiers) {
       const identifiers = spec.findAll({ rule: { kind: 'identifier' } })
       const importedName = identifiers[0]?.text()
-      if (importedName && specsToRemove.has(importedName)) {
-        removedSpecs.push(importedName)
-      } else {
-        keptSpecs.push(spec.text())
+      if (importedName && tableComponents.has(importedName)) {
+        foundComponents.push(importedName)
       }
     }
 
-    if (removedSpecs.length > 0) {
-      // Check if import uses `import type { … }` syntax (top-level type-only)
-      const isTypeOnly = /^import\s+type\s+\{/.test(imp.text())
-      const typeKw = isTypeOnly ? 'type ' : ''
-
-      if (keptSpecs.length === 0) {
-        // All specifiers removed — remove the whole import
-        edits.push(imp.replace(''))
-      } else {
-        // Rebuild import with remaining specifiers
-        const specList = keptSpecs.length <= 3 ? keptSpecs.join(', ') : `\n  ${keptSpecs.join(',\n  ')},\n`
-        const newImport = `import ${typeKw}{ ${specList} } from '${BUI_SOURCE}';`
-        edits.push(imp.replace(newImport))
-      }
-
-      for (const name of removedSpecs) {
-        migrationMetric.increment({
-          type: 'import-removed',
-          action: name,
-        })
-      }
-
-      // Add TODO comments before JSX elements that use removed components
-      for (const name of removedSpecs) {
+    if (foundComponents.length > 0) {
+      // Add TODO comments before JSX elements that use these components
+      for (const name of foundComponents) {
         const jsxElements = rootNode.findAll({
           rule: {
             any: [
@@ -144,13 +121,17 @@ const transform: Codemod<TSX> = async (root) => {
             insertedText: `${TODO_JSX_COMMENT}\n${indent}`,
           })
         }
+
+        migrationMetric.increment({
+          type: 'jsx-todo-added',
+          action: name,
+        })
       }
     }
   }
 
-  // 2. Transform useTable hook calls: old API → new API
-  //    Old: const { data, paginationProps } = useTable({ data: items, pagination: {...} })
-  //    New: const { tableProps } = useTable({ mode: 'complete', getData: () => items })
+  // 2. Add TODO comments above useTable hook calls that use old API patterns.
+  //    Keep the code intact — the AI fixup step handles the full refactor.
   const useTableCalls = rootNode.findAll({
     rule: {
       kind: 'variable_declarator',
@@ -184,39 +165,6 @@ const transform: Codemod<TSX> = async (root) => {
       continue
     }
 
-    // Replace the destructuring pattern with new shape
-    edits.push(objectPattern.replace('{ tableProps }'))
-
-    // Transform the call arguments
-    const args = callExpr.find({ rule: { kind: 'arguments' } })
-    if (!args) {
-      continue
-    }
-
-    const firstArg = args.find({ rule: { kind: 'object' } })
-    if (!firstArg) {
-      continue
-    }
-
-    // Find the 'data' property in the argument object
-    const dataProperty = firstArg.findAll({ rule: { kind: 'pair' } })
-    let dataValueText: string | null = null
-
-    for (const pair of dataProperty) {
-      const key = pair.find({ rule: { kind: 'property_identifier' } })
-      if (key?.text() === 'data') {
-        const value = pair.field('value')
-        if (value) {
-          dataValueText = value.text()
-        }
-      }
-    }
-
-    // Build new argument object
-    const newArgText = dataValueText ? `{ mode: 'complete', getData: () => ${dataValueText} }` : `{ mode: 'complete' }`
-
-    edits.push(firstArg.replace(newArgText))
-
     // Add TODO comment above the declaration
     const varDecl = declarator.parent()
     if (varDecl) {
@@ -237,7 +185,7 @@ const transform: Codemod<TSX> = async (root) => {
 
     migrationMetric.increment({
       type: 'useTable-hook',
-      action: 'migrated',
+      action: 'todo-added',
     })
   }
 

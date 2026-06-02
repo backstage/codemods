@@ -8,9 +8,9 @@ const migrationMetric = useMetricAtom('bui-css-token-rename')
  * Token replacements ordered longest-match-first to avoid partial matches.
  */
 const TOKEN_MAP: [RegExp, string][] = [
-  [/--bui-bg-tint-hover/g, '--bui-bg-neutral-on-surface-0-hover'],
-  [/--bui-bg-tint-pressed/g, '--bui-bg-neutral-on-surface-0-pressed'],
-  [/--bui-bg-tint-disabled/g, '--bui-bg-neutral-on-surface-0-disabled'],
+  [/--bui-bg-tint-hover(?![-\w])/g, '--bui-bg-neutral-on-surface-0-hover'],
+  [/--bui-bg-tint-pressed(?![-\w])/g, '--bui-bg-neutral-on-surface-0-pressed'],
+  [/--bui-bg-tint-disabled(?![-\w])/g, '--bui-bg-neutral-on-surface-0-disabled'],
   [/--bui-bg-tint(?![-\w])/g, '--bui-bg-neutral-on-surface-0'],
   [/--bui-bg(?![-\w])/g, '--bui-bg-surface-0'],
 ]
