@@ -35,7 +35,16 @@ yarn dlx codemod@latest workflow run \
 
 ## AI fixup
 
-The recipe runs every codemod at its default settings (no AI fixup). One of the two codemods ships an optional `aiFixup` param that uses an LLM to refine edge cases the AST transform cannot handle mechanically. If you want AI fixup for that codemod, run it on its own after the recipe:
+The recipe accepts a top-level `aiFixup` param and forwards it to every step that supports it via the workflow’s `args:` directive. By default it is `false`.
+
+```bash
+# Apply the full recipe with AI fixup enabled
+yarn dlx codemod@latest run @backstage/v1-47-0-migration-recipe \
+  --target /path/to/backstage-app \
+  --param aiFixup=true
+```
+
+You can also run a single codemod with AI fixup independently:
 
 ```bash
 yarn dlx codemod@latest run @backstage/migrate-table-to-use-table-hook \
@@ -43,20 +52,18 @@ yarn dlx codemod@latest run @backstage/migrate-table-to-use-table-hook \
   --param aiFixup=true
 ```
 
-The Codemod workflow engine does not currently support string interpolation inside a step's `args:`, so the recipe cannot forward a single top-level `aiFixup` flag to every step. Running the individual package with `--param aiFixup=true` is the supported path for now.
-
 ## Out of scope (document only)
 
 The following v1.47.0 changes are not covered by codemods and require manual attention:
 
-- **`FetchUrlReader` constructor now private** — use `FetchUrlReader.fromConfig` instead (narrow internal API)
-- **URL reader redirect chain validation** — configure `reading.allow` in `app-config.yaml`
-- **Blueprints moving to `@backstage/plugin-app-react`** — deprecated, not yet removed
-- **Color token tint replacements are approximate** — the `--bui-bg-tint*` tokens have "no direct replacement" per changelog; the `--bui-bg-neutral-on-surface-0*` set is the recommended equivalent
+- **`FetchUrlReader` constructor now private** - use `FetchUrlReader.fromConfig` instead (narrow internal API)
+- **URL reader redirect chain validation** - configure `reading.allow` in `app-config.yaml`
+- **Blueprints moving to `@backstage/plugin-app-react`** - deprecated, not yet removed
+- **Color token tint replacements are approximate** - the `--bui-bg-tint*` tokens have "no direct replacement" per changelog; the `--bui-bg-neutral-on-surface-0*` set is the recommended equivalent
 
 ## Notes
 
 - Each step is invoked through the `codemod:` workflow action and resolved from the Codemod registry, so running the recipe installs the latest published version of every referenced package.
 - The recipe does not reorder edits across codemods; each registry package owns its own before/after behavior. Check the individual READMEs for the details of any single step.
 - Several of the codemods insert `TODO(backstage-codemod)` markers where a value needs a human review. After the recipe finishes, grep for `TODO(backstage-codemod)` in your repo to find everything that still needs attention.
-- This recipe is orchestration only — it has no transform script of its own, so there are no fixture tests. Running `yarn test` in this package validates the workflow schema via `codemod workflow validate`.
+- This recipe is orchestration only - it has no transform script of its own, so there are no fixture tests. Running `yarn test` in this package validates the workflow schema via `codemod workflow validate`.

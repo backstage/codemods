@@ -6,6 +6,8 @@ const migrationMetric = useMetricAtom('table-to-use-table-hook')
 
 const BUI_SOURCE = '@backstage/ui'
 const TODO_COMMENT = '/* TODO(backstage-codemod): Review Table migration — verify column config and pagination mode */'
+const TODO_JSX_COMMENT =
+  '{/* TODO(backstage-codemod): Migrate TableHeader/TableBody/TablePagination to new Table API */}'
 
 function escapeRegex(str: string): string {
   return `^${str.replaceAll(/[.*+?^${}()|[\]\\/]/g, '\\$&')}$`
@@ -55,9 +57,6 @@ const transform: Codemod<TSX> = async (root) => {
 
   let hasTableImport = false
   let hasUseTableImport = false
-  let _hasTableHeaderImport = false
-  let _hasTableBodyImport = false
-  let _hasTablePaginationImport = false
 
   for (const imp of buiImports) {
     if (hasNamedImport(imp, 'Table')) {
@@ -65,15 +64,6 @@ const transform: Codemod<TSX> = async (root) => {
     }
     if (hasNamedImport(imp, 'useTable')) {
       hasUseTableImport = true
-    }
-    if (hasNamedImport(imp, 'TableHeader')) {
-      _hasTableHeaderImport = true
-    }
-    if (hasNamedImport(imp, 'TableBody')) {
-      _hasTableBodyImport = true
-    }
-    if (hasNamedImport(imp, 'TablePagination')) {
-      _hasTablePaginationImport = true
     }
   }
 
@@ -101,8 +91,8 @@ const transform: Codemod<TSX> = async (root) => {
     }
 
     if (removedSpecs.length > 0) {
-      // Check if 'type' keyword is before the named imports
-      const isTypeOnly = imp.children().some((c) => c.text() === 'type')
+      // Check if import uses `import type { … }` syntax (top-level type-only)
+      const isTypeOnly = /^import\s+type\s+\{/.test(imp.text())
       const typeKw = isTypeOnly ? 'type ' : ''
 
       if (keptSpecs.length === 0) {
@@ -120,6 +110,40 @@ const transform: Codemod<TSX> = async (root) => {
           type: 'import-removed',
           action: name,
         })
+      }
+
+      // Add TODO comments before JSX elements that use removed components
+      for (const name of removedSpecs) {
+        const jsxElements = rootNode.findAll({
+          rule: {
+            any: [
+              { kind: 'jsx_self_closing_element', has: { kind: 'identifier', regex: `^${name}$` } },
+              { kind: 'jsx_opening_element', has: { kind: 'identifier', regex: `^${name}$` } },
+            ],
+          },
+        })
+
+        for (const el of jsxElements) {
+          // Navigate to the enclosing jsx_element (or self-closing element)
+          const jsxNode = el.kind() === 'jsx_opening_element' ? el.parent() : el
+          if (!jsxNode) {
+            continue
+          }
+
+          const startPos = jsxNode.range().start.index
+          const fullText = rootNode.text()
+          let lineStart = startPos
+          while (lineStart > 0 && fullText[lineStart - 1] !== '\n') {
+            lineStart--
+          }
+          const indent = fullText.slice(lineStart, startPos)
+
+          edits.push({
+            startPos,
+            endPos: startPos,
+            insertedText: `${TODO_JSX_COMMENT}\n${indent}`,
+          })
+        }
       }
     }
   }

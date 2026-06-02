@@ -7,10 +7,12 @@ function MyComponent({ items }) {
   return (
     <div>
       <Table aria-label="My table">
+        {/* TODO(backstage-codemod): Migrate TableHeader/TableBody/TablePagination to new Table API */}
         <TableHeader>
           <Column>Name</Column>
           <Column>Status</Column>
         </TableHeader>
+        {/* TODO(backstage-codemod): Migrate TableHeader/TableBody/TablePagination to new Table API */}
         <TableBody items={data}>
           {(item) => (
             <Row>
@@ -20,6 +22,7 @@ function MyComponent({ items }) {
           )}
         </TableBody>
       </Table>
+      {/* TODO(backstage-codemod): Migrate TableHeader/TableBody/TablePagination to new Table API */}
       <TablePagination {...paginationProps} />
     </div>
   );
