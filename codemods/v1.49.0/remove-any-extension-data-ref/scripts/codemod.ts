@@ -43,36 +43,20 @@ const transform: Codemod<TSX> = async (root) => {
 
   if (existingNewImport) {
     // ExtensionDataRef is already imported — remove the AnyExtensionDataRef specifier entirely
-    // Find the comma and specifier to remove
-    const importClause = specifier.parent()
-    if (importClause) {
-      let startPos = specifier.range().start.index
-      let endPos = specifier.range().end.index
-      const fullSource = rootNode.text()
+    // Rebuild the parent named_imports node without the removed specifier
+    const namedImports = specifier.parent()
+    if (namedImports) {
+      const allSpecs = namedImports.findAll({ rule: { kind: 'import_specifier' } })
+      const remaining = allSpecs.filter((s) => s.id() !== specifier.id())
 
-      // Try to consume trailing comma + whitespace
-      let trailingPos = endPos
-      while (trailingPos < fullSource.length && /[ \t\n]/.test(fullSource[trailingPos] ?? '')) {
-        trailingPos++
-      }
-      if (trailingPos < fullSource.length && fullSource[trailingPos] === ',') {
-        endPos = trailingPos + 1
-        // Consume whitespace after comma
-        while (endPos < fullSource.length && /[ \t\n]/.test(fullSource[endPos] ?? '')) {
-          endPos++
+      if (remaining.length === 0) {
+        const importStmt = specifier.ancestors().find((a) => a.is('import_statement'))
+        if (importStmt) {
+          edits.push(importStmt.replace(''))
         }
       } else {
-        // Remove leading comma + whitespace
-        let leadingPos = startPos - 1
-        while (leadingPos >= 0 && /[ \t\n]/.test(fullSource[leadingPos] ?? '')) {
-          leadingPos--
-        }
-        if (leadingPos >= 0 && fullSource[leadingPos] === ',') {
-          startPos = leadingPos
-        }
+        edits.push(namedImports.replace(`{ ${remaining.map((s) => s.text()).join(', ')} }`))
       }
-
-      edits.push({ startPos, endPos, insertedText: '' })
     }
   } else {
     // Rename the imported name

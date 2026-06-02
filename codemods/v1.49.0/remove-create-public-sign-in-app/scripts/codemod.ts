@@ -25,7 +25,6 @@ const transform: Codemod<TSX> = async (root) => {
     return null
   }
 
-  const fullSource = rootNode.text()
   const edits: Edit[] = []
 
   // 1. Rename import specifier: createPublicSignInApp -> createApp
@@ -49,30 +48,21 @@ const transform: Codemod<TSX> = async (root) => {
 
   if (existingCreateApp) {
     // createApp is already imported — remove the createPublicSignInApp specifier
-    let startPos = specifier.range().start.index
-    let endPos = specifier.range().end.index
+    // Rebuild the parent named_imports node without the removed specifier
+    const namedImports = specifier.parent()
+    if (namedImports) {
+      const allSpecs = namedImports.findAll({ rule: { kind: 'import_specifier' } })
+      const remaining = allSpecs.filter((s) => s.id() !== specifier.id())
 
-    // Consume trailing comma + whitespace
-    let trailingPos = endPos
-    while (trailingPos < fullSource.length && /[ \t\n]/.test(fullSource[trailingPos] ?? '')) {
-      trailingPos++
-    }
-    if (trailingPos < fullSource.length && fullSource[trailingPos] === ',') {
-      endPos = trailingPos + 1
-      while (endPos < fullSource.length && /[ \t\n]/.test(fullSource[endPos] ?? '')) {
-        endPos++
-      }
-    } else {
-      // Remove leading comma
-      let leadingPos = startPos - 1
-      while (leadingPos >= 0 && /[ \t\n]/.test(fullSource[leadingPos] ?? '')) {
-        leadingPos--
-      }
-      if (leadingPos >= 0 && fullSource[leadingPos] === ',') {
-        startPos = leadingPos
+      if (remaining.length === 0) {
+        const importStmt = specifier.ancestors().find((a) => a.is('import_statement'))
+        if (importStmt) {
+          edits.push(importStmt.replace(''))
+        }
+      } else {
+        edits.push(namedImports.replace(`{ ${remaining.map((s) => s.text()).join(', ')} }`))
       }
     }
-    edits.push({ startPos, endPos, insertedText: '' })
   } else {
     edits.push(importedNameNode.replace(NEW_NAME))
   }
@@ -158,18 +148,29 @@ const transform: Codemod<TSX> = async (root) => {
                   insertedText: `${separator}${MODULE_NAME}`,
                 })
               } else if (!hasModules) {
-                // Add modules property before the closing brace
-                // Walk back from } to find end of last content
-                const bracePos = objLiteral.range().end.index - 1
-                let insertPos = bracePos
-                while (insertPos > 0 && /[ \t]/.test(fullSource[insertPos - 1] ?? '')) {
-                  insertPos--
+                // Add modules property after the last existing property
+                const propertyKinds = new Set([
+                  'pair',
+                  'shorthand_property_identifier',
+                  'spread_element',
+                  'method_definition',
+                ])
+                const allProps = objLiteral.children().filter((c) => propertyKinds.has(c.kind()))
+                const lastProp = allProps.at(-1)
+
+                if (lastProp) {
+                  const afterProp = lastProp.next()
+                  const hasTrailingComma = afterProp?.text() === ','
+                  const insertAfter = hasTrailingComma ? afterProp : lastProp
+                  const prefix = hasTrailingComma ? ' ' : ', '
+                  edits.push({
+                    startPos: insertAfter.range().end.index,
+                    endPos: insertAfter.range().end.index,
+                    insertedText: `${prefix}modules: [${MODULE_NAME}]`,
+                  })
+                } else {
+                  edits.push(objLiteral.replace(`{ modules: [${MODULE_NAME}] }`))
                 }
-                edits.push({
-                  startPos: insertPos,
-                  endPos: bracePos,
-                  insertedText: `, modules: [${MODULE_NAME}] `,
-                })
               }
             }
           }

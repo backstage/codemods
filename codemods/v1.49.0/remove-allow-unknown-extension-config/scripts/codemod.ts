@@ -9,61 +9,28 @@ const PROPERTY_NAME = 'allowUnknownExtensionConfig'
 const removedProps = useMetricAtom('allow-unknown-extension-config-removals')
 
 /**
- * Remove a property from an object literal, including its surrounding comma
- * and whitespace so the result stays clean.
+ * Remove a property from an object literal by rebuilding the parent object
+ * without it, so commas and whitespace stay correct.
  */
-function removeProperty(propNode: SgNode<TSX>, fullSource: string): Edit {
-  let startPos = propNode.range().start.index
-  let endPos = propNode.range().end.index
-
-  // Check for trailing comma first
-  let trailingCommaPos = endPos
-  while (trailingCommaPos < fullSource.length && /[ \t]/.test(fullSource[trailingCommaPos] ?? '')) {
-    trailingCommaPos++
-  }
-  const hasTrailingComma = trailingCommaPos < fullSource.length && fullSource[trailingCommaPos] === ','
-
-  if (hasTrailingComma) {
-    // Remove property + trailing comma + whitespace after comma
-    endPos = trailingCommaPos + 1
-    while (endPos < fullSource.length && /[ \t]/.test(fullSource[endPos] ?? '')) {
-      endPos++
-    }
-    if (endPos < fullSource.length && fullSource[endPos] === '\n') {
-      endPos++
-    }
-    // Also consume leading whitespace on the line
-    let lineStart = startPos
-    while (lineStart > 0 && /[ \t]/.test(fullSource[lineStart - 1] ?? '')) {
-      lineStart--
-    }
-    if (lineStart > 0 && fullSource[lineStart - 1] === '\n') {
-      startPos = lineStart - 1
-    }
-  } else {
-    // No trailing comma — remove leading comma + whitespace instead
-    let leadingPos = startPos - 1
-    while (leadingPos >= 0 && /[ \t]/.test(fullSource[leadingPos] ?? '')) {
-      leadingPos--
-    }
-    if (leadingPos >= 0 && fullSource[leadingPos] === ',') {
-      startPos = leadingPos
-    }
-    // Also consume leading whitespace on the line for multi-line
-    let lineStart = startPos
-    while (lineStart > 0 && /[ \t]/.test(fullSource[lineStart - 1] ?? '')) {
-      lineStart--
-    }
-    if (lineStart > 0 && fullSource[lineStart - 1] === '\n') {
-      startPos = lineStart - 1
-    }
+function removeProperty(propNode: SgNode<TSX>): Edit {
+  const parent = propNode.parent()
+  if (parent?.kind() !== 'object') {
+    return propNode.replace('')
   }
 
-  return {
-    startPos,
-    endPos,
-    insertedText: '',
+  const propertyKinds = new Set(['pair', 'shorthand_property_identifier', 'spread_element', 'method_definition'])
+  const allProperties = parent.children().filter((c) => propertyKinds.has(c.kind()))
+  const remaining = allProperties.filter((c) => c.id() !== propNode.id())
+
+  if (remaining.length === 0) {
+    return parent.replace('{}')
   }
+
+  const isMultiLine = parent.text().includes('\n')
+  if (isMultiLine) {
+    return parent.replace(`{\n  ${remaining.map((p) => p.text()).join(',\n  ')},\n}`)
+  }
+  return parent.replace(`{ ${remaining.map((p) => p.text()).join(', ')} }`)
 }
 
 const transform: Codemod<TSX> = async (root) => {
@@ -79,7 +46,6 @@ const transform: Codemod<TSX> = async (root) => {
     return null
   }
 
-  const fullSource = rootNode.text()
   const edits: Edit[] = []
 
   // Find all object properties named allowUnknownExtensionConfig inside
@@ -116,18 +82,18 @@ const transform: Codemod<TSX> = async (root) => {
     // Also find shorthand properties
     const shorthandProps = args.findAll({
       rule: {
-        kind: 'shorthand_property_identifier_pattern',
+        kind: 'shorthand_property_identifier',
         regex: `^${PROPERTY_NAME}$`,
       },
     })
 
     for (const prop of props) {
-      edits.push(removeProperty(prop, fullSource))
+      edits.push(removeProperty(prop))
       removedProps.increment({ property: PROPERTY_NAME })
     }
 
     for (const prop of shorthandProps) {
-      edits.push(removeProperty(prop, fullSource))
+      edits.push(removeProperty(prop))
       removedProps.increment({ property: PROPERTY_NAME })
     }
   }

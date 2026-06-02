@@ -1,0 +1,18 @@
+{
+  "gerrit-gitiles-renames": [
+    {
+      "cardinality": {
+        "from": "buildGerritGitilesArchiveUrl",
+        "to": "buildGerritGitilesArchiveUrlFromLocation"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "from": "parseGerritGitilesUrl",
+        "to": "parseGitilesUrlRef"
+      },
+      "count": 1
+    }
+  ]
+}

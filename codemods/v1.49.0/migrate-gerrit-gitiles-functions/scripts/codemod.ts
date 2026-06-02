@@ -21,7 +21,45 @@ const transform: Codemod<TSX> = async (root) => {
 
   for (const name of DEPRECATED_EXPORTS) {
     const imp = getImport(rootNode, { type: 'named', name, from: INTEGRATION_PKG })
-    if (!imp || imp.isNamespace || imp.moduleType !== 'esm') {
+    if (imp?.moduleType !== 'esm') {
+      continue
+    }
+
+    const replacement = RENAME_MAP[name]
+
+    if (imp.isNamespace) {
+      // Handle: import * as alias from '@backstage/integration'; alias.oldName(...)
+      const memberExprs = rootNode.findAll({
+        rule: {
+          kind: 'member_expression',
+          all: [
+            {
+              has: {
+                field: 'object',
+                kind: 'identifier',
+                regex: `^${imp.alias}$`,
+              },
+            },
+            {
+              has: {
+                field: 'property',
+                kind: 'property_identifier',
+                regex: `^${name}$`,
+              },
+            },
+          ],
+        },
+      })
+
+      for (const expr of memberExprs) {
+        const propNode = expr.field('property')
+        if (propNode) {
+          edits.push(propNode.replace(replacement))
+        }
+      }
+      if (memberExprs.length > 0) {
+        renamedExports.increment({ from: name, to: replacement })
+      }
       continue
     }
 
@@ -37,7 +75,6 @@ const transform: Codemod<TSX> = async (root) => {
     }
     const localNameNode = (identifiers[1] as SgNode<TSX> | undefined) ?? importedNameNode
 
-    const replacement = RENAME_MAP[name]
     renamedExports.increment({ from: name, to: replacement })
     edits.push(importedNameNode.replace(replacement))
 

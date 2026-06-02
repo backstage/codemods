@@ -23,6 +23,7 @@ const VARIANT_COMPONENTS: Record<string, string[]> = {
  */
 const EXTRA_PROP_REMOVALS: Record<string, { pkg: string; props: string[] }> = {
   AboutField: { pkg: '@backstage/plugin-catalog', props: ['gridSizes'] },
+  OwnershipCard: { pkg: '@backstage/plugin-org', props: ['maxScrollHeight'] },
 }
 
 const removedProps = useMetricAtom('catalog-card-variant-prop-removals')
