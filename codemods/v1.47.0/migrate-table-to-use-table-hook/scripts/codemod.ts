@@ -43,19 +43,6 @@ function hasNamedImport(importNode: SgNode<TSX>, name: string): boolean {
   return false
 }
 
-/**
- * Get the local name for an imported identifier (handles aliasing).
- */
-function getLocalName(importNode: SgNode<TSX>, importedName: string): string | null {
-  const specifiers = importNode.findAll({ rule: { kind: 'import_specifier' } })
-  for (const spec of specifiers) {
-    const identifiers = spec.findAll({ rule: { kind: 'identifier' } })
-    if (identifiers[0]?.text() === importedName) {
-      return (identifiers[1] ?? identifiers[0]).text()
-    }
-  }
-  return null
-}
 
 const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root()
@@ -69,16 +56,16 @@ const transform: Codemod<TSX> = async (root) => {
 
   let hasTableImport = false
   let hasUseTableImport = false
-  let hasTableHeaderImport = false
-  let hasTableBodyImport = false
-  let hasTablePaginationImport = false
+  let _hasTableHeaderImport = false
+  let _hasTableBodyImport = false
+  let _hasTablePaginationImport = false
 
   for (const imp of buiImports) {
-    if (hasNamedImport(imp, 'Table')) hasTableImport = true
-    if (hasNamedImport(imp, 'useTable')) hasUseTableImport = true
-    if (hasNamedImport(imp, 'TableHeader')) hasTableHeaderImport = true
-    if (hasNamedImport(imp, 'TableBody')) hasTableBodyImport = true
-    if (hasNamedImport(imp, 'TablePagination')) hasTablePaginationImport = true
+    if (hasNamedImport(imp, 'Table')) { hasTableImport = true }
+    if (hasNamedImport(imp, 'useTable')) { hasUseTableImport = true }
+    if (hasNamedImport(imp, 'TableHeader')) { _hasTableHeaderImport = true }
+    if (hasNamedImport(imp, 'TableBody')) { _hasTableBodyImport = true }
+    if (hasNamedImport(imp, 'TablePagination')) { _hasTablePaginationImport = true }
   }
 
   // Only proceed if file uses the old Table-related imports
@@ -146,27 +133,27 @@ const transform: Codemod<TSX> = async (root) => {
 
   for (const declarator of useTableCalls) {
     const callExpr = declarator.find({ rule: { kind: 'call_expression' } })
-    if (!callExpr) continue
+    if (!callExpr) { continue }
 
     // Check if the destructured return has old-style properties (data, paginationProps)
     const objectPattern = declarator.find({ rule: { kind: 'object_pattern' } })
-    if (!objectPattern) continue
+    if (!objectPattern) { continue }
 
     const patternText = objectPattern.text()
     const hasOldData = /\bdata\b/.test(patternText)
     const hasOldPaginationProps = /\bpaginationProps\b/.test(patternText)
 
-    if (!hasOldData && !hasOldPaginationProps) continue
+    if (!hasOldData && !hasOldPaginationProps) { continue }
 
     // Replace the destructuring pattern with new shape
     edits.push(objectPattern.replace('{ tableProps }'))
 
     // Transform the call arguments
     const args = callExpr.find({ rule: { kind: 'arguments' } })
-    if (!args) continue
+    if (!args) { continue }
 
     const firstArg = args.find({ rule: { kind: 'object' } })
-    if (!firstArg) continue
+    if (!firstArg) { continue }
 
     // Find the 'data' property in the argument object
     const dataProperty = firstArg.findAll({ rule: { kind: 'pair' } })
