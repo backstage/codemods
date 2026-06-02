@@ -179,7 +179,6 @@ function transformJsxElements(
 
       // Clean up extra whitespace from the removal
       elText = elText.split(/\s+/).join(' ')
-      elText = elText.split(' />').join(' />')
       elText = elText.split(' >').join('>')
 
       // Also rename size="large" to size="x-large" if present

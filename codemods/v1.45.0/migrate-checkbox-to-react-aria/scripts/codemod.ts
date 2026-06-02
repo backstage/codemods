@@ -260,7 +260,7 @@ function transformElement(
     if (isSelfClosing) {
       // Convert self-closing to open/close with children
       // Find the component name for opening/closing tags
-      newElText = newElText.replace(' />', '>')
+      newElText = newElText.replace(/\s*\/>/, '>')
       newElText = `${newElText}\n  ${childContent}\n</${componentName}>`
     } else {
       // Already has open/close, insert children
@@ -323,6 +323,28 @@ const transform: Codemod<TSX> = async (root) => {
   }
 
   transformJsxElements(rootNode, fullSource, localNames, namespaceAliases, edits)
+
+  // Rename data-checked → data-selected and flag bui-CheckboxLabel in string fragments
+  const stringFragments = rootNode.findAll({ rule: { kind: 'string_fragment' } })
+  for (const frag of stringFragments) {
+    const text = frag.text()
+    if (text.includes('data-checked')) {
+      edits.push(frag.replace(text.replaceAll('data-checked', 'data-selected')))
+      migrationMetric.increment({ action: 'attr-renamed', from: 'data-checked', to: 'data-selected' })
+    }
+    if (text.includes('bui-CheckboxLabel')) {
+      // Cannot insert a comment inside a string; replace the class name with a TODO marker
+      edits.push(
+        frag.replace(
+          text.replaceAll(
+            'bui-CheckboxLabel',
+            'bui-CheckboxLabel/* TODO(backstage-codemod): bui-CheckboxLabel removed in v1.45 */',
+          ),
+        ),
+      )
+      migrationMetric.increment({ action: 'class-flagged', className: 'bui-CheckboxLabel' })
+    }
+  }
 
   const result = await Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
   return result
