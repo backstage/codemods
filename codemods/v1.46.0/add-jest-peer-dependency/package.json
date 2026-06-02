@@ -1,0 +1,13 @@
+{
+  "name": "@backstage/add-jest-peer-dependency",
+  "version": "0.1.0",
+  "description": "Backstage 1.46.0: Add jest as explicit peer dependency to root package.json",
+  "type": "module",
+  "scripts": {
+    "test": "yarn exec codemod jssg test -l json ./scripts/codemod.ts ./tests && yarn exec codemod workflow validate -w workflow.yaml"
+  },
+  "devDependencies": {
+    "@codemod.com/jssg-types": "1.5.2",
+    "codemod": "1.7.15"
+  }
+}

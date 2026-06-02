@@ -1,0 +1,9 @@
+backend:
+  cache:
+    store: redis
+    connection: redis://localhost:6379
+    client:
+      namespace: 'my-app'
+      keyPrefixSeparator: ':'
+      clearBatchSize: 1000
+      useUnlink: false

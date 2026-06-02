@@ -1,0 +1,7 @@
+backend:
+  cache:
+    store: valkey
+    connection: redis://localhost:6379
+    client:
+      keyPrefix: 'custom-prefix:'
+    # Migrated by @backstage/migrate-valkey-config — Valkey native options in 1.46

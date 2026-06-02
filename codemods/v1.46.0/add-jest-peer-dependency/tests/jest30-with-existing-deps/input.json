@@ -1,0 +1,11 @@
+{
+  "name": "my-backstage-app",
+  "version": "1.0.0",
+  "dependencies": {
+    "@backstage/core-plugin-api": "^1.0.0"
+  },
+  "devDependencies": {
+    "@backstage/cli": "^0.35.0",
+    "typescript": "^5.0.0"
+  }
+}

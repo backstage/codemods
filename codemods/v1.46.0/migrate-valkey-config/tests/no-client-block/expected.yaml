@@ -1,0 +1,4 @@
+backend:
+  cache:
+    store: valkey
+    connection: redis://localhost:6379

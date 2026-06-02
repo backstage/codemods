@@ -1,0 +1,10 @@
+{
+  "migrate-valkey-config": [
+    {
+      "cardinality": {
+        "action": "namespace-to-keyprefix"
+      },
+      "count": 1
+    }
+  ]
+}
