@@ -2,6 +2,12 @@
   "rename-bui-css-tokens": [
     {
       "cardinality": {
+        "action": "neutral-0-to-app"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
         "action": "surface-0-renamed"
       },
       "count": 1
@@ -15,12 +21,6 @@
     {
       "cardinality": {
         "action": "surface-2-renamed"
-      },
-      "count": 1
-    },
-    {
-      "cardinality": {
-        "action": "neutral-0-to-app"
       },
       "count": 1
     }

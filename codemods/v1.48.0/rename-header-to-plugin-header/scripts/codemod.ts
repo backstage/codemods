@@ -36,6 +36,7 @@ interface RenameInfo {
   originalName: string
   localName: string
   newName: string
+  localNameNode: SgNode<TSX>
 }
 
 function collectRenameTargets(importStatements: SgNode<TSX, 'import_statement'>[], edits: Edit[]): RenameInfo[] {
@@ -78,7 +79,7 @@ function collectRenameTargets(importStatements: SgNode<TSX, 'import_statement'>[
 
       // If not aliased, we need to rename all usages
       if (localName === importedName) {
-        renames.push({ originalName: importedName, localName, newName })
+        renames.push({ originalName: importedName, localName, newName, localNameNode })
       }
     }
   }
@@ -102,42 +103,19 @@ function collectNamespaceAliases(importStatements: SgNode<TSX, 'import_statement
 
 function renameReferences(rootNode: SgNode<TSX>, renames: RenameInfo[], filename: string, edits: Edit[]): void {
   for (const rename of renames) {
-    // Find all identifier references to this name
-    const refs = rootNode.findAll({
-      rule: {
-        any: [
-          { kind: 'identifier', regex: `^${escapeRegex(rename.localName)}$` },
-          { kind: 'type_identifier', regex: `^${escapeRegex(rename.localName)}$` },
-        ],
-      },
-    })
-
-    // Track which nodes we've already renamed (import specifiers)
-    const handledIds = new Set<number>()
-
-    for (const ref of refs) {
-      if (handledIds.has(ref.id())) {
+    // Use scope-aware .references() to find all usages of the imported binding
+    for (const refGroup of rename.localNameNode.references()) {
+      if (refGroup.root.filename() !== filename) {
         continue
       }
-
-      // Skip the import specifier itself (already handled)
-      const parent = ref.parent()
-      if (parent?.is('import_specifier')) {
-        continue
-      }
-
-      // Skip nodes that are inside other import statements from different sources
-      const ancestorImport = ref.ancestors().find((a) => a.is('import_statement'))
-      if (ancestorImport) {
-        const sourceNode = ancestorImport.find({ rule: { kind: 'string_fragment' } })
-        if (sourceNode && sourceNode.text() !== UI_SOURCE) {
+      for (const refNode of refGroup.nodes) {
+        // Skip the import specifier itself (already handled)
+        if (refNode.id() === rename.localNameNode.id()) {
           continue
         }
+        edits.push(refNode.replace(rename.newName))
+        migrationMetric.increment({ action: 'reference-renamed', from: rename.localName, to: rename.newName })
       }
-
-      handledIds.add(ref.id())
-      edits.push(ref.replace(rename.newName))
-      migrationMetric.increment({ action: 'reference-renamed', from: rename.localName, to: rename.newName })
     }
   }
 }

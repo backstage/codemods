@@ -156,6 +156,7 @@ const transform: Codemod<TSX> = async (root) => {
   const needsImport = { cellText: false, column: false }
 
   // Find all pairs (object properties) with key 'cell' or 'header'
+  // that are inside an array of objects (i.e. a columns array)
   const allPairs = rootNode.findAll({
     rule: {
       kind: 'pair',
@@ -173,9 +174,22 @@ const transform: Codemod<TSX> = async (root) => {
       continue
     }
     const propName = keyNode.text()
-    if (propName === 'cell' || propName === 'header') {
-      processColumnConfigProperty(pair, propName, rootNode, edits, needsImport)
+    if (propName !== 'cell' && propName !== 'header') {
+      continue
     }
+
+    // Narrow matching: walk up from the pair and verify it's inside an
+    // object literal that's an element of an array (i.e. a columns array).
+    // This prevents matching standalone objects like `{ cell: ... }` that
+    // are not ColumnConfig entries.
+    if (pair.parent()?.kind() !== 'object') {
+      continue
+    }
+    if (pair.parent()?.parent()?.kind() !== 'array') {
+      continue
+    }
+
+    processColumnConfigProperty(pair, propName, rootNode, edits, needsImport)
   }
 
   // Add imports for CellText and Column if needed
