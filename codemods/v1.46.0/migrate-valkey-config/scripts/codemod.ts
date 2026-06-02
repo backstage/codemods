@@ -82,17 +82,17 @@ function extractScalarValue(line: string): string | null {
 
   const raw = line.slice(colonIndex + 1).trim()
 
-  // Remove trailing comment
+  // Strip inline comments before checking for quotes.
+  // An inline comment starts with ` #` (space then hash) outside of quotes.
   let value = raw
+  const commentMatch = value.match(/^([^'"#]*(?:['"][^'"]*['"][^'"#]*)*)(\s+#.*)$/)
+  if (commentMatch?.[1] !== undefined) {
+    value = commentMatch[1].trim()
+  }
+
   // Handle quoted strings
   if ((value.startsWith("'") && value.endsWith("'")) || (value.startsWith('"') && value.endsWith('"'))) {
     return value.slice(1, -1)
-  }
-
-  // Handle unquoted with possible trailing comment
-  const commentMatch = value.match(/^([^#]*?)(\s+#.*)?$/)
-  if (commentMatch?.[1] !== undefined) {
-    value = commentMatch[1].trim()
   }
 
   return value

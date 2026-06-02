@@ -13,7 +13,7 @@ Starting with `@backstage/cli@0.35.0`, `jest` is a peer dependency instead of a 
 - If `jest` is already present, skips the file (already migrated)
 - Adds Jest 30 packages by default (`jest`, `@types/jest`, `@jest/environment-jsdom-abstract`, `jsdom`)
 - With `--param jestVersion=29`, adds Jest 29 packages instead (`jest`, `@types/jest`, `jest-environment-jsdom`)
-- Preserves existing `package.json` formatting and field order
+- Rewrites `package.json` via `JSON.stringify` with auto-detected indentation; `devDependencies` are sorted alphabetically
 
 ## Usage
 
