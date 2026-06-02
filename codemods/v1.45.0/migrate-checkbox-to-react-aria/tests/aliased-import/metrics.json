@@ -1,0 +1,19 @@
+{
+  "migrate-checkbox-to-react-aria": [
+    {
+      "cardinality": {
+        "action": "label-to-children",
+        "labelKind": "string"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "prop-renamed",
+        "from": "checked",
+        "to": "isSelected"
+      },
+      "count": 1
+    }
+  ]
+}

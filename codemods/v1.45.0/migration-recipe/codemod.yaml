@@ -1,0 +1,19 @@
+schema_version: '1.0'
+
+name: '@backstage/v1-45-0-migration-recipe'
+version: '0.1.0'
+description: 'Backstage 1.45.0: Migration recipe that runs every @backstage v1.45.0 codemod from the registry in a safe order.'
+author: 'Paul Schultz<pschultz@redhat.com>'
+license: 'MIT'
+workflow: 'workflow.yaml'
+
+targets:
+  languages: ['tsx', 'ts']
+
+keywords: ['backstage', 'migration', 'recipe', 'workflow', 'upgrade', '1.45.0']
+
+registry:
+  access: 'public'
+  visibility: 'public'
+
+capabilities: []

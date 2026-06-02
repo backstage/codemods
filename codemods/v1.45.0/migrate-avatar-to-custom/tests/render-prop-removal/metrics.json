@@ -1,0 +1,10 @@
+{
+  "migrate-avatar-to-custom": [
+    {
+      "cardinality": {
+        "action": "render-prop-removed"
+      },
+      "count": 1
+    }
+  ]
+}

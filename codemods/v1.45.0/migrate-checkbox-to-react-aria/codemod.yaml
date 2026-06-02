@@ -1,0 +1,20 @@
+schema_version: '1.0'
+
+name: '@backstage/migrate-checkbox-to-react-aria'
+version: '0.1.0'
+description: 'Backstage 1.45.0: Migrate Checkbox component from Base UI to React Aria — prop renames and label to children conversion'
+author: 'Paul Schultz<pschultz@redhat.com>'
+license: 'MIT'
+repository: 'https://github.com/backstage/codemods'
+workflow: 'workflow.yaml'
+
+targets:
+  languages: ['tsx', 'ts']
+
+keywords: ['backstage', 'migration', 'ui', 'checkbox', 'react-aria', '1.45.0']
+
+registry:
+  access: 'public'
+  visibility: 'public'
+
+capabilities: []

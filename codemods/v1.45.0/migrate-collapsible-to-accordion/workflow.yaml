@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+params:
+  schema:
+    aiFixup:
+      type: boolean
+      default: false
+      description: 'Fix complex Collapsible.Trigger render patterns the AST codemod could not convert.'
+
+nodes:
+  - id: apply-transforms
+    name: Apply AST Transformations
+    type: automatic
+    steps:
+      - name: 'Migrate Collapsible to Accordion compound components'
+        js-ast-grep:
+          js_file: scripts/codemod.ts
+          language: 'tsx'
+          semantic_analysis: file
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+
+  - id: ai-fixup
+    name: AI fixup for edge cases
+    type: automatic
+    depends_on: [apply-transforms]
+    steps:
+      - name: 'Fix remaining Collapsible migration edge cases'
+        if: params.aiFixup == true
+        ai:
+          model: 'claude-sonnet-4-6'
+          system_prompt: |
+            You are a Backstage migration expert. You are fixing edge cases left over
+            from an AST-based codemod that migrated Collapsible compound components
+            to Accordion in @backstage/ui v0.9.0 (Backstage 1.45.0).
+
+            The AST codemod already handled:
+            - Import replacement: Collapsible → Accordion, AccordionTrigger, AccordionPanel
+            - Collapsible.Root → Accordion
+            - Collapsible.Panel → AccordionPanel
+            - Simple Collapsible.Trigger render patterns → AccordionTrigger with children
+
+            Your job is ONLY to fix complex patterns that the AST codemod could not
+            handle mechanically. Be precise and conservative.
+          prompt: |
+            Search the codebase for remaining Collapsible migration issues:
+
+            ## 1. Complex render functions
+            Find Collapsible.Trigger components where the render prop contains
+            conditional logic, multiple elements, or complex patterns that may not
+            have been converted correctly to AccordionTrigger children.
+
+            ## 2. Controlled open/close state
+            Find Collapsible usages with controlled open/close state management
+            and verify the migration to Accordion handles state correctly.
+
+            ## 3. Nested collapsibles
+            Find nested Collapsible patterns and verify correct migration.
+
+            ## 4. Custom styling
+            Find CSS targeting Collapsible-specific class names and update for
+            Accordion equivalents.
+
+            After making changes, verify the files are syntactically valid.
+          max_steps: 25

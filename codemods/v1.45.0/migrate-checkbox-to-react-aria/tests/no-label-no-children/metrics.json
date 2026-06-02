@@ -1,0 +1,12 @@
+{
+  "migrate-checkbox-to-react-aria": [
+    {
+      "cardinality": {
+        "action": "prop-renamed",
+        "from": "checked",
+        "to": "isSelected"
+      },
+      "count": 1
+    }
+  ]
+}
