@@ -187,7 +187,7 @@ function transformJsxElements(
         migrationMetric.increment({ action: 'size-renamed', from: 'large', to: 'x-large' })
       }
 
-      const comment = '{/* TODO(backstage-codemod): Avatar render prop removed, review custom rendering */}'
+      const comment = '// TODO(backstage-codemod): Avatar render prop removed, review custom rendering'
       edits.push(el.replace(`${comment}\n${indent}${elText}`))
       migrationMetric.increment({ action: 'render-prop-removed' })
     } else if (sizeLargeFragment) {

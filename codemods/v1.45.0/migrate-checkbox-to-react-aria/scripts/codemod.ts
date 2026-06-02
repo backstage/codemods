@@ -172,6 +172,43 @@ function getLabelValue(
   return null
 }
 
+function computeIndent(fullSource: string, startIndex: number): string {
+  let lineStart = startIndex
+  while (lineStart > 0 && fullSource.charAt(lineStart - 1) !== '\n') {
+    lineStart--
+  }
+  return fullSource.slice(lineStart, startIndex)
+}
+
+function findContainingStatement(node: SgNode<TSX>): SgNode<TSX> | null {
+  const statementKinds = new Set([
+    'expression_statement',
+    'variable_declaration',
+    'lexical_declaration',
+    'return_statement',
+    'export_statement',
+  ])
+  let current: SgNode<TSX> | null = node.parent()
+  while (current) {
+    if (statementKinds.has(current.kind())) {
+      return current
+    }
+    current = current.parent()
+  }
+  return null
+}
+
+function isInsideJsxAttribute(node: SgNode<TSX>): boolean {
+  let current = node.parent()
+  while (current) {
+    if (current.kind() === 'jsx_attribute') {
+      return true
+    }
+    current = current.parent()
+  }
+  return false
+}
+
 function transformElement(
   el: SgNode<TSX>,
   opening: SgNode<TSX>,
@@ -215,41 +252,48 @@ function transformElement(
     return
   }
 
-  // For label conversion or missing label TODO, we need to rebuild the element
-  // Build the new element by replacing the entire thing
+  // For label conversion, use positional AST edits within element text
   const elText = el.text()
-  let newElText = elText
+  const elStart = el.range().start.index
+  const indent = computeIndent(fullSource, elStart)
 
-  // 1. Rename props
+  interface TextReplacement {
+    start: number
+    end: number
+    newText: string
+  }
+  const replacements: TextReplacement[] = []
+
+  // 1. Prop renames: target just the nameNode (property_identifier)
   for (const { attr, newName } of propRenames) {
-    const oldPropName = attr.name
-    // Replace prop name in the element text
-    // We need to be careful to only replace the property identifier, not values
-    // Use a targeted approach: find the attribute text and replace the name part
-    const attrText = attr.node.text()
-    let newAttrText: string
-
-    // Handle boolean shorthand (e.g., `required` with no value)
-    if (attrText === oldPropName) {
-      newAttrText = newName
-    } else {
-      newAttrText = attrText.replace(oldPropName, newName)
-    }
-
-    newElText = newElText.split(attrText).join(newAttrText)
-    migrationMetric.increment({ action: 'prop-renamed', from: oldPropName, to: newName })
+    const nameStart = attr.nameNode.range().start.index - elStart
+    const nameEnd = attr.nameNode.range().end.index - elStart
+    replacements.push({ start: nameStart, end: nameEnd, newText: newName })
+    migrationMetric.increment({ action: 'prop-renamed', from: attr.name, to: newName })
   }
 
   // 2. Handle label
   const labelValue = getLabelValue(labelAttr)
-  const labelAttrText = labelAttr.node.text()
 
   if (labelValue) {
-    // Remove the label attribute
-    newElText = newElText.split(labelAttrText).join('')
-    // Clean up whitespace
-    newElText = newElText.split(/\s+/).join(' ')
+    // Remove the label attribute via positional edit
+    const labelStart = labelAttr.node.range().start.index - elStart
+    const labelEnd = labelAttr.node.range().end.index - elStart
+    replacements.push({ start: labelStart, end: labelEnd, newText: '' })
+  }
 
+  // Apply replacements in reverse position order
+  replacements.sort((a, b) => b.start - a.start)
+  let newElText = elText
+  for (const r of replacements) {
+    newElText = newElText.slice(0, r.start) + r.newText + newElText.slice(r.end)
+  }
+
+  // Clean up whitespace from attribute removal
+  newElText = newElText.replaceAll(/ {2,}/g, ' ')
+  newElText = newElText.replaceAll(' >', '>')
+
+  if (labelValue) {
     let childContent: string
     if (labelValue.kind === 'string') {
       childContent = labelValue.value
@@ -259,16 +303,14 @@ function transformElement(
 
     if (isSelfClosing) {
       // Convert self-closing to open/close with children
-      // Find the component name for opening/closing tags
       newElText = newElText.replace(/\s*\/>/, '>')
-      newElText = `${newElText}\n  ${childContent}\n</${componentName}>`
+      newElText = `${newElText}\n${indent}  ${childContent}\n${indent}</${componentName}>`
     } else {
-      // Already has open/close, insert children
-      // This is a more complex case; for now prepend to existing children
+      // Already has open/close, insert children before closing tag
       const closingTag = `</${componentName}>`
       const closingIdx = newElText.lastIndexOf(closingTag)
       if (closingIdx >= 0) {
-        newElText = `${newElText.slice(0, closingIdx)}${childContent}${newElText.slice(closingIdx)}`
+        newElText = `${newElText.slice(0, closingIdx)}${indent}  ${childContent}\n${indent}${newElText.slice(closingIdx)}`
       }
     }
 
@@ -324,26 +366,33 @@ const transform: Codemod<TSX> = async (root) => {
 
   transformJsxElements(rootNode, fullSource, localNames, namespaceAliases, edits)
 
-  // Rename data-checked → data-selected and flag bui-CheckboxLabel in string fragments
+  // Rename data-checked → data-selected only in JSX attribute values (S2)
+  // Flag bui-CheckboxLabel with a line comment above the containing statement (M2)
   const stringFragments = rootNode.findAll({ rule: { kind: 'string_fragment' } })
+  const todoStatements = new Map<number, SgNode<TSX>>()
+
   for (const frag of stringFragments) {
     const text = frag.text()
-    if (text.includes('data-checked')) {
+
+    if (text.includes('data-checked') && isInsideJsxAttribute(frag)) {
       edits.push(frag.replace(text.replaceAll('data-checked', 'data-selected')))
       migrationMetric.increment({ action: 'attr-renamed', from: 'data-checked', to: 'data-selected' })
     }
+
     if (text.includes('bui-CheckboxLabel')) {
-      // Cannot insert a comment inside a string; replace the class name with a TODO marker
-      edits.push(
-        frag.replace(
-          text.replaceAll(
-            'bui-CheckboxLabel',
-            'bui-CheckboxLabel/* TODO(backstage-codemod): bui-CheckboxLabel removed in v1.45 */',
-          ),
-        ),
-      )
+      const stmt = findContainingStatement(frag)
+      if (stmt) {
+        todoStatements.set(stmt.range().start.index, stmt)
+      }
       migrationMetric.increment({ action: 'class-flagged', className: 'bui-CheckboxLabel' })
     }
+  }
+
+  // Insert TODO comments above statements containing bui-CheckboxLabel
+  for (const [, stmt] of todoStatements) {
+    const stmtIndent = computeIndent(fullSource, stmt.range().start.index)
+    const comment = '// TODO(backstage-codemod): bui-CheckboxLabel removed in v1.45, review CSS selector'
+    edits.push(stmt.replace(`${comment}\n${stmtIndent}${stmt.text()}`))
   }
 
   const result = await Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)

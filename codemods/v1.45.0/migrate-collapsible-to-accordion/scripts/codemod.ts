@@ -187,6 +187,22 @@ function extractSimpleRenderContent(opening: SgNode<TSX>): string | null {
   return null
 }
 
+function addImportEdit(importStatements: SgNode<TSX, 'import_statement'>[], edits: Edit[]): void {
+  for (const imp of importStatements) {
+    for (const spec of imp.findAll({ rule: { kind: 'import_specifier' } })) {
+      const identifiers = spec.findAll({
+        rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
+      })
+      const [importedNameNode] = identifiers
+      if (importedNameNode?.text() === TARGET_IMPORT) {
+        edits.push(spec.replace('Accordion, AccordionTrigger, AccordionPanel'))
+        migrationMetric.increment({ action: 'import-replaced' })
+        return
+      }
+    }
+  }
+}
+
 function transformCollapsibleElements(
   rootNode: SgNode<TSX>,
   fullSource: string,
@@ -293,37 +309,6 @@ function computeIndent(fullSource: string, startIndex: number): string {
   return fullSource.slice(lineStart, startIndex)
 }
 
-function replaceImport(
-  phase1Source: string,
-  localName: string,
-  importStatements: SgNode<TSX, 'import_statement'>[],
-): string {
-  // Use AST-located import positions for a targeted replacement instead of a
-  // whole-file regex that could accidentally rewrite comments or identifiers.
-  for (const imp of importStatements) {
-    for (const spec of imp.findAll({ rule: { kind: 'import_specifier' } })) {
-      const identifiers = spec.findAll({
-        rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
-      })
-      const [importedNameNode] = identifiers
-      if (!importedNameNode || importedNameNode.text() !== TARGET_IMPORT) {
-        continue
-      }
-
-      // Compute the byte offset of the specifier in the original source, then
-      // apply the same delta to phase1Source (AST edits only touched JSX, not
-      // the import line, so the import text is at the same position).
-      const specStart = spec.range().start.index
-      const specEnd = spec.range().end.index
-
-      return `${phase1Source.slice(0, specStart)}Accordion, AccordionTrigger, AccordionPanel${phase1Source.slice(specEnd)}`
-    }
-  }
-
-  // Fallback (should not happen): return unchanged
-  return phase1Source
-}
-
 const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root()
   const fullSource = rootNode.text()
@@ -341,22 +326,10 @@ const transform: Codemod<TSX> = async (root) => {
   const edits: Edit[] = []
   transformCollapsibleElements(rootNode, fullSource, localName, edits)
 
-  let phase1Source: string
-  if (edits.length > 0) {
-    phase1Source = rootNode.commitEdits(edits)
-  } else {
-    phase1Source = fullSource
-  }
+  // Add import edit atomically with JSX edits to avoid stale AST positions
+  addImportEdit(uiImports, edits)
 
-  const phase2Source = replaceImport(phase1Source, localName, uiImports)
-
-  if (phase2Source === fullSource) {
-    return null
-  }
-
-  migrationMetric.increment({ action: 'import-replaced' })
-
-  const result = await Promise.resolve(phase2Source)
+  const result = await Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
   return result
 }
 
