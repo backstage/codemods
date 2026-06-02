@@ -268,9 +268,10 @@ const transform: Codemod<YAML> = async (root) => {
   if (hasNamespace && !hasKeyPrefix) {
     const separator = block.separatorValue ?? DEFAULT_SEPARATOR
     const keyPrefixVal = `${block.namespaceValue ?? ''}${separator}`
+    const escapedKeyPrefix = keyPrefixVal.replaceAll("'", "''")
     linesToAdd.push({
       afterLine: block.namespaceLine as number,
-      content: `${block.childIndent}keyPrefix: '${keyPrefixVal}'`,
+      content: `${block.childIndent}keyPrefix: '${escapedKeyPrefix}'`,
     })
     linesToRemove.add(block.namespaceLine as number)
     if (hasSeparator) {
