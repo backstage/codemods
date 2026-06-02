@@ -1,5 +1,5 @@
 {
-  "*.{ts,js,mts,mjs}": ["oxfmt --write", "oxlint --type-aware --type-check --fix"],
-  "*.{json,yaml,yml}": ["oxfmt --write"],
+  "*.{ts,js,mts,mjs}": ["yarn format", "yarn lint:fix"],
+  "*.{json,yaml,yml,md}": ["yarn format"],
   "codemods/**/scripts/*.ts": "bash scripts/test-staged.sh"
 }

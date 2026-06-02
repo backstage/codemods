@@ -2,6 +2,13 @@
 
 version: '1'
 
+params:
+  schema:
+    aiFixup:
+      type: boolean
+      default: false
+      description: 'Forward aiFixup to every codemod that supports an AI fixup step for edge cases the AST transforms cannot handle mechanically.'
+
 nodes:
   - id: apply-recipe
     name: Run every Backstage 1.51.0 codemod in order
@@ -13,30 +20,42 @@ nodes:
       - name: 'Migrate NavItemBlueprint title/icon into matching PageBlueprint params'
         codemod:
           source: '@backstage/migrate-nav-item-to-page'
+          args:
+            - 'aiFixup'
 
       - name: 'Call PortableSchema.schema() as a method instead of property access'
         codemod:
           source: '@backstage/portable-schema-method-call'
+          args:
+            - 'aiFixup'
 
       # --- BREAKING: permission-node PolicyQueryUser field cleanup
       - name: 'Migrate PolicyQueryUser off removed token/identity fields'
         codemod:
           source: '@backstage/migrate-policy-query-user'
+          args:
+            - 'aiFixup'
 
       # --- BREAKING: @backstage/ui Header root class removal
       - name: 'Rename removed .bui-Header root class and HeaderDefinition.classNames.root'
         codemod:
           source: '@backstage/rename-header-main-class'
+          args:
+            - 'aiFixup'
 
       # --- BREAKING: frontend-test-utils renderInTestApp nav shell change
       - name: 'Migrate renderInTestApp nav-item tests to renderTestApp'
         codemod:
           source: '@backstage/render-test-app-nav-migration'
+          args:
+            - 'aiFixup'
 
       # --- Deprecations (non-breaking in 1.51.0, but recommended to migrate now).
       - name: 'Rename deprecated loading prop to isPending on @backstage/ui components'
         codemod:
           source: '@backstage/loading-to-is-pending'
+          args:
+            - 'aiFixup'
 
       - name: 'Rename EXPERIMENTAL_formDecorators to formDecorators on scaffolder templates'
         codemod:
