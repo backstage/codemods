@@ -1,0 +1,10 @@
+{
+  "migrate-column-config-to-react-element": [
+    {
+      "cardinality": {
+        "action": "cell-wrapped"
+      },
+      "count": 1
+    }
+  ]
+}

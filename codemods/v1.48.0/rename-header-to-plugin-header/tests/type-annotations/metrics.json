@@ -1,0 +1,36 @@
+{
+  "rename-header-to-plugin-header": [
+    {
+      "cardinality": {
+        "action": "import-renamed",
+        "from": "Header",
+        "to": "PluginHeader"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-renamed",
+        "from": "HeaderDefinition",
+        "to": "PluginHeaderDefinition"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "reference-renamed",
+        "from": "Header",
+        "to": "PluginHeader"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "reference-renamed",
+        "from": "HeaderDefinition",
+        "to": "PluginHeaderDefinition"
+      },
+      "count": 1
+    }
+  ]
+}

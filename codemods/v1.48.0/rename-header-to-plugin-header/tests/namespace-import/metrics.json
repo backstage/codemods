@@ -1,0 +1,12 @@
+{
+  "rename-header-to-plugin-header": [
+    {
+      "cardinality": {
+        "action": "namespace-access-renamed",
+        "from": "Header",
+        "to": "PluginHeader"
+      },
+      "count": 1
+    }
+  ]
+}

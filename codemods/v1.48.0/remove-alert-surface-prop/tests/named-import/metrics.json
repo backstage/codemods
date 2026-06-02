@@ -1,0 +1,10 @@
+{
+  "remove-alert-surface-prop": [
+    {
+      "cardinality": {
+        "action": "surface-prop-removed"
+      },
+      "count": 2
+    }
+  ]
+}

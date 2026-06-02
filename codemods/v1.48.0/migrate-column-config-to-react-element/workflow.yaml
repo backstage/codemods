@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+params:
+  schema:
+    aiFixup:
+      type: boolean
+      default: false
+      description: 'Fix complex cell/header return types that require contextual analysis.'
+
+nodes:
+  - id: apply-transforms
+    name: Apply AST Transformations
+    type: automatic
+    steps:
+      - name: 'Wrap ColumnConfig cell and header returns in CellText/Column'
+        js-ast-grep:
+          js_file: scripts/codemod.ts
+          language: 'tsx'
+          semantic_analysis: file
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+
+  - id: ai-fixup
+    name: AI fixup for edge cases
+    type: automatic
+    depends_on: [apply-transforms]
+    steps:
+      - name: 'Fix remaining ColumnConfig cell/header edge cases'
+        if: params.aiFixup == true
+        ai:
+          model: 'claude-sonnet-4-6'
+          system_prompt: |
+            You are a Backstage migration expert. You are fixing edge cases left over
+            from an AST-based codemod that wrapped ColumnConfig cell and header returns
+            in CellText/Column components for ReactElement compliance in @backstage/ui
+            v0.13.0 (Backstage 1.48.0).
+
+            The AST codemod already handled:
+            - Arrow function cells returning bare expressions → wrapped in <CellText title={value} />
+            - Arrow function headers returning bare strings → wrapped in <Column>string</Column>
+            - Added CellText/Column imports to @backstage/ui
+
+            Your job is ONLY to fix complex patterns the AST codemod could not handle.
+          prompt: |
+            Search the codebase for remaining migration issues:
+
+            ## 1. Complex cell returns
+            Find ColumnConfig cell functions that return complex expressions (ternaries,
+            function calls, template literals) that need wrapping in CellText or other
+            ReactElement wrappers.
+
+            ## 2. Block body cell functions
+            Find cell/header functions with block bodies (return statements) that return
+            non-JSX values and need wrapping.
+
+            ## 3. Verify CellText/Column imports
+            Ensure all files using CellText or Column have proper imports from @backstage/ui.
+
+            After making changes, verify the files are syntactically valid.
+          max_steps: 25

@@ -1,0 +1,22 @@
+{
+  "rename-bui-css-tokens": [
+    {
+      "cardinality": {
+        "action": "gray-1-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "gray-4-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "gray-high-todo"
+      },
+      "count": 1
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+schema_version: '1.0'
+
+name: '@backstage/migrate-app-experimental-packages'
+version: '0.1.0'
+description: 'Backstage 1.48.0: Migrate app.experimental.packages to app.packages in app-config YAML'
+author: 'Paul Schultz<pschultz@redhat.com>'
+license: 'MIT'
+repository: 'https://github.com/backstage/codemods'
+workflow: 'workflow.yaml'
+
+targets:
+  languages: ['yaml']
+
+keywords: ['backstage', 'migration', 'app-config', 'experimental', 'packages', '1.48.0']
+
+registry:
+  access: 'public'
+  visibility: 'public'
+
+capabilities: []

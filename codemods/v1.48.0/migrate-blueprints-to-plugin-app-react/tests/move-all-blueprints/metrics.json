@@ -1,0 +1,18 @@
+{
+  "migrate-blueprints-to-plugin-app-react": [
+    {
+      "cardinality": {
+        "action": "import-moved",
+        "name": "IconBundleBlueprint"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-moved",
+        "name": "ThemeBlueprint"
+      },
+      "count": 1
+    }
+  ]
+}

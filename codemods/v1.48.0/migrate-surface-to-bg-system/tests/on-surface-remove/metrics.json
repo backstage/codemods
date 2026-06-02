@@ -1,0 +1,17 @@
+{
+  "migrate-surface-to-bg-system": [
+    {
+      "cardinality": {
+        "action": "on-surface-removed"
+      },
+      "count": 2
+    },
+    {
+      "cardinality": {
+        "action": "surface-to-bg",
+        "value": "neutral-2"
+      },
+      "count": 1
+    }
+  ]
+}
