@@ -65,7 +65,7 @@ function buildReplacements(): TokenReplacement[] {
   for (const state of ['hover', 'pressed', 'disabled'] as const) {
     replacements.push({
       pattern: new RegExp(`--bui-border-${state}(?![-\\w])`, 'g'),
-      replacement: `/* TODO(backstage-codemod): --bui-border-${state} removed, no replacement */`,
+      replacement: `--bui-border-${state} /* TODO(backstage-codemod): --bui-border-${state} removed, no replacement */`,
       action: `border-${state}-todo`,
     })
   }
@@ -115,7 +115,7 @@ function applyTokenReplacements(text: string): { result: string; actions: string
   // Handle --bui-gray-5 through --bui-gray-8 (no replacement, add TODO)
   const afterGrayHigh = result.replaceAll(
     GRAY_HIGH_PATTERN,
-    '/* TODO(backstage-codemod): --bui-gray-$1 removed, no replacement */',
+    '--bui-gray-$1 /* TODO(backstage-codemod): --bui-gray-$1 removed, no replacement */',
   )
   if (afterGrayHigh !== result) {
     actions.push('gray-high-todo')

@@ -1,0 +1,11 @@
+.bui-Button /* TODO(backstage-codemod): .bui-Button split into .bui-ButtonIcon / .bui-ButtonLink, manual review needed */ {
+  color: red;
+}
+
+.bui-ButtonIcon {
+  color: blue;
+}
+
+.bui-Button /* TODO(backstage-codemod): .bui-Button split into .bui-ButtonIcon / .bui-ButtonLink, manual review needed */:hover {
+  color: green;
+}

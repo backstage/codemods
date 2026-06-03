@@ -61,7 +61,7 @@ function buildReplacements(): TokenReplacement[] {
   for (const state of ['hover', 'pressed', 'disabled'] as const) {
     replacements.push({
       pattern: new RegExp(`--bui-border-${state}(?![-\\w])`, 'g'),
-      replacement: `/* TODO(backstage-codemod): --bui-border-${state} removed, no replacement */`,
+      replacement: `--bui-border-${state} /* TODO(backstage-codemod): --bui-border-${state} removed, no replacement */`,
       action: `border-${state}-todo`,
     })
   }
@@ -80,9 +80,10 @@ const REPLACEMENTS = buildReplacements()
 
 const NEUTRAL_0_PATTERN = /--bui-bg-neutral-0(?![-\w])/g
 const GRAY_HIGH_PATTERN = /--bui-gray-([5-8])(?![-\w])/g
+const BUTTON_SELECTOR_PATTERN = /\.bui-Button(?!Icon|Link|[-\w])/g
 
 const DETECTION_REGEX =
-  /--bui-bg-surface-|--bui-bg-neutral-on-surface-|--bui-gray-|--bui-bg-neutral-0(?![-\w])|--bui-border(?:-hover|-pressed|-disabled)?(?![-\w])/
+  /--bui-bg-surface-|--bui-bg-neutral-on-surface-|--bui-gray-|--bui-bg-neutral-0(?![-\w])|--bui-border(?:-hover|-pressed|-disabled)?(?![-\w])|\.bui-Button(?!Icon|Link|[-\w])/
 
 function applyTokenReplacements(text: string): { result: string; actions: string[] } {
   let result = text
@@ -104,11 +105,21 @@ function applyTokenReplacements(text: string): { result: string; actions: string
 
   const afterGrayHigh = result.replaceAll(
     GRAY_HIGH_PATTERN,
-    '/* TODO(backstage-codemod): --bui-gray-$1 removed, no replacement */',
+    '--bui-gray-$1 /* TODO(backstage-codemod): --bui-gray-$1 removed, no replacement */',
   )
   if (afterGrayHigh !== result) {
     actions.push('gray-high-todo')
     result = afterGrayHigh
+  }
+
+  // Handle .bui-Button selector split (→ .bui-ButtonIcon / .bui-ButtonLink)
+  const afterButtonSplit = result.replaceAll(
+    BUTTON_SELECTOR_PATTERN,
+    '.bui-Button /* TODO(backstage-codemod): .bui-Button split into .bui-ButtonIcon / .bui-ButtonLink, manual review needed */',
+  )
+  if (afterButtonSplit !== result) {
+    actions.push('button-selector-todo')
+    result = afterButtonSplit
   }
 
   return { result, actions }

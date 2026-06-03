@@ -87,8 +87,19 @@ const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
-  // Process imports
+  // Process imports — two-pass to avoid generating duplicate new-source imports
   const oldImports = findStatementsFrom(rootNode, 'import_statement', OLD_SOURCE)
+
+  interface ImportAnalysis {
+    imp: SgNode<TSX, 'import_statement'>
+    typeOnly: boolean
+    movedSpecs: SpecifierInfo[]
+    remainingSpecs: SpecifierInfo[]
+  }
+
+  // Phase 1: Analyse every old import
+  const analyses: ImportAnalysis[] = []
+  const allMovedByType = new Map<boolean, SpecifierInfo[]>()
 
   for (const imp of oldImports) {
     const typeOnly = isTypeOnlyStatement(imp)
@@ -109,7 +120,17 @@ const transform: Codemod<TSX> = async (root) => {
       continue
     }
 
-    // Build replacement for original import (remaining specifiers only)
+    analyses.push({ imp, typeOnly, movedSpecs, remainingSpecs })
+
+    const existing = allMovedByType.get(typeOnly) ?? []
+    existing.push(...movedSpecs)
+    allMovedByType.set(typeOnly, existing)
+  }
+
+  // Phase 2: Emit edits — one new-source import per typeOnly group
+  const newImportEmitted = new Set<boolean>()
+
+  for (const { imp, typeOnly, movedSpecs, remainingSpecs } of analyses) {
     let replacement = ''
     if (remainingSpecs.length > 0) {
       replacement = buildNamedStatement(
@@ -120,31 +141,38 @@ const transform: Codemod<TSX> = async (root) => {
       )
     }
 
-    // Try to merge into existing import from new source
-    const existingNewImports = findStatementsFrom(rootNode, 'import_statement', NEW_SOURCE)
-    const existingNewImport = existingNewImports.find((i) => isTypeOnlyStatement(i) === typeOnly)
+    // Emit the new-source import only once per typeOnly group
+    if (!newImportEmitted.has(typeOnly)) {
+      newImportEmitted.add(typeOnly)
 
-    if (existingNewImport) {
-      const edit = addImport(rootNode, {
-        type: 'named',
-        specifiers: movedSpecs.map((s) => ({
-          name: s.importedName,
-          alias: s.localName !== s.importedName ? s.localName : undefined,
-        })),
-        from: NEW_SOURCE,
-      })
-      if (edit) {
-        edits.push(edit)
+      const allMoved = allMovedByType.get(typeOnly) ?? []
+
+      // Try to merge into existing import from new source
+      const existingNewImports = findStatementsFrom(rootNode, 'import_statement', NEW_SOURCE)
+      const existingNewImport = existingNewImports.find((i) => isTypeOnlyStatement(i) === typeOnly)
+
+      if (existingNewImport) {
+        const edit = addImport(rootNode, {
+          type: 'named',
+          specifiers: allMoved.map((s) => ({
+            name: s.importedName,
+            alias: s.localName !== s.importedName ? s.localName : undefined,
+          })),
+          from: NEW_SOURCE,
+        })
+        if (edit) {
+          edits.push(edit)
+        }
+      } else {
+        // Create new import statement with ALL moved specs for this typeOnly group
+        const newImport = buildNamedStatement(
+          'import',
+          allMoved.map((s) => s.specText),
+          NEW_SOURCE,
+          typeOnly,
+        )
+        replacement = replacement ? `${replacement}\n${newImport}` : newImport
       }
-    } else {
-      // Create new import statement
-      const newImport = buildNamedStatement(
-        'import',
-        movedSpecs.map((s) => s.specText),
-        NEW_SOURCE,
-        typeOnly,
-      )
-      replacement = replacement ? `${replacement}\n${newImport}` : newImport
     }
 
     edits.push(imp.replace(replacement))

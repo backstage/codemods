@@ -3,5 +3,5 @@
 }
 
 .interactive:hover {
-  border-color: var(/* TODO(backstage-codemod): --bui-border-hover removed, no replacement */);
+  border-color: var(--bui-border-hover /* TODO(backstage-codemod): --bui-border-hover removed, no replacement */);
 }
