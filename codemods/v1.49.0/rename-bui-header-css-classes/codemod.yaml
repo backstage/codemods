@@ -1,7 +1,7 @@
 schema_version: '1.0'
 
 name: '@backstage/rename-bui-header-css-classes'
-version: '0.0.1'
+version: '0.1.0'
 description: 'Backstage 1.49.0: Rename BUI HeaderPage CSS classes to Header'
 author: 'Paul Schultz<pschultz@redhat.com>'
 license: 'MIT'
