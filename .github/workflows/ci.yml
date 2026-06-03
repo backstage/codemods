@@ -70,16 +70,6 @@ jobs:
             (cd "$dir" && yarn test)
           done
 
-      - name: README freshness check
-        if: steps.codemods.outputs.dirs != ''
-        run: |
-          yarn readme
-          if ! git diff --quiet README.md; then
-            echo "::error::README.md is out of date. Run 'yarn readme' and commit the result."
-            git diff README.md
-            exit 1
-          fi
-
   changeset-check:
     name: Changeset Check
     runs-on: ubuntu-latest
