@@ -31,6 +31,12 @@ npx codemod workflow run \
   --target /path/to/backstage-app
 ```
 
+## Known limitations
+
+- **Dotted-key form is not supported.** The codemod only handles the nested
+  YAML form (`backend: cache: store: …`). If your config uses dotted keys
+  (e.g. `backend.cache.store: valkey`), you must migrate those entries manually.
+
 ## Notes
 
 - Only applies to `store: valkey` — Redis configurations are untouched
