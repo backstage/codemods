@@ -173,8 +173,31 @@ const transform: Codemod<TSX> = async (root) => {
                 }
               }
             } else {
-              // No arguments — replace empty call with options containing modules
-              edits.push(argsNode.replace(`({ modules: [${MODULE_NAME}] })`))
+              // Check if there are any arguments at all
+              const argChildren = argsNode
+                .children()
+                .filter((c) => c.kind() !== '(' && c.kind() !== ')' && c.kind() !== ',')
+              if (argChildren.length === 0) {
+                // No arguments — replace empty call with options containing modules
+                edits.push(argsNode.replace(`({ modules: [${MODULE_NAME}] })`))
+              } else {
+                // Non-object argument (e.g. variable) — add TODO comment after the statement
+                const stmt =
+                  parent
+                    .ancestors()
+                    .find(
+                      (a) =>
+                        a.kind() === 'expression_statement' ||
+                        a.kind() === 'variable_declaration' ||
+                        a.kind() === 'lexical_declaration',
+                    ) ?? parent
+                const stmtEnd = stmt.range().end.index
+                edits.push({
+                  startPos: stmtEnd,
+                  endPos: stmtEnd,
+                  insertedText: ` // TODO(backstage-codemod): add modules: [${MODULE_NAME}] to options`,
+                })
+              }
             }
           }
         } else {

@@ -9,46 +9,99 @@ const PROPERTY_NAME = 'allowUnknownExtensionConfig'
 const removedProps = useMetricAtom('allow-unknown-extension-config-removals')
 
 /**
- * Detect the indentation used for properties in an object literal
- * by examining the original text.
+ * Remove a property from an object literal by surgically removing the property
+ * range, its trailing comma and surrounding whitespace from the source.
+ * This preserves comments and original formatting.
  */
-function detectIndent(objectText: string): string {
-  const lines = objectText.split('\n')
-  // Look for the first property line (skip the opening brace line)
-  for (let i = 1; i < lines.length; i++) {
-    const match = lines[i]?.match(/^(\s+)\S/)
-    if (match?.[1]) {
-      return match[1]
-    }
-  }
-  return '  '
-}
-
-/**
- * Remove a property from an object literal by rebuilding the parent object
- * without it, so commas and whitespace stay correct.
- */
-function removeProperty(propNode: SgNode<TSX>): Edit {
+function removeProperty(propNode: SgNode<TSX>, fullSource: string): Edit {
   const parent = propNode.parent()
   if (parent?.kind() !== 'object') {
     return propNode.replace('')
   }
 
+  // If this is the only property, just replace the parent with {}
   const propertyKinds = new Set(['pair', 'shorthand_property_identifier', 'spread_element', 'method_definition'])
   const allProperties = parent.children().filter((c) => propertyKinds.has(c.kind()))
-  const remaining = allProperties.filter((c) => c.id() !== propNode.id())
-
-  if (remaining.length === 0) {
+  if (allProperties.length <= 1) {
     return parent.replace('{}')
   }
 
+  let startPos = propNode.range().start.index
+  let endPos = propNode.range().end.index
+
+  // Check for trailing comma after the property
+  let trailingPos = endPos
+  while (trailingPos < fullSource.length && /[ \t]/.test(fullSource[trailingPos] ?? '')) {
+    trailingPos++
+  }
+  const hasTrailingComma = trailingPos < fullSource.length && fullSource[trailingPos] === ','
+
+  // Check if the object is multi-line
   const parentText = parent.text()
   const isMultiLine = parentText.includes('\n')
-  if (isMultiLine) {
-    const indent = detectIndent(parentText)
-    return parent.replace(`{\n${indent}${remaining.map((p) => p.text()).join(`,\n${indent}`)},\n}`)
+
+  if (hasTrailingComma) {
+    // Property has a trailing comma.
+    endPos = trailingPos + 1
+    if (isMultiLine) {
+      // Multi-line: remove indentation + property + comma + trailing newline
+      while (endPos < fullSource.length && /[ \t]/.test(fullSource[endPos] ?? '')) {
+        endPos++
+      }
+      if (endPos < fullSource.length && fullSource[endPos] === '\n') {
+        endPos++
+      }
+      // Back up to start of indentation on this line (but keep the preceding newline)
+      while (startPos > 0 && /[ \t]/.test(fullSource[startPos - 1] ?? '')) {
+        startPos--
+      }
+    } else {
+      // Single-line: remove property + comma + trailing space
+      while (endPos < fullSource.length && fullSource[endPos] === ' ') {
+        endPos++
+      }
+    }
+  } else if (isMultiLine) {
+    // No trailing comma, multi-line — last property.
+    // Remove indentation + property + trailing whitespace/newline,
+    // and the preceding comma.
+    while (endPos < fullSource.length && /[ \t]/.test(fullSource[endPos] ?? '')) {
+      endPos++
+    }
+    if (endPos < fullSource.length && fullSource[endPos] === '\n') {
+      endPos++
+    }
+    while (startPos > 0 && /[ \t]/.test(fullSource[startPos - 1] ?? '')) {
+      startPos--
+    }
+    if (startPos > 0 && fullSource[startPos - 1] === '\n') {
+      startPos--
+    }
+    // Find and consume the preceding comma
+    let commaPos = startPos
+    while (commaPos > 0 && /[ \t]/.test(fullSource[commaPos - 1] ?? '')) {
+      commaPos--
+    }
+    if (commaPos > 0 && fullSource[commaPos - 1] === ',') {
+      startPos = commaPos - 1
+    }
+  } else {
+    // No trailing comma, single-line — last property.
+    // Remove from preceding comma to end of property.
+    let commaPos = startPos - 1
+    while (commaPos >= 0 && /[ \t]/.test(fullSource[commaPos] ?? '')) {
+      commaPos--
+    }
+    if (commaPos >= 0 && fullSource[commaPos] === ',') {
+      startPos = commaPos
+    }
   }
-  return parent.replace(`{ ${remaining.map((p) => p.text()).join(', ')} }`)
+
+  return {
+    startPos,
+    endPos,
+    insertedText: '',
+  }
 }
 
 const transform: Codemod<TSX> = async (root) => {
@@ -65,6 +118,7 @@ const transform: Codemod<TSX> = async (root) => {
   }
 
   const edits: Edit[] = []
+  const fullSource = rootNode.text()
 
   // Find all object properties named allowUnknownExtensionConfig inside
   // createApp() call arguments
@@ -106,12 +160,12 @@ const transform: Codemod<TSX> = async (root) => {
     })
 
     for (const prop of props) {
-      edits.push(removeProperty(prop))
+      edits.push(removeProperty(prop, fullSource))
       removedProps.increment({ property: PROPERTY_NAME })
     }
 
     for (const prop of shorthandProps) {
-      edits.push(removeProperty(prop))
+      edits.push(removeProperty(prop, fullSource))
       removedProps.increment({ property: PROPERTY_NAME })
     }
   }

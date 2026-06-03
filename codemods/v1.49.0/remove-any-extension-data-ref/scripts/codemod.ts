@@ -41,9 +41,20 @@ const transform: Codemod<TSX> = async (root) => {
   }
   const localNameNode = (identifiers[1] as SgNode<TSX> | undefined) ?? importedNameNode
 
+  // Determine the replacement name: if ExtensionDataRef is already imported with
+  // an alias (e.g. `import { ExtensionDataRef as EDR }`), use that alias
+  let replacementName = NEW_NAME
   if (existingNewImport) {
-    // ExtensionDataRef is already imported — remove the AnyExtensionDataRef specifier entirely
-    // Rebuild the parent named_imports node without the removed specifier
+    // Check if the existing import is aliased
+    const existingSpec = existingNewImport.node.parent()
+    if (existingSpec?.is('import_specifier')) {
+      const existingIds = existingSpec.children().filter((c) => c.is('identifier'))
+      if (existingIds.length >= 2 && existingIds[1]) {
+        replacementName = existingIds[1].text()
+      }
+    }
+
+    // Remove the AnyExtensionDataRef specifier entirely
     const namedImports = specifier.parent()
     if (namedImports) {
       const allSpecs = namedImports.findAll({ rule: { kind: 'import_specifier' } })
@@ -54,6 +65,11 @@ const transform: Codemod<TSX> = async (root) => {
         if (importStmt) {
           edits.push(importStmt.replace(''))
         }
+      } else if (remaining.length >= 3) {
+        // Multi-line formatting for 3+ specifiers
+        const indent = '  '
+        const specTexts = remaining.map((s) => `${indent}${s.text()}`).join(',\n')
+        edits.push(namedImports.replace(`{\n${specTexts},\n}`))
       } else {
         edits.push(namedImports.replace(`{ ${remaining.map((s) => s.text()).join(', ')} }`))
       }
@@ -77,7 +93,7 @@ const transform: Codemod<TSX> = async (root) => {
         if (refNode.id() === localNameNode.id()) {
           continue
         }
-        edits.push(refNode.replace(NEW_NAME))
+        edits.push(refNode.replace(replacementName))
       }
     }
   }

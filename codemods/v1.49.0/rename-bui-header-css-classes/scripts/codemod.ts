@@ -33,9 +33,9 @@ const transform: Codemod<TSX> = async (root) => {
     let changed = false
 
     for (const [oldName, newName] of RENAME_MAP) {
-      const re = new RegExp(`\\b${oldName}\\b`, 'g')
-      if (re.test(text)) {
-        text = text.replaceAll(new RegExp(`\\b${oldName}\\b`, 'g'), newName)
+      const before = text
+      text = text.replaceAll(new RegExp(`\\b${oldName}\\b`, 'g'), newName)
+      if (text !== before) {
         changed = true
         migrationMetric.increment({ type: 'string-fragment', from: oldName, to: newName })
       }
