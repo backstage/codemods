@@ -1,6 +1,6 @@
 {
   "name": "@backstage/rename-bui-css-tokens-v1-47",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Backstage 1.47.0: Rename deprecated BUI CSS custom properties (--bui-bg, --bui-bg-tint*) to their new equivalents",
   "type": "module",
   "scripts": {

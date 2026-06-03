@@ -1,7 +1,7 @@
 schema_version: '1.0'
 
 name: '@backstage/migrate-table-to-use-table-hook'
-version: '0.0.0'
+version: '0.1.0'
 description: 'Backstage 1.47.0: Migrate Table component to new useTable hook API from @backstage/ui'
 author: 'Paul Schultz<pschultz@redhat.com>'
 license: 'MIT'
