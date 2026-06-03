@@ -1,0 +1,10 @@
+{
+  "rename-bui-css-tokens": [
+    {
+      "cardinality": {
+        "action": "neutral-0-to-app"
+      },
+      "count": 1
+    }
+  ]
+}

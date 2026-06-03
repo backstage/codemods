@@ -1,0 +1,11 @@
+.bui-Button {
+  color: red;
+}
+
+.bui-ButtonIcon {
+  color: blue;
+}
+
+.bui-Button:hover {
+  color: green;
+}

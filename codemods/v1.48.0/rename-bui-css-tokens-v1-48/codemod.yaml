@@ -1,0 +1,20 @@
+schema_version: '1.0'
+
+name: '@backstage/rename-bui-css-tokens-v1-48'
+version: '0.1.0'
+description: 'Backstage 1.48.0: Rename deprecated BUI CSS tokens and selectors'
+author: 'Paul Schultz<pschultz@redhat.com>'
+license: 'MIT'
+repository: 'https://github.com/backstage/codemods'
+workflow: 'workflow.yaml'
+
+targets:
+  languages: ['tsx', 'ts', 'css']
+
+keywords: ['backstage', 'migration', 'ui', 'css', 'tokens', '1.48.0']
+
+registry:
+  access: 'public'
+  visibility: 'public'
+
+capabilities: []

@@ -1,0 +1,10 @@
+{
+  "rename-bui-css-tokens": [
+    {
+      "cardinality": {
+        "action": "button-selector-todo"
+      },
+      "count": 1
+    }
+  ]
+}

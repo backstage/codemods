@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+nodes:
+  - id: apply-recipe
+    name: Run every Backstage 1.48.0 codemod in order
+    type: automatic
+    steps:
+      # --- BREAKING: BUI CSS token renames — run first so downstream component
+      #     codemods see updated token names in any inline styles.
+      - name: 'Rename deprecated BUI CSS tokens and selectors'
+        codemod:
+          source: '@backstage/rename-bui-css-tokens-v1-48'
+
+      # --- BREAKING: BUI Alert surface prop removal
+      - name: 'Remove deprecated surface prop from Alert component'
+        codemod:
+          source: '@backstage/remove-alert-surface-prop'
+
+      # --- BREAKING: BUI surface/onSurface → bg provider/consumer system
+      - name: 'Migrate surface/onSurface props to bg system on @backstage/ui components'
+        codemod:
+          source: '@backstage/migrate-surface-to-bg-system'
+
+      # --- BREAKING: BUI ColumnConfig cell/header must return ReactElement
+      - name: 'Wrap ColumnConfig cell and header returns in CellText/Column'
+        codemod:
+          source: '@backstage/migrate-column-config-to-react-element'
+
+      # --- BREAKING: BUI Header → PluginHeader rename
+      - name: 'Rename Header to PluginHeader in @backstage/ui'
+        codemod:
+          source: '@backstage/rename-header-to-plugin-header'
+
+      # --- BREAKING: Frontend plugin API blueprint exports moved
+      - name: 'Move blueprint imports from @backstage/frontend-plugin-api to @backstage/plugin-app-react'
+        codemod:
+          source: '@backstage/migrate-blueprints-to-plugin-app-react'
+
+      # --- Config: app.experimental.packages removed
+      - name: 'Migrate app.experimental.packages to app.packages in app-config YAML'
+        codemod:
+          source: '@backstage/migrate-app-experimental-packages'

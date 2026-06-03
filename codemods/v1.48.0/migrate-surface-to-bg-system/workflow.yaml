@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+params:
+  schema:
+    aiFixup:
+      type: boolean
+      default: false
+      description: 'Resolve dynamic surface values, custom Surface type usage, and provider/consumer context patterns.'
+
+nodes:
+  - id: apply-transforms
+    name: Apply AST Transformations
+    type: automatic
+    steps:
+      - name: 'Migrate surface/onSurface props to bg system on @backstage/ui components'
+        js-ast-grep:
+          js_file: scripts/codemod.ts
+          language: 'tsx'
+          semantic_analysis: file
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+
+  - id: ai-fixup
+    name: AI fixup for edge cases
+    type: automatic
+    depends_on: [apply-transforms]
+    steps:
+      - name: 'Fix remaining surface-to-bg edge cases'
+        if: params.aiFixup == true
+        ai:
+          model: 'claude-sonnet-4-6'
+          system_prompt: |
+            You are a Backstage migration expert. You are fixing edge cases left over
+            from an AST-based codemod that migrated the surface/onSurface prop system
+            to the bg provider/consumer architecture in @backstage/ui v0.13.0
+            (Backstage 1.48.0).
+
+            The AST codemod already handled:
+            - Static surface="N" → bg="neutral-N" on Box, Card, Flex, Grid
+            - surface="0" removal (transparent by default)
+            - surface="auto" → bg="neutral-auto"
+            - onSurface prop removal on consumer components
+            - Added TODO for dynamic surface values
+
+            Your job is ONLY to fix complex patterns the AST codemod could not handle.
+          prompt: |
+            Search the codebase for remaining migration issues:
+
+            ## 1. Dynamic surface values
+            Find TODO comments from the codemod about dynamic surface values. Where the
+            value can be determined statically from context, apply the mapping. Otherwise
+            leave the TODO.
+
+            ## 2. Surface type references
+            Find remaining references to the `Surface` type from `@backstage/ui` and
+            replace with `ProviderBg | ContainerBg` as appropriate.
+
+            ## 3. Provider/consumer patterns
+            Check for custom wrapper components that forward surface props to BUI
+            components and update their prop types and forwarding logic.
+
+            After making changes, verify the files are syntactically valid.
+          max_steps: 30

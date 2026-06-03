@@ -1,0 +1,10 @@
+{
+  "rename-bui-css-tokens": [
+    {
+      "cardinality": {
+        "action": "border-renamed"
+      },
+      "count": 1
+    }
+  ]
+}

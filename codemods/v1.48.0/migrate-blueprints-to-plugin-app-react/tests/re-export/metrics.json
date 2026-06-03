@@ -1,0 +1,11 @@
+{
+  "migrate-blueprints-to-plugin-app-react": [
+    {
+      "cardinality": {
+        "action": "export-moved",
+        "name": "ThemeBlueprint"
+      },
+      "count": 1
+    }
+  ]
+}

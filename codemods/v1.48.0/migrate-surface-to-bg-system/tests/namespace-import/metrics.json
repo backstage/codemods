@@ -1,0 +1,11 @@
+{
+  "migrate-surface-to-bg-system": [
+    {
+      "cardinality": {
+        "action": "surface-to-bg",
+        "value": "neutral-1"
+      },
+      "count": 1
+    }
+  ]
+}

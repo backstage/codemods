@@ -1,0 +1,13 @@
+{
+  "name": "@backstage/migrate-surface-to-bg-system",
+  "version": "0.1.0",
+  "description": "Backstage 1.48.0: Migrate surface/onSurface props to bg system in @backstage/ui",
+  "type": "module",
+  "scripts": {
+    "test": "yarn exec codemod jssg test -l tsx ./scripts/codemod.ts ./tests && yarn exec codemod workflow validate -w workflow.yaml"
+  },
+  "devDependencies": {
+    "@codemod.com/jssg-types": "1.5.2",
+    "codemod": "1.7.15"
+  }
+}

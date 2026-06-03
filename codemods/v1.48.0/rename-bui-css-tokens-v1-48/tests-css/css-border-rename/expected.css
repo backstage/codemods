@@ -1,0 +1,7 @@
+.container {
+  border: 1px solid var(--bui-border-2);
+}
+
+.interactive:hover {
+  border-color: var(--bui-border-hover /* TODO(backstage-codemod): --bui-border-hover removed, no replacement */);
+}

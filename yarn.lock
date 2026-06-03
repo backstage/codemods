@@ -97,11 +97,30 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/migrate-app-experimental-packages@workspace:codemods/v1.48.0/migrate-app-experimental-packages":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-app-experimental-packages@workspace:codemods/v1.48.0/migrate-app-experimental-packages"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/migrate-avatar-to-custom@workspace:codemods/v1.45.0/migrate-avatar-to-custom":
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-avatar-to-custom@workspace:codemods/v1.45.0/migrate-avatar-to-custom"
   dependencies:
     "@codemod.com/jssg-types": "npm:1.5.2"
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/migrate-blueprints-to-plugin-app-react@workspace:codemods/v1.48.0/migrate-blueprints-to-plugin-app-react":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-blueprints-to-plugin-app-react@workspace:codemods/v1.48.0/migrate-blueprints-to-plugin-app-react"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    "@jssg/utils": "npm:0.0.5"
     codemod: "npm:1.7.15"
   languageName: unknown
   linkType: soft
@@ -120,6 +139,16 @@ __metadata:
   resolution: "@backstage/migrate-collapsible-to-accordion@workspace:codemods/v1.45.0/migrate-collapsible-to-accordion"
   dependencies:
     "@codemod.com/jssg-types": "npm:1.5.2"
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/migrate-column-config-to-react-element@workspace:codemods/v1.48.0/migrate-column-config-to-react-element":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-column-config-to-react-element@workspace:codemods/v1.48.0/migrate-column-config-to-react-element"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    "@jssg/utils": "npm:0.0.5"
     codemod: "npm:1.7.15"
   languageName: unknown
   linkType: soft
@@ -164,6 +193,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/migrate-surface-to-bg-system@workspace:codemods/v1.48.0/migrate-surface-to-bg-system":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-surface-to-bg-system@workspace:codemods/v1.48.0/migrate-surface-to-bg-system"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/migrate-table-to-use-table-hook@workspace:codemods/v1.47.0/migrate-table-to-use-table-hook":
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-table-to-use-table-hook@workspace:codemods/v1.47.0/migrate-table-to-use-table-hook"
@@ -185,6 +223,15 @@ __metadata:
 "@backstage/portable-schema-method-call@workspace:codemods/v1.51.0/portable-schema-method-call":
   version: 0.0.0-use.local
   resolution: "@backstage/portable-schema-method-call@workspace:codemods/v1.51.0/portable-schema-method-call"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/remove-alert-surface-prop@workspace:codemods/v1.48.0/remove-alert-surface-prop":
+  version: 0.0.0-use.local
+  resolution: "@backstage/remove-alert-surface-prop@workspace:codemods/v1.48.0/remove-alert-surface-prop"
   dependencies:
     "@codemod.com/jssg-types": "npm:1.5.2"
     codemod: "npm:1.7.15"
@@ -219,9 +266,27 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/rename-bui-css-tokens-v1-48@workspace:codemods/v1.48.0/rename-bui-css-tokens-v1-48":
+  version: 0.0.0-use.local
+  resolution: "@backstage/rename-bui-css-tokens-v1-48@workspace:codemods/v1.48.0/rename-bui-css-tokens-v1-48"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/rename-header-main-class@workspace:codemods/v1.51.0/rename-header-main-class":
   version: 0.0.0-use.local
   resolution: "@backstage/rename-header-main-class@workspace:codemods/v1.51.0/rename-header-main-class"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/rename-header-to-plugin-header@workspace:codemods/v1.48.0/rename-header-to-plugin-header":
+  version: 0.0.0-use.local
+  resolution: "@backstage/rename-header-to-plugin-header@workspace:codemods/v1.48.0/rename-header-to-plugin-header"
   dependencies:
     "@codemod.com/jssg-types": "npm:1.5.2"
     codemod: "npm:1.7.15"
@@ -276,6 +341,14 @@ __metadata:
 "@backstage/v1-47-0-migration-recipe@workspace:codemods/v1.47.0/migration-recipe":
   version: 0.0.0-use.local
   resolution: "@backstage/v1-47-0-migration-recipe@workspace:codemods/v1.47.0/migration-recipe"
+  dependencies:
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/v1-48-0-migration-recipe@workspace:codemods/v1.48.0/migration-recipe":
+  version: 0.0.0-use.local
+  resolution: "@backstage/v1-48-0-migration-recipe@workspace:codemods/v1.48.0/migration-recipe"
   dependencies:
     codemod: "npm:1.7.15"
   languageName: unknown

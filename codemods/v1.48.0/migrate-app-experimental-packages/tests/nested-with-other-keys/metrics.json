@@ -1,0 +1,10 @@
+{
+  "migrate-app-experimental-packages": [
+    {
+      "cardinality": {
+        "action": "packages-migrated"
+      },
+      "count": 1
+    }
+  ]
+}
