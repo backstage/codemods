@@ -103,6 +103,19 @@ The codemod modifies code it should not touch. Root causes:
 - **Name collision**: A field name like `token` or `loading` exists in
   unrelated code. Fix: verify the field belongs to the target type before
   transforming.
+- **Workspace member bleed**: A dependency-adding codemod modifies every
+  sub-package in a monorepo when the workspace root already provides the
+  dependency. Use judgement — sometimes sub-packages legitimately need
+  their own entry (published packages, version pinning). When the codemod
+  was designed to target only the workspace root (workflow excludes
+  `packages/**`), add a guard in the transform (e.g., check for a
+  `workspaces` field). When it makes sense for both root and members,
+  consider a param like `skipWorkspaceMembers` to let users choose.
+- **Workflow glob paths shift with `--target`**: A workflow that excludes
+  `packages/**/package.json` works with `--target .` but not `--target
+packages`, because `include`/`exclude` resolve relative to the target
+  root. Transforms that should only hit the repo root need guards in the
+  transform code itself, not just workflow globs.
 
 #### Redundant transforms
 
@@ -259,3 +272,16 @@ over-restrict the scope.
 - **lint-staged interference.** The repo's pre-commit hooks may reformat files
   via prettier. If prettier and a generator script (like `yarn readme`)
   disagree on formatting, the generator should run prettier as its last step.
+- **`params` must be forwarded in recipes.** When a sub-codemod declares
+  `params:` (e.g., `aiFixup`), the recipe workflow must also declare those
+  params at its own top level and forward them via `args:` on each step that
+  uses them. Without this, the codemod CLI crashes with
+  `Variable identifier is not bound to anything by context: "params.xxx"`.
+  Compare against v1.50.0+ recipes for the correct pattern.
+- **Cross-version audit.** Before fixing one recipe, `grep -r` across all
+  version directories for the same pattern. A bug in one recipe's
+  `params`/`args` setup is likely repeated in adjacent versions.
+- **JSON test fixtures and `JSON.stringify`.** When a transform round-trips
+  through `JSON.stringify`, arrays are expanded to one-element-per-line.
+  Test fixture `input.json` and `expected.json` must match this expanded
+  format or the test runner reports a false mismatch.
