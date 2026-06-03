@@ -82,4 +82,8 @@ awk -v start="$START_MARKER" -v end="$END_MARKER" -v content="$section" '
 ' "$README" > "$README.tmp"
 
 mv "$README.tmp" "$README"
+
+# Format so the committed output matches what prettier expects
+yarn format "$README" >/dev/null 2>&1 || true
+
 echo "✅ README.md updated with ${all_versions[0]} and ${all_versions[1]} ($total total on disk)"
