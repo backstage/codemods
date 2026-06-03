@@ -14,7 +14,8 @@
     "lint:fix": "oxlint --type-aware --type-check --fix",
     "prepare": "husky",
     "changeset": "changeset",
-    "version-packages": "changeset version && bash scripts/sync-codemod-versions.sh"
+    "version-packages": "changeset version && bash scripts/sync-codemod-versions.sh",
+    "readme": "bash scripts/generate-readme-codemods.sh"
   },
   "devDependencies": {
     "@changesets/cli": "^2.30.0",
