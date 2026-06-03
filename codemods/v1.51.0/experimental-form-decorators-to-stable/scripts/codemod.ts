@@ -28,6 +28,12 @@ const transform: Codemod<TSX> = async (root) => {
   })
 
   for (const key of propertyKeys) {
+    // Skip property accesses (e.g. template.spec.EXPERIMENTAL_formDecorators)
+    // — only rename actual object literal keys, not member-expression properties
+    const parent = key.parent()
+    if (parent?.kind() === 'member_expression') {
+      continue
+    }
     renames.increment()
     edits.push(key.replace(NEW_KEY))
   }

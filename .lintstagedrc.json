@@ -1,5 +1,6 @@
 {
   "*.{ts,js,mts,mjs}": ["yarn format", "yarn lint:fix"],
   "*.{json,yaml,yml,md}": ["yarn format"],
-  "codemods/**/scripts/*.ts": "bash scripts/test-staged.sh"
+  "codemods/**/scripts/*.ts": "bash scripts/test-staged.sh",
+  "codemods/**/package.json": "bash -c 'yarn readme && git add README.md'"
 }

@@ -1,0 +1,16 @@
+{
+  "migrate-policy-query-user": [
+    {
+      "cardinality": {
+        "action": "empty-destructuring-cleaned"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "token-usage-todo"
+      },
+      "count": 1
+    }
+  ]
+}

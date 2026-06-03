@@ -181,10 +181,73 @@ function rebuildObjectPattern(objectPattern: SgNode<TSX>): { text: string; renam
   return { text: `{ ${kept.join(', ')} }`, renamedLocals }
 }
 
-function processObjectPattern(objectPattern: SgNode<TSX>, edits: Edit[]): Map<string, string> {
+function isPolicyQueryUserObjectPattern(objectPattern: SgNode<TSX>, userBindings: Set<string>): boolean {
+  const parent = objectPattern.parent()
+  if (!parent) {
+    return false
+  }
+
+  // Direct parameter annotation: ({ token, credentials }: PolicyQueryUser)
+  if (parent.is('required_parameter') || parent.is('optional_parameter')) {
+    const typeNode = parent.field('type')
+    return isPolicyQueryUserTypeAnnotation(typeNode)
+  }
+
+  // Variable declaration: const { token } = user (where user is a tracked PolicyQueryUser binding)
+  if (parent.is('variable_declarator')) {
+    const initNode = parent.field('value')
+    if (initNode?.is('identifier') && userBindings.has(initNode.text())) {
+      return true
+    }
+    // Explicit type annotation: const { token }: PolicyQueryUser = ...
+    const typeNode = parent.field('type')
+    if (isPolicyQueryUserTypeAnnotation(typeNode)) {
+      return true
+    }
+  }
+
+  return false
+}
+
+function processObjectPattern(objectPattern: SgNode<TSX>, edits: Edit[], source: string): Map<string, string> {
   const rebuilt = rebuildObjectPattern(objectPattern)
   if (!rebuilt) {
     return new Map()
+  }
+
+  // When all fields have been removed, the destructuring becomes `const {} = expr`
+  // which is useless.  Clean up the enclosing statement instead.
+  if (rebuilt.text === '{}') {
+    const statement = getEnclosingStatement(objectPattern)
+    if (statement) {
+      const kind = statement.kind()
+      if (kind === 'lexical_declaration' || kind === 'variable_declarator') {
+        const decl = kind === 'variable_declarator' ? statement.parent() : statement
+        if (decl) {
+          // If the RHS contains an await, keep the await for side-effects
+          const awaitExpr = decl.find({ rule: { kind: 'await_expression' } })
+          if (awaitExpr) {
+            const range = decl.range()
+            const indent = getLineIndent(source, range.start.index)
+            const endPos = consumeTrailingNewline(source, range.end.index)
+            const lineStart = source.lastIndexOf('\n', range.start.index - 1) + 1
+            edits.push({
+              startPos: lineStart,
+              endPos,
+              insertedText: `${indent}${awaitExpr.text()};\n`,
+            })
+          } else {
+            // No side-effects — remove the entire statement
+            const range = decl.range()
+            const lineStart = source.lastIndexOf('\n', range.start.index - 1) + 1
+            const endPos = consumeTrailingNewline(source, range.end.index)
+            edits.push({ startPos: lineStart, endPos, insertedText: '' })
+          }
+          migrationMetric.increment({ action: 'empty-destructuring-cleaned' })
+          return rebuilt.renamedLocals
+        }
+      }
+    }
   }
 
   edits.push(objectPattern.replace(rebuilt.text))
@@ -328,10 +391,60 @@ function getEnclosingStatement(node: SgNode<TSX>): SgNode<TSX> | null {
   return null
 }
 
-function replaceStatementWithTodo(statement: SgNode<TSX>, source: string, edits: Edit[]): void {
+function declaresUsedBinding(statement: SgNode<TSX>, rootNode: SgNode<TSX>): boolean {
+  const kind = statement.kind()
+  const decl = kind === 'lexical_declaration' ? statement : kind === 'variable_declarator' ? statement.parent() : null
+  if (!decl) {
+    return false
+  }
+
+  const declarators = decl.findAll({ rule: { kind: 'variable_declarator' } })
+  for (const d of declarators) {
+    const nameNode = d.field('name')
+    if (!nameNode?.is('identifier')) {
+      continue
+    }
+    const name = nameNode.text()
+    // Check if the declared name is used outside this statement.
+    // Search both regular identifiers and shorthand object properties
+    // (e.g. `{ secrets }` parses as shorthand_property_identifier).
+    const identifierKinds = ['identifier', 'shorthand_property_identifier'] as const
+    for (const identKind of identifierKinds) {
+      const usages = rootNode.findAll({
+        rule: { kind: identKind, regex: exactMatchRegex(name) },
+      })
+      for (const usage of usages) {
+        if (isBindingIdentifier(usage)) {
+          continue
+        }
+        // Usage is outside the declaration statement
+        const usageIdx = usage.range().start.index
+        if (usageIdx < decl.range().start.index || usageIdx >= decl.range().end.index) {
+          return true
+        }
+      }
+    }
+  }
+  return false
+}
+
+function replaceStatementWithTodo(statement: SgNode<TSX>, source: string, edits: Edit[], rootNode: SgNode<TSX>): void {
   const range = statement.range()
   const lineStart = source.lastIndexOf('\n', range.start.index - 1) + 1
   const indent = getLineIndent(source, range.start.index)
+
+  // If the statement defines a variable used elsewhere, add a TODO comment
+  // above instead of deleting it — otherwise downstream references break.
+  if (declaresUsedBinding(statement, rootNode)) {
+    edits.push({
+      startPos: lineStart,
+      endPos: lineStart,
+      insertedText: `${indent}${TODO_TOKEN}\n`,
+    })
+    migrationMetric.increment({ action: 'token-usage-todo-comment' })
+    return
+  }
+
   const endPos = consumeTrailingNewline(source, range.end.index)
 
   edits.push({
@@ -356,13 +469,16 @@ const transform: Codemod<TSX> = async (root) => {
   const statementsWithTodo = new Set<number>()
 
   for (const objectPattern of rootNode.findAll({ rule: { kind: 'object_pattern' } })) {
+    if (!isPolicyQueryUserObjectPattern(objectPattern, userBindings)) {
+      continue
+    }
     const bindings = collectObjectPatternBindings(objectPattern)
     for (const binding of bindings) {
       if (REMOVED_FIELDS.has(binding.fieldName)) {
         tokenLocals.add(binding.localName)
       }
     }
-    const renamed = processObjectPattern(objectPattern, edits)
+    const renamed = processObjectPattern(objectPattern, edits, source)
     for (const [from, to] of renamed) {
       renamedLocals.set(from, to)
     }
@@ -399,7 +515,7 @@ const transform: Codemod<TSX> = async (root) => {
       const statement = getEnclosingStatement(member)
       if (statement && !statementsWithTodo.has(statement.range().start.index)) {
         statementsWithTodo.add(statement.range().start.index)
-        replaceStatementWithTodo(statement, source, edits)
+        replaceStatementWithTodo(statement, source, edits, rootNode)
       }
     }
 
@@ -407,7 +523,7 @@ const transform: Codemod<TSX> = async (root) => {
       const statement = getEnclosingStatement(member)
       if (statement && !statementsWithTodo.has(statement.range().start.index)) {
         statementsWithTodo.add(statement.range().start.index)
-        replaceStatementWithTodo(statement, source, edits)
+        replaceStatementWithTodo(statement, source, edits, rootNode)
       }
     }
   }
@@ -420,7 +536,7 @@ const transform: Codemod<TSX> = async (root) => {
       const statement = getEnclosingStatement(node)
       if (statement && !statementsWithTodo.has(statement.range().start.index)) {
         statementsWithTodo.add(statement.range().start.index)
-        replaceStatementWithTodo(statement, source, edits)
+        replaceStatementWithTodo(statement, source, edits, rootNode)
       }
     }
   }
