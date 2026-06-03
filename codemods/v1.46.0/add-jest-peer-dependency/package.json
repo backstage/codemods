@@ -1,6 +1,6 @@
 {
   "name": "@backstage/add-jest-peer-dependency",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Backstage 1.46.0: Add jest as explicit peer dependency to root package.json",
   "type": "module",
   "scripts": {
