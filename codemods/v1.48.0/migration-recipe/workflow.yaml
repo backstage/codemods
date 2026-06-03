@@ -2,6 +2,13 @@
 
 version: '1'
 
+params:
+  schema:
+    aiFixup:
+      type: boolean
+      default: false
+      description: 'Forward aiFixup to every codemod that supports an AI fixup step for edge cases the AST transforms cannot handle mechanically.'
+
 nodes:
   - id: apply-recipe
     name: Run every Backstage 1.48.0 codemod in order
@@ -22,11 +29,15 @@ nodes:
       - name: 'Migrate surface/onSurface props to bg system on @backstage/ui components'
         codemod:
           source: '@backstage/migrate-surface-to-bg-system'
+          args:
+            - 'aiFixup'
 
       # --- BREAKING: BUI ColumnConfig cell/header must return ReactElement
       - name: 'Wrap ColumnConfig cell and header returns in CellText/Column'
         codemod:
           source: '@backstage/migrate-column-config-to-react-element'
+          args:
+            - 'aiFixup'
 
       # --- BREAKING: BUI Header → PluginHeader rename
       - name: 'Rename Header to PluginHeader in @backstage/ui'

@@ -1,6 +1,12 @@
 {
   "name": "my-backstage-app",
   "version": "1.0.0",
+  "workspaces": {
+    "packages": [
+      "packages/*",
+      "plugins/*"
+    ]
+  },
   "dependencies": {
     "@backstage/core-plugin-api": "^1.0.0"
   },

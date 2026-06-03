@@ -1,5 +1,11 @@
 {
   "name": "my-backstage-app",
+  "workspaces": {
+    "packages": [
+      "packages/*",
+      "plugins/*"
+    ]
+  },
   "devDependencies": {
     "@backstage/cli": "^0.35.0",
     "@jest/environment-jsdom-abstract": "^30",
