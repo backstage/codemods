@@ -136,6 +136,30 @@ syntax when removing nodes.
 
 ### Step 5: Fix the AST transform
 
+**Generic fixes only.** Every fix must be a general rule that happens to solve
+the specific case — not a patch targeting one repo's file. Before editing the
+transform, ask: "Would this fix improve the codemod for ANY consumer codebase,
+or only for this target?" If the answer is only this target, skip it — the
+codemod is working as designed and the target code needs a manual migration.
+
+Signals that a fix is **generic** (implement it):
+
+- The AST rule matches too broadly and would false-positive in any codebase
+  with a similarly-named field (e.g., removing `token` from all destructuring
+  instead of only `PolicyQueryUser`-typed patterns).
+- The transform produces syntactically broken output (empty destructuring,
+  undefined references) regardless of which codebase it runs against.
+- A rename inside a fallback pattern creates `X ?? X` — structurally wrong
+  in any project.
+
+Signals that a fix is **too specific** (skip it):
+
+- The "fix" would encode one repo's internal API patterns (e.g., replacing
+  `backstageToken: token` with `(credentials as any).token`).
+- The transform correctly identifies the target pattern but the surrounding
+  code needs manual follow-up — this is what TODO comments are for.
+- The fix would only matter for a single file in one codebase.
+
 Edit the codemod's `scripts/codemod.ts`. Common fix patterns:
 
 - **Add parent-kind guard**: Skip matches whose parent is an unintended node
@@ -200,6 +224,28 @@ Repeat from Step 3 until no issues remain. A clean run means:
 - No broken references or undefined variables
 - No dangling artifacts
 - All codemod tests pass
+
+## Diagnostic signals
+
+**Metrics output.** After each run, check the metrics summary. Unexpected
+counts reveal issues — e.g., `object-pattern-updated: 2` when only one
+`PolicyQueryUser` pattern exists means a false positive hit an unrelated
+destructuring.
+
+**Files that should not have changed.** For every modified file, verify it
+actually uses the target type/API. If a file has no relevant imports or type
+references, the modification is a false positive. Run:
+
+```bash
+grep -n '<TargetType>' <modified-file>
+```
+
+If it returns nothing, the codemod's scope guard is too broad.
+
+**Diff count between runs.** After fixing the codemod, the re-run should
+modify fewer files (false positives eliminated) while still transforming all
+legitimate targets. If the file count drops to zero, verify you didn't
+over-restrict the scope.
 
 ## Pitfalls
 
