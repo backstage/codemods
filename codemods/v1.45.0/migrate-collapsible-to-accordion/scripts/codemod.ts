@@ -158,6 +158,13 @@ function extractSimpleRenderContent(opening: SgNode<TSX>): string | null {
   }
 
   if (jsxBody.is('jsx_self_closing_element')) {
+    // Self-closing elements with attributes/props (e.g. <Icon {...props} />) are not
+    // truly empty — return null to let the complex-render fallback path handle them
+    const hasAttrs = jsxBody.findAll({ rule: { kind: 'jsx_attribute' } }).length > 0
+    const hasSpreads = jsxBody.findAll({ rule: { kind: 'jsx_expression' } }).length > 0
+    if (hasAttrs || hasSpreads) {
+      return null
+    }
     return ''
   }
 

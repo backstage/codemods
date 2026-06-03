@@ -106,12 +106,6 @@ function isTargetComponent(nameNode: SgNode<TSX>, localNames: Set<string>, names
 }
 
 function getComponentDisplayName(nameNode: SgNode<TSX>): string {
-  if (nameNode.is('identifier')) {
-    return nameNode.text()
-  }
-  if (nameNode.is('member_expression')) {
-    return nameNode.text()
-  }
   return nameNode.text()
 }
 

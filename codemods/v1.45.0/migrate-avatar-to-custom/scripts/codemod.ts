@@ -169,26 +169,46 @@ function transformJsxElements(
     }
 
     if (renderAttr) {
-      // When render prop is present, replace the entire element
+      // When render prop is present, use positional edits within the element text
       const indent = computeIndent(fullSource, el.range().start.index)
-      let elText = el.text()
+      const elStart = el.range().start.index
+      const elText = el.text()
 
-      // Remove the render prop text from the element source
-      const renderAttrText = renderAttr.text()
-      elText = elText.split(renderAttrText).join('')
+      // Build positional replacements within the element text
+      interface TextReplacement {
+        start: number
+        end: number
+        newText: string
+      }
+      const replacements: TextReplacement[] = []
 
-      // Clean up extra whitespace from the removal
-      elText = elText.split(/\s+/).join(' ')
-      elText = elText.split(' >').join('>')
+      // Remove the render attribute by position
+      const renderStart = renderAttr.range().start.index - elStart
+      const renderEnd = renderAttr.range().end.index - elStart
+      replacements.push({ start: renderStart, end: renderEnd, newText: '' })
 
       // Also rename size="large" to size="x-large" if present
       if (sizeLargeFragment) {
-        elText = elText.split('size="large"').join('size="x-large"')
+        const fragStart = sizeLargeFragment.range().start.index - elStart
+        const fragEnd = sizeLargeFragment.range().end.index - elStart
+        replacements.push({ start: fragStart, end: fragEnd, newText: 'x-large' })
         migrationMetric.increment({ action: 'size-renamed', from: 'large', to: 'x-large' })
       }
 
+      // Apply replacements in reverse position order
+      replacements.sort((a, b) => b.start - a.start)
+      let newElText = elText
+      for (const r of replacements) {
+        newElText = newElText.slice(0, r.start) + r.newText + newElText.slice(r.end)
+      }
+
+      // Clean up only extra spaces from attribute removal (not inside strings)
+      newElText = newElText.replaceAll(/ {2,}/g, ' ')
+      newElText = newElText.replaceAll(' />', ' />')
+      newElText = newElText.replaceAll(' >', '>')
+
       const comment = '// TODO(backstage-codemod): Avatar render prop removed, review custom rendering'
-      edits.push(el.replace(`${comment}\n${indent}${elText}`))
+      edits.push(el.replace(`${comment}\n${indent}${newElText}`))
       migrationMetric.increment({ action: 'render-prop-removed' })
     } else if (sizeLargeFragment) {
       // Only size="large" rename, no render prop
