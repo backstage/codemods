@@ -65,6 +65,12 @@ const transform: Codemod<JSON> = async (root, options) => {
     return null
   }
 
+  // Skip workspace member packages — they inherit jest from the workspace root.
+  // Only the root package.json (which has a "workspaces" field) should be modified.
+  if (!pkg.workspaces) {
+    return null
+  }
+
   // Check if jest is already present
   const hasJest = pkg.dependencies?.jest !== undefined || pkg.devDependencies?.jest !== undefined
 

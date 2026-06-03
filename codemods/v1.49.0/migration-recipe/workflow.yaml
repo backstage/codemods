@@ -2,6 +2,13 @@
 
 version: '1'
 
+params:
+  schema:
+    aiFixup:
+      type: boolean
+      default: false
+      description: 'Forward aiFixup to every codemod that supports an AI fixup step for edge cases the AST transforms cannot handle mechanically.'
+
 nodes:
   - id: apply-recipe
     name: Run every Backstage 1.49.0 codemod in order
@@ -32,6 +39,8 @@ nodes:
       - name: 'Replace createPublicSignInApp with createApp + appModulePublicSignIn'
         codemod:
           source: '@backstage/remove-create-public-sign-in-app'
+          args:
+            - 'aiFixup'
 
       # --- BREAKING: createApp option removed
       - name: 'Remove deprecated allowUnknownExtensionConfig from createApp()'
