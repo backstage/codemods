@@ -1,0 +1,11 @@
+{
+  "gerrit-gitiles-renames": [
+    {
+      "cardinality": {
+        "from": "parseGerritGitilesUrl",
+        "to": "parseGitilesUrlRef"
+      },
+      "count": 1
+    }
+  ]
+}

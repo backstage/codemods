@@ -1,0 +1,25 @@
+{
+  "catalog-card-variant-prop-removals": [
+    {
+      "cardinality": {
+        "component": "EntityAboutCard",
+        "prop": "variant"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "component": "EntityCatalogGraphCard",
+        "prop": "variant"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "component": "EntityLinksCard",
+        "prop": "variant"
+      },
+      "count": 1
+    }
+  ]
+}

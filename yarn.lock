@@ -153,6 +153,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/migrate-gerrit-gitiles-functions@workspace:codemods/v1.49.0/migrate-gerrit-gitiles-functions":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-gerrit-gitiles-functions@workspace:codemods/v1.49.0/migrate-gerrit-gitiles-functions"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    "@jssg/utils": "npm:0.0.5"
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/migrate-nav-item-to-page@workspace:codemods/v1.51.0/migrate-nav-item-to-page":
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-nav-item-to-page@workspace:codemods/v1.51.0/migrate-nav-item-to-page"
@@ -238,9 +248,49 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/remove-allow-unknown-extension-config@workspace:codemods/v1.49.0/remove-allow-unknown-extension-config":
+  version: 0.0.0-use.local
+  resolution: "@backstage/remove-allow-unknown-extension-config@workspace:codemods/v1.49.0/remove-allow-unknown-extension-config"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    "@jssg/utils": "npm:0.0.5"
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/remove-any-extension-data-ref@workspace:codemods/v1.49.0/remove-any-extension-data-ref":
+  version: 0.0.0-use.local
+  resolution: "@backstage/remove-any-extension-data-ref@workspace:codemods/v1.49.0/remove-any-extension-data-ref"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    "@jssg/utils": "npm:0.0.5"
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/remove-bootstrap-env-proxy@workspace:codemods/v1.50.0/remove-bootstrap-env-proxy":
   version: 0.0.0-use.local
   resolution: "@backstage/remove-bootstrap-env-proxy@workspace:codemods/v1.50.0/remove-bootstrap-env-proxy"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    "@jssg/utils": "npm:0.0.5"
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/remove-catalog-card-variant-props@workspace:codemods/v1.49.0/remove-catalog-card-variant-props":
+  version: 0.0.0-use.local
+  resolution: "@backstage/remove-catalog-card-variant-props@workspace:codemods/v1.49.0/remove-catalog-card-variant-props"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    "@jssg/utils": "npm:0.0.5"
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/remove-create-public-sign-in-app@workspace:codemods/v1.49.0/remove-create-public-sign-in-app":
+  version: 0.0.0-use.local
+  resolution: "@backstage/remove-create-public-sign-in-app@workspace:codemods/v1.49.0/remove-create-public-sign-in-app"
   dependencies:
     "@codemod.com/jssg-types": "npm:1.5.2"
     "@jssg/utils": "npm:0.0.5"
@@ -269,6 +319,15 @@ __metadata:
 "@backstage/rename-bui-css-tokens-v1-48@workspace:codemods/v1.48.0/rename-bui-css-tokens-v1-48":
   version: 0.0.0-use.local
   resolution: "@backstage/rename-bui-css-tokens-v1-48@workspace:codemods/v1.48.0/rename-bui-css-tokens-v1-48"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/rename-bui-header-css-classes@workspace:codemods/v1.49.0/rename-bui-header-css-classes":
+  version: 0.0.0-use.local
+  resolution: "@backstage/rename-bui-header-css-classes@workspace:codemods/v1.49.0/rename-bui-header-css-classes"
   dependencies:
     "@codemod.com/jssg-types": "npm:1.5.2"
     codemod: "npm:1.7.15"
@@ -349,6 +408,14 @@ __metadata:
 "@backstage/v1-48-0-migration-recipe@workspace:codemods/v1.48.0/migration-recipe":
   version: 0.0.0-use.local
   resolution: "@backstage/v1-48-0-migration-recipe@workspace:codemods/v1.48.0/migration-recipe"
+  dependencies:
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/v1-49-0-migration-recipe@workspace:codemods/v1.49.0/migration-recipe":
+  version: 0.0.0-use.local
+  resolution: "@backstage/v1-49-0-migration-recipe@workspace:codemods/v1.49.0/migration-recipe"
   dependencies:
     codemod: "npm:1.7.15"
   languageName: unknown

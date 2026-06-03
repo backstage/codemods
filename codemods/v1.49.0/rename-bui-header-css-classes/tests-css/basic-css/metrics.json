@@ -1,0 +1,44 @@
+{
+  "bui-header-css-renames": [
+    {
+      "cardinality": {
+        "from": "bui-HeaderPage",
+        "to": "bui-Header",
+        "type": "css-class-name"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "from": "bui-HeaderPageBreadcrumbs",
+        "to": "bui-HeaderBreadcrumbs",
+        "type": "css-class-name"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "from": "bui-HeaderPageContent",
+        "to": "bui-HeaderContent",
+        "type": "css-class-name"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "from": "bui-HeaderPageControls",
+        "to": "bui-HeaderControls",
+        "type": "css-class-name"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "from": "bui-HeaderPageTabsWrapper",
+        "to": "bui-HeaderTabsWrapper",
+        "type": "css-class-name"
+      },
+      "count": 1
+    }
+  ]
+}

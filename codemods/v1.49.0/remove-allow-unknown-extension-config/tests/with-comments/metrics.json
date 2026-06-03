@@ -1,0 +1,10 @@
+{
+  "allow-unknown-extension-config-removals": [
+    {
+      "cardinality": {
+        "property": "allowUnknownExtensionConfig"
+      },
+      "count": 1
+    }
+  ]
+}

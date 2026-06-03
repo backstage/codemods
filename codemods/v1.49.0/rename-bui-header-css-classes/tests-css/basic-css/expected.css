@@ -1,0 +1,5 @@
+.bui-Header { background: var(--bui-color-surface); }
+.bui-HeaderContent { padding: 16px; }
+.bui-HeaderBreadcrumbs { margin-bottom: 8px; }
+.bui-HeaderTabsWrapper { border-bottom: 1px solid; }
+.bui-HeaderControls { gap: 8px; }

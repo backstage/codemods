@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+nodes:
+  - id: apply-recipe
+    name: Run every Backstage 1.49.0 codemod in order
+    type: automatic
+    steps:
+      # --- BUI CSS: rename HeaderPage classes first since later codemods
+      #     may reference the new class names.
+      - name: 'Rename BUI HeaderPage CSS classes to Header'
+        codemod:
+          source: '@backstage/rename-bui-header-css-classes'
+
+      # --- BREAKING: Catalog plugin card props removed
+      - name: 'Remove deprecated variant and gridSizes props from catalog card components'
+        codemod:
+          source: '@backstage/remove-catalog-card-variant-props'
+
+      # --- BREAKING: Gerrit integration function renames
+      - name: 'Rename deprecated Gerrit Gitiles functions in @backstage/integration'
+        codemod:
+          source: '@backstage/migrate-gerrit-gitiles-functions'
+
+      # --- BREAKING: Frontend plugin API type rename
+      - name: 'Rename deprecated AnyExtensionDataRef to ExtensionDataRef'
+        codemod:
+          source: '@backstage/remove-any-extension-data-ref'
+
+      # --- BREAKING: createPublicSignInApp removed
+      - name: 'Replace createPublicSignInApp with createApp + appModulePublicSignIn'
+        codemod:
+          source: '@backstage/remove-create-public-sign-in-app'
+
+      # --- BREAKING: createApp option removed
+      - name: 'Remove deprecated allowUnknownExtensionConfig from createApp()'
+        codemod:
+          source: '@backstage/remove-allow-unknown-extension-config'

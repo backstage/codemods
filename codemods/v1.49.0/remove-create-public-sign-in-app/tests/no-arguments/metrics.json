@@ -1,0 +1,10 @@
+{
+  "create-public-sign-in-app-replacements": [
+    {
+      "cardinality": {
+        "action": "replaced"
+      },
+      "count": 1
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+schema_version: '1.0'
+
+name: '@backstage/rename-bui-header-css-classes'
+version: '0.0.1'
+description: 'Backstage 1.49.0: Rename BUI HeaderPage CSS classes to Header'
+author: 'Paul Schultz<pschultz@redhat.com>'
+license: 'MIT'
+repository: 'https://github.com/backstage/codemods'
+workflow: 'workflow.yaml'
+
+targets:
+  languages: ['tsx', 'ts', 'js', 'jsx', 'css', 'scss']
+
+keywords: ['backstage', 'migration', 'bui', 'HeaderPage', 'Header', 'css', '1.49.0']
+
+registry:
+  access: 'public'
+  visibility: 'public'
+
+capabilities: []

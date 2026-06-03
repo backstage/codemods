@@ -1,0 +1,11 @@
+{
+  "any-extension-data-ref-renames": [
+    {
+      "cardinality": {
+        "from": "AnyExtensionDataRef",
+        "to": "ExtensionDataRef"
+      },
+      "count": 1
+    }
+  ]
+}
