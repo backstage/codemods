@@ -1,6 +1,6 @@
 {
   "name": "@backstage/migrate-avatar-to-custom",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Backstage 1.45.0: Migrate Avatar component from Base UI to custom implementation — remove render prop, rename size=\"large\" to size=\"x-large\"",
   "type": "module",
   "scripts": {

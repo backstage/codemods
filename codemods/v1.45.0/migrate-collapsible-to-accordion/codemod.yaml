@@ -1,7 +1,7 @@
 schema_version: '1.0'
 
 name: '@backstage/migrate-collapsible-to-accordion'
-version: '0.1.0'
+version: '0.2.0'
 description: 'Backstage 1.45.0: Migrate Collapsible compound component to Accordion — Collapsible.Root/Trigger/Panel to Accordion/AccordionTrigger/AccordionPanel'
 author: 'Paul Schultz<pschultz@redhat.com>'
 license: 'MIT'
