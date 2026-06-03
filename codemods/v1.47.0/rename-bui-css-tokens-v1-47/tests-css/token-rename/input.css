@@ -1,0 +1,19 @@
+.my-component {
+  background: var(--bui-bg);
+}
+
+.my-tinted {
+  background: var(--bui-bg-tint);
+}
+
+.my-tinted:hover {
+  background: var(--bui-bg-tint-hover);
+}
+
+.my-tinted:active {
+  background: var(--bui-bg-tint-pressed);
+}
+
+.my-tinted:disabled {
+  background: var(--bui-bg-tint-disabled);
+}

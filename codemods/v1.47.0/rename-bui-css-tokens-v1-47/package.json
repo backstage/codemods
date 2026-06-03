@@ -1,0 +1,13 @@
+{
+  "name": "@backstage/rename-bui-css-tokens-v1-47",
+  "version": "0.0.0",
+  "description": "Backstage 1.47.0: Rename deprecated BUI CSS custom properties (--bui-bg, --bui-bg-tint*) to their new equivalents",
+  "type": "module",
+  "scripts": {
+    "test": "yarn exec codemod jssg test -l tsx ./scripts/codemod.ts ./tests && yarn exec codemod jssg test -l css ./scripts/codemod-css.ts ./tests-css && yarn exec codemod workflow validate -w workflow.yaml"
+  },
+  "devDependencies": {
+    "@codemod.com/jssg-types": "1.5.2",
+    "codemod": "1.7.15"
+  }
+}

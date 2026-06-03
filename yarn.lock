@@ -164,6 +164,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/migrate-table-to-use-table-hook@workspace:codemods/v1.47.0/migrate-table-to-use-table-hook":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-table-to-use-table-hook@workspace:codemods/v1.47.0/migrate-table-to-use-table-hook"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/migrate-valkey-config@workspace:codemods/v1.46.0/migrate-valkey-config":
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-valkey-config@workspace:codemods/v1.46.0/migrate-valkey-config"
@@ -195,6 +204,15 @@ __metadata:
 "@backstage/remove-immediate-stitching-mode@workspace:codemods/v1.51.0/remove-immediate-stitching-mode":
   version: 0.0.0-use.local
   resolution: "@backstage/remove-immediate-stitching-mode@workspace:codemods/v1.51.0/remove-immediate-stitching-mode"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/rename-bui-css-tokens-v1-47@workspace:codemods/v1.47.0/rename-bui-css-tokens-v1-47":
+  version: 0.0.0-use.local
+  resolution: "@backstage/rename-bui-css-tokens-v1-47@workspace:codemods/v1.47.0/rename-bui-css-tokens-v1-47"
   dependencies:
     "@codemod.com/jssg-types": "npm:1.5.2"
     codemod: "npm:1.7.15"
@@ -250,6 +268,14 @@ __metadata:
 "@backstage/v1-46-0-migration-recipe@workspace:codemods/v1.46.0/migration-recipe":
   version: 0.0.0-use.local
   resolution: "@backstage/v1-46-0-migration-recipe@workspace:codemods/v1.46.0/migration-recipe"
+  dependencies:
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/v1-47-0-migration-recipe@workspace:codemods/v1.47.0/migration-recipe":
+  version: 0.0.0-use.local
+  resolution: "@backstage/v1-47-0-migration-recipe@workspace:codemods/v1.47.0/migration-recipe"
   dependencies:
     codemod: "npm:1.7.15"
   languageName: unknown

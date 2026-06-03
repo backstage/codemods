@@ -1,0 +1,77 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+params:
+  schema:
+    aiFixup:
+      type: boolean
+      default: false
+      description: 'Complete Table migration including column config, pagination mode selection, and row selection patterns.'
+
+nodes:
+  - id: apply-transforms
+    name: 'Apply AST Transformations'
+    type: automatic
+    steps:
+      - name: 'Migrate Table to useTable hook API'
+        js-ast-grep:
+          js_file: scripts/codemod.ts
+          language: 'tsx'
+          semantic_analysis: file
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+
+  - id: ai-fixup
+    name: 'AI fixup for edge cases'
+    type: automatic
+    depends_on: [apply-transforms]
+    steps:
+      - name: 'Fix remaining edge cases that require contextual understanding'
+        if: params.aiFixup == true
+        ai:
+          model: 'claude-sonnet-4-6'
+          system_prompt: |
+            You are a Backstage migration expert. You are fixing edge cases left over
+            from an AST-based codemod that migrated the old Table component API to the
+            new useTable hook API in Backstage 1.47.0 (BUI v0.11.0).
+
+            The old API used `<Table>` with `<TableHeader>`, `<TableBody>`, and
+            `<TablePagination>` children. The new API uses `useTable()` hook returning
+            `tableProps` and a simplified `<Table {...tableProps} columns={columns} />`.
+
+            The AST codemod already handled the mechanical parts:
+            - Kept existing imports intact (TableHeader, TableBody, TablePagination)
+            - Added TODO comments above useTable hook calls that use old destructuring patterns
+            - Added TODO comments before JSX elements using TableHeader/TableBody/TablePagination
+
+            Your job is to find and fix the remaining issues that the AST codemod could not
+            handle mechanically. Be precise and conservative.
+          prompt: |
+            Search the codebase for remaining Table migration issues and fix them:
+
+            ## 1. Convert column definitions
+            Find all `TODO(backstage-codemod): Review Table migration` comments.
+            Convert inline `<TableHeader>`/`<TableBody>` JSX structures to `ColumnConfig[]`
+            array definitions.
+
+            ## 2. Determine pagination mode
+            For each `useTable` call with `mode: 'complete'`, assess whether the data
+            source is:
+            - Already fully loaded → keep `mode: 'complete'`
+            - Using offset-based API pagination → change to `mode: 'offset'`
+            - Using cursor-based pagination → change to `mode: 'cursor'`
+
+            ## 3. Migrate row selection
+            If the old code used row selection callbacks on `<TableBody>`, convert them
+            to the new `onSelectionChange` / `selectionMode` props.
+
+            ## 4. Update sort handling
+            Convert old sort column definitions to the new `sortDescriptor` / `onSortChange`
+            API pattern.
+
+            After making changes, verify the files are syntactically valid TypeScript/TSX.
+          max_steps: 50

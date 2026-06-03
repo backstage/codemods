@@ -1,0 +1,32 @@
+{
+  "table-to-use-table-hook": [
+    {
+      "cardinality": {
+        "action": "TableBody",
+        "type": "jsx-todo-added"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "TableHeader",
+        "type": "jsx-todo-added"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "TablePagination",
+        "type": "jsx-todo-added"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "todo-added",
+        "type": "useTable-hook"
+      },
+      "count": 1
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+.my-component {
+  background: var(--bui-bg-surface-0);
+  color: var(--bui-text-primary);
+  border: 1px solid var(--bui-border-default);
+}

@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+params:
+  schema:
+    aiFixup:
+      type: boolean
+      default: false
+      description: 'Forward aiFixup to every codemod that supports an AI fixup step for edge cases the AST transforms cannot handle mechanically.'
+
+nodes:
+  - id: apply-recipe
+    name: Run every Backstage 1.47.0 codemod in order
+    type: automatic
+    steps:
+      # --- CSS token renames (simple string replacement, no dependencies)
+      - name: 'Rename deprecated BUI CSS custom properties (--bui-bg, --bui-bg-tint*)'
+        codemod:
+          source: '@backstage/rename-bui-css-tokens-v1-47'
+
+      # --- Table component migration (structural, may depend on token renames being done)
+      - name: 'Migrate Table component to new useTable hook API from @backstage/ui'
+        codemod:
+          source: '@backstage/migrate-table-to-use-table-hook'
+          args:
+            - 'aiFixup'
