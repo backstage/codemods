@@ -84,7 +84,9 @@ const transform: Codemod<TSX> = async (root) => {
       const identifiers = spec.findAll({ rule: { kind: 'identifier' } })
       const importedName = identifiers[0]?.text()
       if (importedName && tableComponents.has(importedName)) {
-        foundComponents.push(importedName)
+        // Use local alias (second identifier) when present, otherwise the imported name
+        const localName = identifiers[1]?.text() ?? importedName
+        foundComponents.push(localName)
       }
     }
 
