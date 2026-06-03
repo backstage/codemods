@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+params:
+  schema:
+    jestVersion:
+      type: string
+      default: '30'
+      description: 'Jest major version to add: "30" (default, recommended) or "29"'
+
+nodes:
+  - id: apply-recipe
+    name: Run every Backstage 1.46.0 codemod in order
+    type: automatic
+    steps:
+      # --- CLI / tooling: add jest as explicit peer dependency
+      - name: 'Add jest peer dependencies to root package.json (@backstage/cli >= 0.35.0)'
+        codemod:
+          source: '@backstage/add-jest-peer-dependency'
+          args: ['jestVersion']
+
+      # --- Backend config: migrate Valkey cache options
+      - name: 'Migrate Valkey cache configuration to new native options (@backstage/backend-defaults >= 0.14.0)'
+        codemod:
+          source: '@backstage/migrate-valkey-config'

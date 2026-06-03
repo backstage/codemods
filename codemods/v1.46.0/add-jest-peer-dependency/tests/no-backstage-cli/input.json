@@ -1,0 +1,6 @@
+{
+  "name": "some-other-project",
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

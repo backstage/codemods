@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+params:
+  schema:
+    jestVersion:
+      type: string
+      default: '30'
+      description: 'Jest major version to add: "30" (default, recommended) or "29"'
+
+nodes:
+  - id: apply-transforms
+    name: Apply JSON Transformations
+    type: automatic
+    steps:
+      - name: 'Add jest peer dependencies to root package.json'
+        js-ast-grep:
+          js_file: scripts/codemod.ts
+          language: 'json'
+          include:
+            - 'package.json'
+          exclude:
+            - '**/node_modules/**'
+            - 'packages/**/package.json'
+            - 'plugins/**/package.json'

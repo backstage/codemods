@@ -1,0 +1,12 @@
+{
+  "add-jest-peer-dependency": [
+    {
+      "cardinality": {
+        "action": "deps-added",
+        "jestVersion": "30",
+        "packageCount": "4"
+      },
+      "count": 1
+    }
+  ]
+}

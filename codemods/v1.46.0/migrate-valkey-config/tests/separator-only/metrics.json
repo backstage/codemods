@@ -1,0 +1,10 @@
+{
+  "migrate-valkey-config": [
+    {
+      "cardinality": {
+        "action": "separator-removed"
+      },
+      "count": 1
+    }
+  ]
+}

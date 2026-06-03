@@ -1,0 +1,10 @@
+{
+  "add-jest-peer-dependency": [
+    {
+      "cardinality": {
+        "action": "skipped-already-present"
+      },
+      "count": 1
+    }
+  ]
+}

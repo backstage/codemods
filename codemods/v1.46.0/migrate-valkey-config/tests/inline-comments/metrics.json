@@ -1,0 +1,22 @@
+{
+  "migrate-valkey-config": [
+    {
+      "cardinality": {
+        "action": "clear-batch-size-removed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "namespace-to-keyprefix"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "use-unlink-removed"
+      },
+      "count": 1
+    }
+  ]
+}

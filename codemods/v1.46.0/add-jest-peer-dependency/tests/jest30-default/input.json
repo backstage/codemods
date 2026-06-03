@@ -1,0 +1,6 @@
+{
+  "name": "my-backstage-app",
+  "devDependencies": {
+    "@backstage/cli": "^0.35.0"
+  }
+}

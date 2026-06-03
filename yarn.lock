@@ -22,6 +22,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/add-jest-peer-dependency@workspace:codemods/v1.46.0/add-jest-peer-dependency":
+  version: 0.0.0-use.local
+  resolution: "@backstage/add-jest-peer-dependency@workspace:codemods/v1.46.0/add-jest-peer-dependency"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/add-update-location-method@workspace:codemods/v1.50.0/add-update-location-method":
   version: 0.0.0-use.local
   resolution: "@backstage/add-update-location-method@workspace:codemods/v1.50.0/add-update-location-method"
@@ -155,6 +164,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/migrate-valkey-config@workspace:codemods/v1.46.0/migrate-valkey-config":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-valkey-config@workspace:codemods/v1.46.0/migrate-valkey-config"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/portable-schema-method-call@workspace:codemods/v1.51.0/portable-schema-method-call":
   version: 0.0.0-use.local
   resolution: "@backstage/portable-schema-method-call@workspace:codemods/v1.51.0/portable-schema-method-call"
@@ -224,6 +242,14 @@ __metadata:
 "@backstage/v1-45-0-migration-recipe@workspace:codemods/v1.45.0/migration-recipe":
   version: 0.0.0-use.local
   resolution: "@backstage/v1-45-0-migration-recipe@workspace:codemods/v1.45.0/migration-recipe"
+  dependencies:
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/v1-46-0-migration-recipe@workspace:codemods/v1.46.0/migration-recipe":
+  version: 0.0.0-use.local
+  resolution: "@backstage/v1-46-0-migration-recipe@workspace:codemods/v1.46.0/migration-recipe"
   dependencies:
     codemod: "npm:1.7.15"
   languageName: unknown
