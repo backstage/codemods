@@ -88,6 +88,33 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/migrate-avatar-to-custom@workspace:codemods/v1.45.0/migrate-avatar-to-custom":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-avatar-to-custom@workspace:codemods/v1.45.0/migrate-avatar-to-custom"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/migrate-checkbox-to-react-aria@workspace:codemods/v1.45.0/migrate-checkbox-to-react-aria":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-checkbox-to-react-aria@workspace:codemods/v1.45.0/migrate-checkbox-to-react-aria"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/migrate-collapsible-to-accordion@workspace:codemods/v1.45.0/migrate-collapsible-to-accordion":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-collapsible-to-accordion@workspace:codemods/v1.45.0/migrate-collapsible-to-accordion"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/migrate-nav-item-to-page@workspace:codemods/v1.51.0/migrate-nav-item-to-page":
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-nav-item-to-page@workspace:codemods/v1.51.0/migrate-nav-item-to-page"
@@ -190,6 +217,14 @@ __metadata:
   dependencies:
     "@codemod.com/jssg-types": "npm:1.5.2"
     "@jssg/utils": "npm:0.0.5"
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/v1-45-0-migration-recipe@workspace:codemods/v1.45.0/migration-recipe":
+  version: 0.0.0-use.local
+  resolution: "@backstage/v1-45-0-migration-recipe@workspace:codemods/v1.45.0/migration-recipe"
+  dependencies:
     codemod: "npm:1.7.15"
   languageName: unknown
   linkType: soft

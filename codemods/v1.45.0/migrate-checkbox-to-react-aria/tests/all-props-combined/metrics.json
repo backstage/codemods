@@ -1,0 +1,43 @@
+{
+  "migrate-checkbox-to-react-aria": [
+    {
+      "cardinality": {
+        "action": "label-to-children",
+        "labelKind": "string"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "prop-renamed",
+        "from": "checked",
+        "to": "isSelected"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "prop-renamed",
+        "from": "defaultChecked",
+        "to": "defaultSelected"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "prop-renamed",
+        "from": "disabled",
+        "to": "isDisabled"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "prop-renamed",
+        "from": "required",
+        "to": "isRequired"
+      },
+      "count": 1
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+params:
+  schema:
+    aiFixup:
+      type: boolean
+      default: false
+      description: 'Fix complex label → children conversions and CSS class references the AST codemod could not handle.'
+
+nodes:
+  - id: apply-transforms
+    name: Apply AST Transformations
+    type: automatic
+    steps:
+      - name: 'Migrate Checkbox props and label to children'
+        js-ast-grep:
+          js_file: scripts/codemod.ts
+          language: 'tsx'
+          semantic_analysis: file
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+
+  - id: ai-fixup
+    name: AI fixup for edge cases
+    type: automatic
+    depends_on: [apply-transforms]
+    steps:
+      - name: 'Fix remaining Checkbox migration edge cases'
+        if: params.aiFixup == true
+        ai:
+          model: 'claude-sonnet-4-6'
+          system_prompt: |
+            You are a Backstage migration expert. You are fixing edge cases left over
+            from an AST-based codemod that migrated the Checkbox component from Base UI
+            to React Aria in @backstage/ui v0.9.0 (Backstage 1.45.0).
+
+            The AST codemod already handled:
+            - Prop renames: checked→isSelected, defaultChecked→defaultSelected,
+              disabled→isDisabled, required→isRequired
+            - Simple label="string" and label={variable} → children conversion
+            - Self-closing to open/close tag conversion when adding children
+            - Boolean shorthand props (e.g. required → isRequired)
+
+            Your job is ONLY to fix complex patterns that the AST codemod could not
+            handle mechanically. Be precise and conservative.
+          prompt: |
+            Search the codebase for remaining Checkbox migration issues:
+
+            ## 1. Complex label expressions
+            Find Checkbox components where the label prop contains JSX, ternaries,
+            or function calls that may not have been converted to children correctly.
+
+            ## 2. Spread props
+            Find {...props} patterns on Checkbox from @backstage/ui where checked,
+            label, or other renamed props may be passed dynamically.
+
+            ## 3. CSS class references
+            Find references to bui-CheckboxLabel CSS class and add appropriate
+            TODO comments.
+
+            ## 4. Wrapper components
+            Find wrapper components that forward Checkbox props and may still use
+            the old prop names.
+
+            After making changes, verify the files are syntactically valid.
+          max_steps: 25

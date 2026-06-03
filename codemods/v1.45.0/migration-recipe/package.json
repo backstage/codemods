@@ -1,0 +1,12 @@
+{
+  "name": "@backstage/v1-45-0-migration-recipe",
+  "version": "0.1.0",
+  "description": "Backstage 1.45.0: Migration recipe that runs every @backstage v1.45.0 codemod from the registry in a safe order.",
+  "type": "module",
+  "scripts": {
+    "test": "yarn exec codemod workflow validate -w workflow.yaml"
+  },
+  "devDependencies": {
+    "codemod": "1.7.15"
+  }
+}

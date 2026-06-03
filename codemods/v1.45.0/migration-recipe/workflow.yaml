@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+params:
+  schema:
+    aiFixup:
+      type: boolean
+      default: false
+      description: 'Forward aiFixup to every codemod that supports an AI fixup step for edge cases the AST transforms cannot handle mechanically.'
+
+nodes:
+  - id: apply-recipe
+    name: Run every Backstage 1.45.0 codemod in order
+    type: automatic
+    steps:
+      # --- BREAKING: @backstage/ui BUI component migrations (v0.9.0)
+      #     Avatar, Checkbox, and Collapsible all migrated from Base UI to
+      #     custom/React Aria implementations.
+
+      - name: 'Migrate Avatar: remove render prop, rename size="large" to size="x-large"'
+        codemod:
+          source: '@backstage/migrate-avatar-to-custom'
+
+      - name: 'Migrate Checkbox props and label to children for React Aria'
+        codemod:
+          source: '@backstage/migrate-checkbox-to-react-aria'
+          args:
+            - 'aiFixup'
+
+      - name: 'Migrate Collapsible compound component to Accordion'
+        codemod:
+          source: '@backstage/migrate-collapsible-to-accordion'
+          args:
+            - 'aiFixup'

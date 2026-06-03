@@ -1,0 +1,33 @@
+{
+  "migrate-collapsible-to-accordion": [
+    {
+      "cardinality": {
+        "action": "component-renamed",
+        "from": "Collapsible.Panel",
+        "to": "AccordionPanel"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "component-renamed",
+        "from": "Collapsible.Root",
+        "to": "Accordion"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-replaced"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "trigger-render-migrated",
+        "pattern": "simple"
+      },
+      "count": 1
+    }
+  ]
+}

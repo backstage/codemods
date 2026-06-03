@@ -1,0 +1,12 @@
+{
+  "migrate-avatar-to-custom": [
+    {
+      "cardinality": {
+        "action": "size-renamed",
+        "from": "large",
+        "to": "x-large"
+      },
+      "count": 1
+    }
+  ]
+}
