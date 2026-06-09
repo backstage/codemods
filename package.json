@@ -1,7 +1,7 @@
 {
   "name": "useful-codemods",
   "private": true,
-  "description": "Useful codemods made by Codemod.",
+  "description": "Useful codemods made by Backstage.",
   "workspaces": [
     "codemods/*",
     "codemods/*/*"

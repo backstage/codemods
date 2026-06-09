@@ -99,7 +99,3 @@ Or from this package directory:
 ```bash
 yarn test
 ```
-
-## License
-
-MIT

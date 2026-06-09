@@ -49,7 +49,3 @@ yarn workspace @backstage/migrate-collapsible-to-accordion test
 - **Namespace imports** (`import * as UI from '@backstage/ui'` with `<UI.Collapsible.Root>`) are not supported — these must be migrated manually
 - Self-closing render elements with props (e.g., `render={(props) => <Icon {...props} />}`) are treated as complex cases requiring manual review
 - Props on `Collapsible.Trigger` other than `render` (e.g., `id`, `className`) are preserved in the complex-render path but may be lost in the simple-render extraction
-
-## License
-
-MIT

@@ -50,7 +50,3 @@ yarn workspace @backstage/migrate-checkbox-to-react-aria test
 - `bui-CheckboxLabel` CSS class references are flagged with a TODO but not removed — manual review required
 - `data-checked` → `data-selected` replacement only applies to strings within JSX attributes; CSS files need manual update
 - Checkboxes without a `label` prop and without existing children are not flagged — the new Checkbox requires a label via children
-
-## License
-
-MIT

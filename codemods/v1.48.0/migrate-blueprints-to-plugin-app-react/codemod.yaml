@@ -4,7 +4,7 @@ name: '@backstage/migrate-blueprints-to-plugin-app-react'
 version: '0.2.0'
 description: 'Backstage 1.48.0: Move blueprint exports from @backstage/frontend-plugin-api to @backstage/plugin-app-react'
 author: 'Paul Schultz<pschultz@redhat.com>'
-license: 'MIT'
+license: 'Apache-2.0'
 repository: 'https://github.com/backstage/codemods'
 workflow: 'workflow.yaml'
 
