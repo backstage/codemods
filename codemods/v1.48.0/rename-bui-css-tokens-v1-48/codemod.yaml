@@ -4,7 +4,7 @@ name: '@backstage/rename-bui-css-tokens-v1-48'
 version: '0.2.0'
 description: 'Backstage 1.48.0: Rename deprecated BUI CSS tokens and selectors'
 author: 'Paul Schultz<pschultz@redhat.com>'
-license: 'MIT'
+license: 'Apache-2.0'
 repository: 'https://github.com/backstage/codemods'
 workflow: 'workflow.yaml'
 

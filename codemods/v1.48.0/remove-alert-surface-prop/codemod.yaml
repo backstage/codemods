@@ -4,7 +4,7 @@ name: '@backstage/remove-alert-surface-prop'
 version: '0.2.0'
 description: 'Backstage 1.48.0: Remove deprecated surface prop from Alert component in @backstage/ui'
 author: 'Paul Schultz<pschultz@redhat.com>'
-license: 'MIT'
+license: 'Apache-2.0'
 repository: 'https://github.com/backstage/codemods'
 workflow: 'workflow.yaml'
 

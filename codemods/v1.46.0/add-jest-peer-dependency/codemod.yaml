@@ -4,7 +4,7 @@ name: '@backstage/add-jest-peer-dependency'
 version: '0.2.1'
 description: 'Backstage 1.46.0: Add jest as explicit peer dependency to root package.json'
 author: 'Paul Schultz<pschultz@redhat.com>'
-license: 'MIT'
+license: 'Apache-2.0'
 repository: 'https://github.com/backstage/codemods'
 workflow: 'workflow.yaml'
 

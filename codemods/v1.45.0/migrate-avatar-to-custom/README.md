@@ -35,7 +35,3 @@ yarn workspace @backstage/migrate-avatar-to-custom test
 
 - When a `render` prop is removed, the codemod cannot mechanically migrate the custom rendering logic — review the TODO comment and manually adjust
 - Namespace imports are supported for detection, but the namespace prefix is preserved as-is
-
-## License
-
-MIT

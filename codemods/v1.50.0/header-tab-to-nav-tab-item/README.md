@@ -77,7 +77,3 @@ Or from this package directory:
 yarn test
 yarn check-types
 ```
-
-## License
-
-MIT
