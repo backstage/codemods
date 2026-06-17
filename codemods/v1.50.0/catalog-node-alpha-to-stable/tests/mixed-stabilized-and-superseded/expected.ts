@@ -1,5 +1,5 @@
 import { catalogServiceRef, catalogProcessingExtensionPoint } from '@backstage/plugin-catalog-node';
-import { createBackendModule , coreServices} from '@backstage/backend-plugin-api';
+import { createBackendModule, coreServices } from '@backstage/backend-plugin-api';
 
 export default createBackendModule({
   pluginId: 'catalog',

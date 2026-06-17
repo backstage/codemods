@@ -7,7 +7,7 @@
     "test": "yarn exec codemod jssg test -l tsx ./scripts/codemod.ts ./tests && yarn exec codemod workflow validate -w workflow.yaml"
   },
   "devDependencies": {
-    "@codemod.com/jssg-types": "1.5.2",
-    "codemod": "1.7.15"
+    "@codemod.com/jssg-types": "1.6.2",
+    "codemod": "1.12.3"
   }
 }

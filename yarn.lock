@@ -16,9 +16,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/add-entity-ref-to-location@workspace:codemods/v1.50.0/add-entity-ref-to-location"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    "@jssg/utils": "npm:0.0.5"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    "@jssg/utils": "npm:^0.0.8"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -26,8 +26,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/add-jest-peer-dependency@workspace:codemods/v1.46.0/add-jest-peer-dependency"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -35,9 +35,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/add-update-location-method@workspace:codemods/v1.50.0/add-update-location-method"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    "@jssg/utils": "npm:0.0.5"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    "@jssg/utils": "npm:^0.0.8"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -45,9 +45,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/catalog-node-alpha-to-stable@workspace:codemods/v1.50.0/catalog-node-alpha-to-stable"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    "@jssg/utils": "npm:0.0.5"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    "@jssg/utils": "npm:^0.0.8"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -55,9 +55,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/dialog-api-show-to-open@workspace:codemods/v1.50.0/dialog-api-show-to-open"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    "@jssg/utils": "npm:0.0.5"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    "@jssg/utils": "npm:^0.0.8"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -65,8 +65,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/experimental-form-decorators-to-stable@workspace:codemods/v1.51.0/experimental-form-decorators-to-stable"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -74,8 +74,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/header-tab-to-nav-tab-item@workspace:codemods/v1.50.0/header-tab-to-nav-tab-item"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -83,8 +83,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/humanize-entity-ref-to-presentation@workspace:codemods/v1.50.0/humanize-entity-ref-to-presentation"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -92,8 +92,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/loading-to-is-pending@workspace:codemods/v1.51.0/loading-to-is-pending"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -101,8 +101,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-app-experimental-packages@workspace:codemods/v1.48.0/migrate-app-experimental-packages"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -110,8 +110,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-avatar-to-custom@workspace:codemods/v1.45.0/migrate-avatar-to-custom"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -119,9 +119,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-blueprints-to-plugin-app-react@workspace:codemods/v1.48.0/migrate-blueprints-to-plugin-app-react"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    "@jssg/utils": "npm:0.0.5"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    "@jssg/utils": "npm:^0.0.8"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -129,8 +129,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-bui-props-to-intersection@workspace:codemods/v1.52.0/migrate-bui-props-to-intersection"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -138,8 +138,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-checkbox-to-react-aria@workspace:codemods/v1.45.0/migrate-checkbox-to-react-aria"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -147,8 +147,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-collapsible-to-accordion@workspace:codemods/v1.45.0/migrate-collapsible-to-accordion"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -156,9 +156,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-column-config-to-react-element@workspace:codemods/v1.48.0/migrate-column-config-to-react-element"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    "@jssg/utils": "npm:0.0.5"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    "@jssg/utils": "npm:^0.0.8"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -166,9 +166,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-gerrit-gitiles-functions@workspace:codemods/v1.49.0/migrate-gerrit-gitiles-functions"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    "@jssg/utils": "npm:0.0.5"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    "@jssg/utils": "npm:^0.0.8"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -176,9 +176,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-nav-item-to-page@workspace:codemods/v1.51.0/migrate-nav-item-to-page"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    "@jssg/utils": "npm:0.0.5"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    "@jssg/utils": "npm:^0.0.8"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -186,9 +186,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-permissioned-route@workspace:codemods/v1.50.0/migrate-permissioned-route"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    "@jssg/utils": "npm:0.0.5"
-    codemod: "npm:^1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    "@jssg/utils": "npm:^0.0.8"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -196,9 +196,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-policy-query-user@workspace:codemods/v1.51.0/migrate-policy-query-user"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    "@jssg/utils": "npm:0.0.5"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    "@jssg/utils": "npm:^0.0.8"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -206,8 +206,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-select-combobox-deprecated-props@workspace:codemods/v1.52.0/migrate-select-combobox-deprecated-props"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -215,9 +215,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-signals-service@workspace:codemods/v1.50.0/migrate-signals-service"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    "@jssg/utils": "npm:0.0.5"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    "@jssg/utils": "npm:^0.0.8"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -225,8 +225,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-surface-to-bg-system@workspace:codemods/v1.48.0/migrate-surface-to-bg-system"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -234,8 +234,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-table-to-use-table-hook@workspace:codemods/v1.47.0/migrate-table-to-use-table-hook"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -243,8 +243,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-valkey-config@workspace:codemods/v1.46.0/migrate-valkey-config"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -252,8 +252,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/portable-schema-method-call@workspace:codemods/v1.51.0/portable-schema-method-call"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -261,8 +261,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/remove-alert-surface-prop@workspace:codemods/v1.48.0/remove-alert-surface-prop"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -270,9 +270,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/remove-allow-unknown-extension-config@workspace:codemods/v1.49.0/remove-allow-unknown-extension-config"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    "@jssg/utils": "npm:0.0.5"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    "@jssg/utils": "npm:^0.0.8"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -280,9 +280,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/remove-any-extension-data-ref@workspace:codemods/v1.49.0/remove-any-extension-data-ref"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    "@jssg/utils": "npm:0.0.5"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    "@jssg/utils": "npm:^0.0.8"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -290,9 +290,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/remove-bootstrap-env-proxy@workspace:codemods/v1.50.0/remove-bootstrap-env-proxy"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    "@jssg/utils": "npm:0.0.5"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    "@jssg/utils": "npm:^0.0.8"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -300,9 +300,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/remove-catalog-card-variant-props@workspace:codemods/v1.49.0/remove-catalog-card-variant-props"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    "@jssg/utils": "npm:0.0.5"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    "@jssg/utils": "npm:^0.0.8"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -310,9 +310,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/remove-create-public-sign-in-app@workspace:codemods/v1.49.0/remove-create-public-sign-in-app"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    "@jssg/utils": "npm:0.0.5"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    "@jssg/utils": "npm:^0.0.8"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -320,8 +320,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/remove-immediate-stitching-mode@workspace:codemods/v1.51.0/remove-immediate-stitching-mode"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -329,8 +329,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/remove-stitching-strategy-mode@workspace:codemods/v1.52.0/remove-stitching-strategy-mode"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -338,8 +338,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/rename-bui-css-tokens-v1-47@workspace:codemods/v1.47.0/rename-bui-css-tokens-v1-47"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -347,8 +347,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/rename-bui-css-tokens-v1-48@workspace:codemods/v1.48.0/rename-bui-css-tokens-v1-48"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -356,8 +356,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/rename-bui-css-tokens-v1-52@workspace:codemods/v1.52.0/rename-bui-css-tokens-v1-52"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -365,8 +365,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/rename-bui-header-css-classes@workspace:codemods/v1.49.0/rename-bui-header-css-classes"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -374,8 +374,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/rename-header-main-class@workspace:codemods/v1.51.0/rename-header-main-class"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -383,8 +383,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/rename-header-to-plugin-header@workspace:codemods/v1.48.0/rename-header-to-plugin-header"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -392,8 +392,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/rename-plugin-header-toolbar@workspace:codemods/v1.50.0/rename-plugin-header-toolbar"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -401,9 +401,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/render-test-app-nav-migration@workspace:codemods/v1.51.0/render-test-app-nav-migration"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    "@jssg/utils": "npm:0.0.5"
-    codemod: "npm:^1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    "@jssg/utils": "npm:^0.0.8"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -411,9 +411,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/replace-create-schema-from-zod@workspace:codemods/v1.50.0/replace-create-schema-from-zod"
   dependencies:
-    "@codemod.com/jssg-types": "npm:1.5.2"
-    "@jssg/utils": "npm:0.0.5"
-    codemod: "npm:1.7.15"
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    "@jssg/utils": "npm:^0.0.8"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -421,7 +421,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/v1-45-0-migration-recipe@workspace:codemods/v1.45.0/migration-recipe"
   dependencies:
-    codemod: "npm:1.7.15"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -429,7 +429,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/v1-46-0-migration-recipe@workspace:codemods/v1.46.0/migration-recipe"
   dependencies:
-    codemod: "npm:1.7.15"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -437,7 +437,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/v1-47-0-migration-recipe@workspace:codemods/v1.47.0/migration-recipe"
   dependencies:
-    codemod: "npm:1.7.15"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -445,7 +445,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/v1-48-0-migration-recipe@workspace:codemods/v1.48.0/migration-recipe"
   dependencies:
-    codemod: "npm:1.7.15"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -453,7 +453,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/v1-49-0-migration-recipe@workspace:codemods/v1.49.0/migration-recipe"
   dependencies:
-    codemod: "npm:1.7.15"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -461,7 +461,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/v1-50-0-migration-recipe@workspace:codemods/v1.50.0/migration-recipe"
   dependencies:
-    codemod: "npm:1.7.15"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -469,7 +469,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/v1-51-0-migration-recipe@workspace:codemods/v1.51.0/migration-recipe"
   dependencies:
-    codemod: "npm:1.7.15"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
@@ -477,15 +477,15 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/v1-52-0-migration-recipe@workspace:codemods/v1.52.0/migration-recipe"
   dependencies:
-    codemod: "npm:1.7.15"
+    codemod: "npm:1.12.3"
   languageName: unknown
   linkType: soft
 
-"@changesets/apply-release-plan@npm:^7.1.0":
-  version: 7.1.0
-  resolution: "@changesets/apply-release-plan@npm:7.1.0"
+"@changesets/apply-release-plan@npm:^7.1.1":
+  version: 7.1.1
+  resolution: "@changesets/apply-release-plan@npm:7.1.1"
   dependencies:
-    "@changesets/config": "npm:^3.1.3"
+    "@changesets/config": "npm:^3.1.4"
     "@changesets/get-version-range-type": "npm:^0.4.0"
     "@changesets/git": "npm:^3.0.4"
     "@changesets/should-skip-package": "npm:^0.1.2"
@@ -498,21 +498,21 @@ __metadata:
     prettier: "npm:^2.7.1"
     resolve-from: "npm:^5.0.0"
     semver: "npm:^7.5.3"
-  checksum: 10c0/c8b4fa55f204a0c343c450ca44ae32a892752eaa81b594fb8941e9d1eb8675aba6245c8d80e5e9726e915d2643c542d22cba40d430c76a71ff438ad368d91f5c
+  checksum: 10c0/27de184e74e8e48b43fca1f73e7c7a2887b0cdacfe7ba9c09cdc4547dff0de1587bed5fe2d5ec0a3754fa422f6b8a528e0ac452c22ac7a6ae5211f5ac089bfb2
   languageName: node
   linkType: hard
 
-"@changesets/assemble-release-plan@npm:^6.0.9":
-  version: 6.0.9
-  resolution: "@changesets/assemble-release-plan@npm:6.0.9"
+"@changesets/assemble-release-plan@npm:^6.0.10":
+  version: 6.0.10
+  resolution: "@changesets/assemble-release-plan@npm:6.0.10"
   dependencies:
     "@changesets/errors": "npm:^0.2.0"
-    "@changesets/get-dependents-graph": "npm:^2.1.3"
+    "@changesets/get-dependents-graph": "npm:^2.1.4"
     "@changesets/should-skip-package": "npm:^0.1.2"
     "@changesets/types": "npm:^6.1.0"
     "@manypkg/get-packages": "npm:^1.1.3"
     semver: "npm:^7.5.3"
-  checksum: 10c0/128f87975f65d9ceb2c997df186a5deae8637fd3868098bb4fb9772f35fdd3b47883ccbdc2761d0468e60a83ef4e2c1561a8e58f8052bfe2daf1ea046803fe1a
+  checksum: 10c0/a0ea336a5f19f8d0a97b684983bcd9c3bb8d6881b7b6abd5b482b301795ae4600924c188982f5f98dc48ac88e94a063b66ab72659041eb2623ade3e35f05d555
   languageName: node
   linkType: hard
 
@@ -525,17 +525,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@changesets/cli@npm:^2.30.0":
-  version: 2.30.0
-  resolution: "@changesets/cli@npm:2.30.0"
+"@changesets/cli@npm:^2.31.0":
+  version: 2.31.0
+  resolution: "@changesets/cli@npm:2.31.0"
   dependencies:
-    "@changesets/apply-release-plan": "npm:^7.1.0"
-    "@changesets/assemble-release-plan": "npm:^6.0.9"
+    "@changesets/apply-release-plan": "npm:^7.1.1"
+    "@changesets/assemble-release-plan": "npm:^6.0.10"
     "@changesets/changelog-git": "npm:^0.2.1"
-    "@changesets/config": "npm:^3.1.3"
+    "@changesets/config": "npm:^3.1.4"
     "@changesets/errors": "npm:^0.2.0"
-    "@changesets/get-dependents-graph": "npm:^2.1.3"
-    "@changesets/get-release-plan": "npm:^4.0.15"
+    "@changesets/get-dependents-graph": "npm:^2.1.4"
+    "@changesets/get-release-plan": "npm:^4.0.16"
     "@changesets/git": "npm:^3.0.4"
     "@changesets/logger": "npm:^0.1.1"
     "@changesets/pre": "npm:^2.0.2"
@@ -557,23 +557,23 @@ __metadata:
     term-size: "npm:^2.1.0"
   bin:
     changeset: bin.js
-  checksum: 10c0/2b06343ae6df20b627ee89027f4078c074bdd758f82bb5dbf16ef7c4900138f733b59ceeb1c960fca1e9e59cf6973bb4d5984e4c7dd6d50a3949b39c490f31e0
+  checksum: 10c0/3b15f4f5fc7ccaa0b82ca4f9803977ed141b6bed66f83cf8004c2f4ab8e3a00c3a813569b76e4c757d0a8ca5e778bcb6df6e4df91be6c98e0dfaa2cff87c9434
   languageName: node
   linkType: hard
 
-"@changesets/config@npm:^3.1.3":
-  version: 3.1.3
-  resolution: "@changesets/config@npm:3.1.3"
+"@changesets/config@npm:^3.1.4":
+  version: 3.1.4
+  resolution: "@changesets/config@npm:3.1.4"
   dependencies:
     "@changesets/errors": "npm:^0.2.0"
-    "@changesets/get-dependents-graph": "npm:^2.1.3"
+    "@changesets/get-dependents-graph": "npm:^2.1.4"
     "@changesets/logger": "npm:^0.1.1"
     "@changesets/should-skip-package": "npm:^0.1.2"
     "@changesets/types": "npm:^6.1.0"
     "@manypkg/get-packages": "npm:^1.1.3"
     fs-extra: "npm:^7.0.1"
     micromatch: "npm:^4.0.8"
-  checksum: 10c0/68764135cbd014aca24b20429ffaf6f90e440286c7d233c33ddc968f0ab54b9e6e5dd5015a619dd0e0dd2eb172f028064a229fa610c260b779ff5315a840be1e
+  checksum: 10c0/1c0e7975aa719e2c87dfda3f5a1eb81b9f4852cdfb5b5c9d181fa2f8f485e92370b3bdfdb6f666432207dd75a3f79fa8fffe7847d48fb11308acb5ecf327bc12
   languageName: node
   linkType: hard
 
@@ -586,29 +586,29 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@changesets/get-dependents-graph@npm:^2.1.3":
-  version: 2.1.3
-  resolution: "@changesets/get-dependents-graph@npm:2.1.3"
+"@changesets/get-dependents-graph@npm:^2.1.4":
+  version: 2.1.4
+  resolution: "@changesets/get-dependents-graph@npm:2.1.4"
   dependencies:
     "@changesets/types": "npm:^6.1.0"
     "@manypkg/get-packages": "npm:^1.1.3"
     picocolors: "npm:^1.1.0"
     semver: "npm:^7.5.3"
-  checksum: 10c0/b9d9992440b7e09dcaf22f57d28f1d8e0e31996e1bc44dbbfa1801e44f93fa49ebba6f9356c60f6ff0bd85cd0f0d0b8602f7e0f2addc5be647b686e6f8985f70
+  checksum: 10c0/37b12ba42f16c458d0b574bcafa0247ff2b9a218686a64c86fc75bccc9ba3982f9c27206542941cf3a0563d9b199f40a830682b45e9fd902536de91344cbd0a2
   languageName: node
   linkType: hard
 
-"@changesets/get-release-plan@npm:^4.0.15":
-  version: 4.0.15
-  resolution: "@changesets/get-release-plan@npm:4.0.15"
+"@changesets/get-release-plan@npm:^4.0.16":
+  version: 4.0.16
+  resolution: "@changesets/get-release-plan@npm:4.0.16"
   dependencies:
-    "@changesets/assemble-release-plan": "npm:^6.0.9"
-    "@changesets/config": "npm:^3.1.3"
+    "@changesets/assemble-release-plan": "npm:^6.0.10"
+    "@changesets/config": "npm:^3.1.4"
     "@changesets/pre": "npm:^2.0.2"
     "@changesets/read": "npm:^0.6.7"
     "@changesets/types": "npm:^6.1.0"
     "@manypkg/get-packages": "npm:^1.1.3"
-  checksum: 10c0/d059c18ef5aab1c1aa1dd4f68d74e2fc351d965e28a76ab7f7c63c3290787d645f887d89c50b92f9f6bb63148a5d17329cfbb9cdea8e02c669a47768ec3456bc
+  checksum: 10c0/4be4553e13fe331f6d5b2ed98fece21c8d2b38c04a0543f726a0398b7538ef8fd073d712c35ae4540ed4fc6f84f08de6335318bc09dd562b189fb6968d049e95
   languageName: node
   linkType: hard
 
@@ -714,45 +714,45 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@codemod.com/cli-darwin-arm64@npm:1.7.15":
-  version: 1.7.15
-  resolution: "@codemod.com/cli-darwin-arm64@npm:1.7.15"
+"@codemod.com/cli-darwin-arm64@npm:1.12.3":
+  version: 1.12.3
+  resolution: "@codemod.com/cli-darwin-arm64@npm:1.12.3"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@codemod.com/cli-darwin-x64@npm:1.7.15":
-  version: 1.7.15
-  resolution: "@codemod.com/cli-darwin-x64@npm:1.7.15"
+"@codemod.com/cli-darwin-x64@npm:1.12.3":
+  version: 1.12.3
+  resolution: "@codemod.com/cli-darwin-x64@npm:1.12.3"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@codemod.com/cli-linux-arm64-gnu@npm:1.7.15":
-  version: 1.7.15
-  resolution: "@codemod.com/cli-linux-arm64-gnu@npm:1.7.15"
+"@codemod.com/cli-linux-arm64-gnu@npm:1.12.3":
+  version: 1.12.3
+  resolution: "@codemod.com/cli-linux-arm64-gnu@npm:1.12.3"
   conditions: os=linux & cpu=arm64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@codemod.com/cli-linux-x64-gnu@npm:1.7.15":
-  version: 1.7.15
-  resolution: "@codemod.com/cli-linux-x64-gnu@npm:1.7.15"
+"@codemod.com/cli-linux-x64-gnu@npm:1.12.3":
+  version: 1.12.3
+  resolution: "@codemod.com/cli-linux-x64-gnu@npm:1.12.3"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@codemod.com/cli-win32-x64-msvc@npm:1.7.15":
-  version: 1.7.15
-  resolution: "@codemod.com/cli-win32-x64-msvc@npm:1.7.15"
+"@codemod.com/cli-win32-x64-msvc@npm:1.12.3":
+  version: 1.12.3
+  resolution: "@codemod.com/cli-win32-x64-msvc@npm:1.12.3"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
 
-"@codemod.com/jssg-types@npm:1.5.2":
-  version: 1.5.2
-  resolution: "@codemod.com/jssg-types@npm:1.5.2"
-  checksum: 10c0/5032977b26555e49e7860078a3f3d0070f40a4a491bfa786064af958c21bb4db64c0a3886321e686726c7316200c60f82456e1e7383164144958c62c1298defd
+"@codemod.com/jssg-types@npm:1.6.2":
+  version: 1.6.2
+  resolution: "@codemod.com/jssg-types@npm:1.6.2"
+  checksum: 10c0/b6f8395a2321ccdf4d4659f2fc4d89529dbac8e13ac2d98991277110c7ca0f284d7f07690656771e0c336617f6cdf90d5fc50f817faccc4bbd2cd4cddda49ee2
   languageName: node
   linkType: hard
 
@@ -771,10 +771,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jssg/utils@npm:0.0.5":
-  version: 0.0.5
-  resolution: "@jssg/utils@npm:0.0.5"
-  checksum: 10c0/da9794929cf46ac27103a83b3eb8b2935335d31b3848af65fa7337aab1910f79754ddd6c406d8364dcf69c4fc01f949d3b5c5449743b6974cdc149f6ba48d91c
+"@jssg/utils@npm:^0.0.8":
+  version: 0.0.8
+  resolution: "@jssg/utils@npm:0.0.8"
+  checksum: 10c0/ee2fbe4b590b8da11f9e58392b63726af82d89e08104e0ef96eb164ea4530e426cf0ef1330f0c760264c842f83bd110aa66275c10eab6a7e0f802b1f451d9d8f
   languageName: node
   linkType: hard
 
@@ -831,310 +831,310 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@oxfmt/binding-android-arm-eabi@npm:0.46.0":
-  version: 0.46.0
-  resolution: "@oxfmt/binding-android-arm-eabi@npm:0.46.0"
+"@oxfmt/binding-android-arm-eabi@npm:0.55.0":
+  version: 0.55.0
+  resolution: "@oxfmt/binding-android-arm-eabi@npm:0.55.0"
   conditions: os=android & cpu=arm
   languageName: node
   linkType: hard
 
-"@oxfmt/binding-android-arm64@npm:0.46.0":
-  version: 0.46.0
-  resolution: "@oxfmt/binding-android-arm64@npm:0.46.0"
+"@oxfmt/binding-android-arm64@npm:0.55.0":
+  version: 0.55.0
+  resolution: "@oxfmt/binding-android-arm64@npm:0.55.0"
   conditions: os=android & cpu=arm64
   languageName: node
   linkType: hard
 
-"@oxfmt/binding-darwin-arm64@npm:0.46.0":
-  version: 0.46.0
-  resolution: "@oxfmt/binding-darwin-arm64@npm:0.46.0"
+"@oxfmt/binding-darwin-arm64@npm:0.55.0":
+  version: 0.55.0
+  resolution: "@oxfmt/binding-darwin-arm64@npm:0.55.0"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@oxfmt/binding-darwin-x64@npm:0.46.0":
-  version: 0.46.0
-  resolution: "@oxfmt/binding-darwin-x64@npm:0.46.0"
+"@oxfmt/binding-darwin-x64@npm:0.55.0":
+  version: 0.55.0
+  resolution: "@oxfmt/binding-darwin-x64@npm:0.55.0"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@oxfmt/binding-freebsd-x64@npm:0.46.0":
-  version: 0.46.0
-  resolution: "@oxfmt/binding-freebsd-x64@npm:0.46.0"
+"@oxfmt/binding-freebsd-x64@npm:0.55.0":
+  version: 0.55.0
+  resolution: "@oxfmt/binding-freebsd-x64@npm:0.55.0"
   conditions: os=freebsd & cpu=x64
   languageName: node
   linkType: hard
 
-"@oxfmt/binding-linux-arm-gnueabihf@npm:0.46.0":
-  version: 0.46.0
-  resolution: "@oxfmt/binding-linux-arm-gnueabihf@npm:0.46.0"
+"@oxfmt/binding-linux-arm-gnueabihf@npm:0.55.0":
+  version: 0.55.0
+  resolution: "@oxfmt/binding-linux-arm-gnueabihf@npm:0.55.0"
   conditions: os=linux & cpu=arm
   languageName: node
   linkType: hard
 
-"@oxfmt/binding-linux-arm-musleabihf@npm:0.46.0":
-  version: 0.46.0
-  resolution: "@oxfmt/binding-linux-arm-musleabihf@npm:0.46.0"
+"@oxfmt/binding-linux-arm-musleabihf@npm:0.55.0":
+  version: 0.55.0
+  resolution: "@oxfmt/binding-linux-arm-musleabihf@npm:0.55.0"
   conditions: os=linux & cpu=arm
   languageName: node
   linkType: hard
 
-"@oxfmt/binding-linux-arm64-gnu@npm:0.46.0":
-  version: 0.46.0
-  resolution: "@oxfmt/binding-linux-arm64-gnu@npm:0.46.0"
+"@oxfmt/binding-linux-arm64-gnu@npm:0.55.0":
+  version: 0.55.0
+  resolution: "@oxfmt/binding-linux-arm64-gnu@npm:0.55.0"
   conditions: os=linux & cpu=arm64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@oxfmt/binding-linux-arm64-musl@npm:0.46.0":
-  version: 0.46.0
-  resolution: "@oxfmt/binding-linux-arm64-musl@npm:0.46.0"
+"@oxfmt/binding-linux-arm64-musl@npm:0.55.0":
+  version: 0.55.0
+  resolution: "@oxfmt/binding-linux-arm64-musl@npm:0.55.0"
   conditions: os=linux & cpu=arm64 & libc=musl
   languageName: node
   linkType: hard
 
-"@oxfmt/binding-linux-ppc64-gnu@npm:0.46.0":
-  version: 0.46.0
-  resolution: "@oxfmt/binding-linux-ppc64-gnu@npm:0.46.0"
+"@oxfmt/binding-linux-ppc64-gnu@npm:0.55.0":
+  version: 0.55.0
+  resolution: "@oxfmt/binding-linux-ppc64-gnu@npm:0.55.0"
   conditions: os=linux & cpu=ppc64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@oxfmt/binding-linux-riscv64-gnu@npm:0.46.0":
-  version: 0.46.0
-  resolution: "@oxfmt/binding-linux-riscv64-gnu@npm:0.46.0"
+"@oxfmt/binding-linux-riscv64-gnu@npm:0.55.0":
+  version: 0.55.0
+  resolution: "@oxfmt/binding-linux-riscv64-gnu@npm:0.55.0"
   conditions: os=linux & cpu=riscv64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@oxfmt/binding-linux-riscv64-musl@npm:0.46.0":
-  version: 0.46.0
-  resolution: "@oxfmt/binding-linux-riscv64-musl@npm:0.46.0"
+"@oxfmt/binding-linux-riscv64-musl@npm:0.55.0":
+  version: 0.55.0
+  resolution: "@oxfmt/binding-linux-riscv64-musl@npm:0.55.0"
   conditions: os=linux & cpu=riscv64 & libc=musl
   languageName: node
   linkType: hard
 
-"@oxfmt/binding-linux-s390x-gnu@npm:0.46.0":
-  version: 0.46.0
-  resolution: "@oxfmt/binding-linux-s390x-gnu@npm:0.46.0"
+"@oxfmt/binding-linux-s390x-gnu@npm:0.55.0":
+  version: 0.55.0
+  resolution: "@oxfmt/binding-linux-s390x-gnu@npm:0.55.0"
   conditions: os=linux & cpu=s390x & libc=glibc
   languageName: node
   linkType: hard
 
-"@oxfmt/binding-linux-x64-gnu@npm:0.46.0":
-  version: 0.46.0
-  resolution: "@oxfmt/binding-linux-x64-gnu@npm:0.46.0"
+"@oxfmt/binding-linux-x64-gnu@npm:0.55.0":
+  version: 0.55.0
+  resolution: "@oxfmt/binding-linux-x64-gnu@npm:0.55.0"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@oxfmt/binding-linux-x64-musl@npm:0.46.0":
-  version: 0.46.0
-  resolution: "@oxfmt/binding-linux-x64-musl@npm:0.46.0"
+"@oxfmt/binding-linux-x64-musl@npm:0.55.0":
+  version: 0.55.0
+  resolution: "@oxfmt/binding-linux-x64-musl@npm:0.55.0"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@oxfmt/binding-openharmony-arm64@npm:0.46.0":
-  version: 0.46.0
-  resolution: "@oxfmt/binding-openharmony-arm64@npm:0.46.0"
+"@oxfmt/binding-openharmony-arm64@npm:0.55.0":
+  version: 0.55.0
+  resolution: "@oxfmt/binding-openharmony-arm64@npm:0.55.0"
   conditions: os=openharmony & cpu=arm64
   languageName: node
   linkType: hard
 
-"@oxfmt/binding-win32-arm64-msvc@npm:0.46.0":
-  version: 0.46.0
-  resolution: "@oxfmt/binding-win32-arm64-msvc@npm:0.46.0"
+"@oxfmt/binding-win32-arm64-msvc@npm:0.55.0":
+  version: 0.55.0
+  resolution: "@oxfmt/binding-win32-arm64-msvc@npm:0.55.0"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@oxfmt/binding-win32-ia32-msvc@npm:0.46.0":
-  version: 0.46.0
-  resolution: "@oxfmt/binding-win32-ia32-msvc@npm:0.46.0"
+"@oxfmt/binding-win32-ia32-msvc@npm:0.55.0":
+  version: 0.55.0
+  resolution: "@oxfmt/binding-win32-ia32-msvc@npm:0.55.0"
   conditions: os=win32 & cpu=ia32
   languageName: node
   linkType: hard
 
-"@oxfmt/binding-win32-x64-msvc@npm:0.46.0":
-  version: 0.46.0
-  resolution: "@oxfmt/binding-win32-x64-msvc@npm:0.46.0"
+"@oxfmt/binding-win32-x64-msvc@npm:0.55.0":
+  version: 0.55.0
+  resolution: "@oxfmt/binding-win32-x64-msvc@npm:0.55.0"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
 
-"@oxlint-tsgolint/darwin-arm64@npm:0.21.1":
-  version: 0.21.1
-  resolution: "@oxlint-tsgolint/darwin-arm64@npm:0.21.1"
+"@oxlint-tsgolint/darwin-arm64@npm:0.23.0":
+  version: 0.23.0
+  resolution: "@oxlint-tsgolint/darwin-arm64@npm:0.23.0"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@oxlint-tsgolint/darwin-x64@npm:0.21.1":
-  version: 0.21.1
-  resolution: "@oxlint-tsgolint/darwin-x64@npm:0.21.1"
+"@oxlint-tsgolint/darwin-x64@npm:0.23.0":
+  version: 0.23.0
+  resolution: "@oxlint-tsgolint/darwin-x64@npm:0.23.0"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@oxlint-tsgolint/linux-arm64@npm:0.21.1":
-  version: 0.21.1
-  resolution: "@oxlint-tsgolint/linux-arm64@npm:0.21.1"
+"@oxlint-tsgolint/linux-arm64@npm:0.23.0":
+  version: 0.23.0
+  resolution: "@oxlint-tsgolint/linux-arm64@npm:0.23.0"
   conditions: os=linux & cpu=arm64
   languageName: node
   linkType: hard
 
-"@oxlint-tsgolint/linux-x64@npm:0.21.1":
-  version: 0.21.1
-  resolution: "@oxlint-tsgolint/linux-x64@npm:0.21.1"
+"@oxlint-tsgolint/linux-x64@npm:0.23.0":
+  version: 0.23.0
+  resolution: "@oxlint-tsgolint/linux-x64@npm:0.23.0"
   conditions: os=linux & cpu=x64
   languageName: node
   linkType: hard
 
-"@oxlint-tsgolint/win32-arm64@npm:0.21.1":
-  version: 0.21.1
-  resolution: "@oxlint-tsgolint/win32-arm64@npm:0.21.1"
+"@oxlint-tsgolint/win32-arm64@npm:0.23.0":
+  version: 0.23.0
+  resolution: "@oxlint-tsgolint/win32-arm64@npm:0.23.0"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@oxlint-tsgolint/win32-x64@npm:0.21.1":
-  version: 0.21.1
-  resolution: "@oxlint-tsgolint/win32-x64@npm:0.21.1"
+"@oxlint-tsgolint/win32-x64@npm:0.23.0":
+  version: 0.23.0
+  resolution: "@oxlint-tsgolint/win32-x64@npm:0.23.0"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
 
-"@oxlint/binding-android-arm-eabi@npm:1.61.0":
-  version: 1.61.0
-  resolution: "@oxlint/binding-android-arm-eabi@npm:1.61.0"
+"@oxlint/binding-android-arm-eabi@npm:1.70.0":
+  version: 1.70.0
+  resolution: "@oxlint/binding-android-arm-eabi@npm:1.70.0"
   conditions: os=android & cpu=arm
   languageName: node
   linkType: hard
 
-"@oxlint/binding-android-arm64@npm:1.61.0":
-  version: 1.61.0
-  resolution: "@oxlint/binding-android-arm64@npm:1.61.0"
+"@oxlint/binding-android-arm64@npm:1.70.0":
+  version: 1.70.0
+  resolution: "@oxlint/binding-android-arm64@npm:1.70.0"
   conditions: os=android & cpu=arm64
   languageName: node
   linkType: hard
 
-"@oxlint/binding-darwin-arm64@npm:1.61.0":
-  version: 1.61.0
-  resolution: "@oxlint/binding-darwin-arm64@npm:1.61.0"
+"@oxlint/binding-darwin-arm64@npm:1.70.0":
+  version: 1.70.0
+  resolution: "@oxlint/binding-darwin-arm64@npm:1.70.0"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@oxlint/binding-darwin-x64@npm:1.61.0":
-  version: 1.61.0
-  resolution: "@oxlint/binding-darwin-x64@npm:1.61.0"
+"@oxlint/binding-darwin-x64@npm:1.70.0":
+  version: 1.70.0
+  resolution: "@oxlint/binding-darwin-x64@npm:1.70.0"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@oxlint/binding-freebsd-x64@npm:1.61.0":
-  version: 1.61.0
-  resolution: "@oxlint/binding-freebsd-x64@npm:1.61.0"
+"@oxlint/binding-freebsd-x64@npm:1.70.0":
+  version: 1.70.0
+  resolution: "@oxlint/binding-freebsd-x64@npm:1.70.0"
   conditions: os=freebsd & cpu=x64
   languageName: node
   linkType: hard
 
-"@oxlint/binding-linux-arm-gnueabihf@npm:1.61.0":
-  version: 1.61.0
-  resolution: "@oxlint/binding-linux-arm-gnueabihf@npm:1.61.0"
+"@oxlint/binding-linux-arm-gnueabihf@npm:1.70.0":
+  version: 1.70.0
+  resolution: "@oxlint/binding-linux-arm-gnueabihf@npm:1.70.0"
   conditions: os=linux & cpu=arm
   languageName: node
   linkType: hard
 
-"@oxlint/binding-linux-arm-musleabihf@npm:1.61.0":
-  version: 1.61.0
-  resolution: "@oxlint/binding-linux-arm-musleabihf@npm:1.61.0"
+"@oxlint/binding-linux-arm-musleabihf@npm:1.70.0":
+  version: 1.70.0
+  resolution: "@oxlint/binding-linux-arm-musleabihf@npm:1.70.0"
   conditions: os=linux & cpu=arm
   languageName: node
   linkType: hard
 
-"@oxlint/binding-linux-arm64-gnu@npm:1.61.0":
-  version: 1.61.0
-  resolution: "@oxlint/binding-linux-arm64-gnu@npm:1.61.0"
+"@oxlint/binding-linux-arm64-gnu@npm:1.70.0":
+  version: 1.70.0
+  resolution: "@oxlint/binding-linux-arm64-gnu@npm:1.70.0"
   conditions: os=linux & cpu=arm64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@oxlint/binding-linux-arm64-musl@npm:1.61.0":
-  version: 1.61.0
-  resolution: "@oxlint/binding-linux-arm64-musl@npm:1.61.0"
+"@oxlint/binding-linux-arm64-musl@npm:1.70.0":
+  version: 1.70.0
+  resolution: "@oxlint/binding-linux-arm64-musl@npm:1.70.0"
   conditions: os=linux & cpu=arm64 & libc=musl
   languageName: node
   linkType: hard
 
-"@oxlint/binding-linux-ppc64-gnu@npm:1.61.0":
-  version: 1.61.0
-  resolution: "@oxlint/binding-linux-ppc64-gnu@npm:1.61.0"
+"@oxlint/binding-linux-ppc64-gnu@npm:1.70.0":
+  version: 1.70.0
+  resolution: "@oxlint/binding-linux-ppc64-gnu@npm:1.70.0"
   conditions: os=linux & cpu=ppc64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@oxlint/binding-linux-riscv64-gnu@npm:1.61.0":
-  version: 1.61.0
-  resolution: "@oxlint/binding-linux-riscv64-gnu@npm:1.61.0"
+"@oxlint/binding-linux-riscv64-gnu@npm:1.70.0":
+  version: 1.70.0
+  resolution: "@oxlint/binding-linux-riscv64-gnu@npm:1.70.0"
   conditions: os=linux & cpu=riscv64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@oxlint/binding-linux-riscv64-musl@npm:1.61.0":
-  version: 1.61.0
-  resolution: "@oxlint/binding-linux-riscv64-musl@npm:1.61.0"
+"@oxlint/binding-linux-riscv64-musl@npm:1.70.0":
+  version: 1.70.0
+  resolution: "@oxlint/binding-linux-riscv64-musl@npm:1.70.0"
   conditions: os=linux & cpu=riscv64 & libc=musl
   languageName: node
   linkType: hard
 
-"@oxlint/binding-linux-s390x-gnu@npm:1.61.0":
-  version: 1.61.0
-  resolution: "@oxlint/binding-linux-s390x-gnu@npm:1.61.0"
+"@oxlint/binding-linux-s390x-gnu@npm:1.70.0":
+  version: 1.70.0
+  resolution: "@oxlint/binding-linux-s390x-gnu@npm:1.70.0"
   conditions: os=linux & cpu=s390x & libc=glibc
   languageName: node
   linkType: hard
 
-"@oxlint/binding-linux-x64-gnu@npm:1.61.0":
-  version: 1.61.0
-  resolution: "@oxlint/binding-linux-x64-gnu@npm:1.61.0"
+"@oxlint/binding-linux-x64-gnu@npm:1.70.0":
+  version: 1.70.0
+  resolution: "@oxlint/binding-linux-x64-gnu@npm:1.70.0"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@oxlint/binding-linux-x64-musl@npm:1.61.0":
-  version: 1.61.0
-  resolution: "@oxlint/binding-linux-x64-musl@npm:1.61.0"
+"@oxlint/binding-linux-x64-musl@npm:1.70.0":
+  version: 1.70.0
+  resolution: "@oxlint/binding-linux-x64-musl@npm:1.70.0"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@oxlint/binding-openharmony-arm64@npm:1.61.0":
-  version: 1.61.0
-  resolution: "@oxlint/binding-openharmony-arm64@npm:1.61.0"
+"@oxlint/binding-openharmony-arm64@npm:1.70.0":
+  version: 1.70.0
+  resolution: "@oxlint/binding-openharmony-arm64@npm:1.70.0"
   conditions: os=openharmony & cpu=arm64
   languageName: node
   linkType: hard
 
-"@oxlint/binding-win32-arm64-msvc@npm:1.61.0":
-  version: 1.61.0
-  resolution: "@oxlint/binding-win32-arm64-msvc@npm:1.61.0"
+"@oxlint/binding-win32-arm64-msvc@npm:1.70.0":
+  version: 1.70.0
+  resolution: "@oxlint/binding-win32-arm64-msvc@npm:1.70.0"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@oxlint/binding-win32-ia32-msvc@npm:1.61.0":
-  version: 1.61.0
-  resolution: "@oxlint/binding-win32-ia32-msvc@npm:1.61.0"
+"@oxlint/binding-win32-ia32-msvc@npm:1.70.0":
+  version: 1.70.0
+  resolution: "@oxlint/binding-win32-ia32-msvc@npm:1.70.0"
   conditions: os=win32 & cpu=ia32
   languageName: node
   linkType: hard
 
-"@oxlint/binding-win32-x64-msvc@npm:1.61.0":
-  version: 1.61.0
-  resolution: "@oxlint/binding-win32-x64-msvc@npm:1.61.0"
+"@oxlint/binding-win32-x64-msvc@npm:1.70.0":
+  version: 1.70.0
+  resolution: "@oxlint/binding-win32-x64-msvc@npm:1.70.0"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
@@ -1240,7 +1240,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cli-truncate@npm:^5.0.0":
+"cli-truncate@npm:^5.2.0":
   version: 5.2.0
   resolution: "cli-truncate@npm:5.2.0"
   dependencies:
@@ -1250,15 +1250,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"codemod@npm:1.7.15, codemod@npm:^1.7.15":
-  version: 1.7.15
-  resolution: "codemod@npm:1.7.15"
+"codemod@npm:1.12.3":
+  version: 1.12.3
+  resolution: "codemod@npm:1.12.3"
   dependencies:
-    "@codemod.com/cli-darwin-arm64": "npm:1.7.15"
-    "@codemod.com/cli-darwin-x64": "npm:1.7.15"
-    "@codemod.com/cli-linux-arm64-gnu": "npm:1.7.15"
-    "@codemod.com/cli-linux-x64-gnu": "npm:1.7.15"
-    "@codemod.com/cli-win32-x64-msvc": "npm:1.7.15"
+    "@codemod.com/cli-darwin-arm64": "npm:1.12.3"
+    "@codemod.com/cli-darwin-x64": "npm:1.12.3"
+    "@codemod.com/cli-linux-arm64-gnu": "npm:1.12.3"
+    "@codemod.com/cli-linux-x64-gnu": "npm:1.12.3"
+    "@codemod.com/cli-win32-x64-msvc": "npm:1.12.3"
     detect-libc: "npm:^2.0.3"
   dependenciesMeta:
     "@codemod.com/cli-darwin-arm64":
@@ -1273,21 +1273,7 @@ __metadata:
       optional: true
   bin:
     codemod: codemod
-  checksum: 10c0/700d741051d0d4d24b457676929b2345b8b78d4b6730cb433cd0e70b9dd3131fef7de3bc92b539e4e653506232f4ed03f2ada744bf1b9e5143f712d31c97572c
-  languageName: node
-  linkType: hard
-
-"colorette@npm:^2.0.20":
-  version: 2.0.20
-  resolution: "colorette@npm:2.0.20"
-  checksum: 10c0/e94116ff33b0ff56f3b83b9ace895e5bf87c2a7a47b3401b8c3f3226e050d5ef76cf4072fb3325f9dc24d1698f9b730baf4e05eeaf861d74a1883073f4c98a40
-  languageName: node
-  linkType: hard
-
-"commander@npm:^14.0.3":
-  version: 14.0.3
-  resolution: "commander@npm:14.0.3"
-  checksum: 10c0/755652564bbf56ff2ff083313912b326450d3f8d8c85f4b71416539c9a05c3c67dbd206821ca72635bf6b160e2afdefcb458e86b317827d5cb333b69ce7f1a24
+  checksum: 10c0/d53a2a7e4a9a45bc07ce796bea20365cc868b311307036586acd0a6b278ff5a67e361555e37770d8ce7afcaa38f843554b8db8731eea4556b1c44c70c1846c95
   languageName: node
   linkType: hard
 
@@ -1359,7 +1345,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eventemitter3@npm:^5.0.1":
+"eventemitter3@npm:^5.0.4":
   version: 5.0.4
   resolution: "eventemitter3@npm:5.0.4"
   checksum: 10c0/575b8cac8d709e1473da46f8f15ef311b57ff7609445a7c71af5cd42598583eee6f098fa7a593e30f27e94b8865642baa0689e8fa97c016f742abdb3b1bf6d9a
@@ -1597,33 +1583,34 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lint-staged@npm:^16.4.0":
-  version: 16.4.0
-  resolution: "lint-staged@npm:16.4.0"
+"lint-staged@npm:^17.0.7":
+  version: 17.0.7
+  resolution: "lint-staged@npm:17.0.7"
   dependencies:
-    commander: "npm:^14.0.3"
-    listr2: "npm:^9.0.5"
-    picomatch: "npm:^4.0.3"
+    listr2: "npm:^10.2.1"
+    picomatch: "npm:^4.0.4"
     string-argv: "npm:^0.3.2"
-    tinyexec: "npm:^1.0.4"
-    yaml: "npm:^2.8.2"
+    tinyexec: "npm:^1.2.4"
+    yaml: "npm:^2.9.0"
+  dependenciesMeta:
+    yaml:
+      optional: true
   bin:
     lint-staged: bin/lint-staged.js
-  checksum: 10c0/67625a49a2a01368c7df2da7e553567a79c4b261d9faf3436e00fc3a2f9c4bbe7295909012c47b3d9029e269fd7d7469901a5120573527a032f15797aa497c26
+  checksum: 10c0/c4e7100becb327d817999a231b8d345e6be389c555d9cd8d668797d2670832ad15c4e5085b61895e3fbf937f0fbd6be5c78ca76a4599ed332227f37270ebe8eb
   languageName: node
   linkType: hard
 
-"listr2@npm:^9.0.5":
-  version: 9.0.5
-  resolution: "listr2@npm:9.0.5"
+"listr2@npm:^10.2.1":
+  version: 10.2.1
+  resolution: "listr2@npm:10.2.1"
   dependencies:
-    cli-truncate: "npm:^5.0.0"
-    colorette: "npm:^2.0.20"
-    eventemitter3: "npm:^5.0.1"
+    cli-truncate: "npm:^5.2.0"
+    eventemitter3: "npm:^5.0.4"
     log-update: "npm:^6.1.0"
     rfdc: "npm:^1.4.1"
-    wrap-ansi: "npm:^9.0.0"
-  checksum: 10c0/46448d1ba0addc9d71aeafd05bb8e86ded9641ccad930ac302c2bd2ad71580375604743e18586fcb8f11906edf98e8e17fca75ba0759947bf275d381f68e311d
+    wrap-ansi: "npm:^10.0.0"
+  checksum: 10c0/a381a7aaef2e8625e6e882835ef446d14306c8fa371b56c4499cf23ece86f84922008af11962bfba5411b51589e02d280bea2b820451a2efad89ebf78bbe68a4
   languageName: node
   linkType: hard
 
@@ -1703,30 +1690,33 @@ __metadata:
   languageName: node
   linkType: hard
 
-"oxfmt@npm:^0.46.0":
-  version: 0.46.0
-  resolution: "oxfmt@npm:0.46.0"
+"oxfmt@npm:^0.55.0":
+  version: 0.55.0
+  resolution: "oxfmt@npm:0.55.0"
   dependencies:
-    "@oxfmt/binding-android-arm-eabi": "npm:0.46.0"
-    "@oxfmt/binding-android-arm64": "npm:0.46.0"
-    "@oxfmt/binding-darwin-arm64": "npm:0.46.0"
-    "@oxfmt/binding-darwin-x64": "npm:0.46.0"
-    "@oxfmt/binding-freebsd-x64": "npm:0.46.0"
-    "@oxfmt/binding-linux-arm-gnueabihf": "npm:0.46.0"
-    "@oxfmt/binding-linux-arm-musleabihf": "npm:0.46.0"
-    "@oxfmt/binding-linux-arm64-gnu": "npm:0.46.0"
-    "@oxfmt/binding-linux-arm64-musl": "npm:0.46.0"
-    "@oxfmt/binding-linux-ppc64-gnu": "npm:0.46.0"
-    "@oxfmt/binding-linux-riscv64-gnu": "npm:0.46.0"
-    "@oxfmt/binding-linux-riscv64-musl": "npm:0.46.0"
-    "@oxfmt/binding-linux-s390x-gnu": "npm:0.46.0"
-    "@oxfmt/binding-linux-x64-gnu": "npm:0.46.0"
-    "@oxfmt/binding-linux-x64-musl": "npm:0.46.0"
-    "@oxfmt/binding-openharmony-arm64": "npm:0.46.0"
-    "@oxfmt/binding-win32-arm64-msvc": "npm:0.46.0"
-    "@oxfmt/binding-win32-ia32-msvc": "npm:0.46.0"
-    "@oxfmt/binding-win32-x64-msvc": "npm:0.46.0"
+    "@oxfmt/binding-android-arm-eabi": "npm:0.55.0"
+    "@oxfmt/binding-android-arm64": "npm:0.55.0"
+    "@oxfmt/binding-darwin-arm64": "npm:0.55.0"
+    "@oxfmt/binding-darwin-x64": "npm:0.55.0"
+    "@oxfmt/binding-freebsd-x64": "npm:0.55.0"
+    "@oxfmt/binding-linux-arm-gnueabihf": "npm:0.55.0"
+    "@oxfmt/binding-linux-arm-musleabihf": "npm:0.55.0"
+    "@oxfmt/binding-linux-arm64-gnu": "npm:0.55.0"
+    "@oxfmt/binding-linux-arm64-musl": "npm:0.55.0"
+    "@oxfmt/binding-linux-ppc64-gnu": "npm:0.55.0"
+    "@oxfmt/binding-linux-riscv64-gnu": "npm:0.55.0"
+    "@oxfmt/binding-linux-riscv64-musl": "npm:0.55.0"
+    "@oxfmt/binding-linux-s390x-gnu": "npm:0.55.0"
+    "@oxfmt/binding-linux-x64-gnu": "npm:0.55.0"
+    "@oxfmt/binding-linux-x64-musl": "npm:0.55.0"
+    "@oxfmt/binding-openharmony-arm64": "npm:0.55.0"
+    "@oxfmt/binding-win32-arm64-msvc": "npm:0.55.0"
+    "@oxfmt/binding-win32-ia32-msvc": "npm:0.55.0"
+    "@oxfmt/binding-win32-x64-msvc": "npm:0.55.0"
     tinypool: "npm:2.1.0"
+  peerDependencies:
+    svelte: ^5.0.0
+    vite-plus: "*"
   dependenciesMeta:
     "@oxfmt/binding-android-arm-eabi":
       optional: true
@@ -1766,22 +1756,27 @@ __metadata:
       optional: true
     "@oxfmt/binding-win32-x64-msvc":
       optional: true
+  peerDependenciesMeta:
+    svelte:
+      optional: true
+    vite-plus:
+      optional: true
   bin:
     oxfmt: bin/oxfmt
-  checksum: 10c0/bc258840802ac8f66a2a24fc7a5b87d668d0da41d3033811aa30583483b1f66299c3648e34edbe45b4c97d061cbbec208a439a498b1a2ccefd94d73b780fef46
+  checksum: 10c0/8052adf41f426d34e08ba464efeb388d8864ee00c263719d7aa5d72c96e436e8a24cd83597904387a5764e87ea2bd57e7e7f26772d6347b7181bb3bf2ab8f5bb
   languageName: node
   linkType: hard
 
-"oxlint-tsgolint@npm:^0.21.1":
-  version: 0.21.1
-  resolution: "oxlint-tsgolint@npm:0.21.1"
+"oxlint-tsgolint@npm:^0.23.0":
+  version: 0.23.0
+  resolution: "oxlint-tsgolint@npm:0.23.0"
   dependencies:
-    "@oxlint-tsgolint/darwin-arm64": "npm:0.21.1"
-    "@oxlint-tsgolint/darwin-x64": "npm:0.21.1"
-    "@oxlint-tsgolint/linux-arm64": "npm:0.21.1"
-    "@oxlint-tsgolint/linux-x64": "npm:0.21.1"
-    "@oxlint-tsgolint/win32-arm64": "npm:0.21.1"
-    "@oxlint-tsgolint/win32-x64": "npm:0.21.1"
+    "@oxlint-tsgolint/darwin-arm64": "npm:0.23.0"
+    "@oxlint-tsgolint/darwin-x64": "npm:0.23.0"
+    "@oxlint-tsgolint/linux-arm64": "npm:0.23.0"
+    "@oxlint-tsgolint/linux-x64": "npm:0.23.0"
+    "@oxlint-tsgolint/win32-arm64": "npm:0.23.0"
+    "@oxlint-tsgolint/win32-x64": "npm:0.23.0"
   dependenciesMeta:
     "@oxlint-tsgolint/darwin-arm64":
       optional: true
@@ -1797,35 +1792,36 @@ __metadata:
       optional: true
   bin:
     tsgolint: bin/tsgolint.js
-  checksum: 10c0/7f175543d5d7adf6b5df16735de9105aec6c882e71ccd1b6f337d6bccb681ae3099020992ca0482d8ce0b2e6d0d43ba4201d10e299ba292a468cfdfb24ccaa11
+  checksum: 10c0/052035ea9fe2fe654aa1187ba30f842e1c44883bec34fffbb959dd86b5cfd0067af1bf0c27897b720f28346b3641422672e35913db8940f3e02728e459a1d8f1
   languageName: node
   linkType: hard
 
-"oxlint@npm:^1.61.0":
-  version: 1.61.0
-  resolution: "oxlint@npm:1.61.0"
+"oxlint@npm:^1.70.0":
+  version: 1.70.0
+  resolution: "oxlint@npm:1.70.0"
   dependencies:
-    "@oxlint/binding-android-arm-eabi": "npm:1.61.0"
-    "@oxlint/binding-android-arm64": "npm:1.61.0"
-    "@oxlint/binding-darwin-arm64": "npm:1.61.0"
-    "@oxlint/binding-darwin-x64": "npm:1.61.0"
-    "@oxlint/binding-freebsd-x64": "npm:1.61.0"
-    "@oxlint/binding-linux-arm-gnueabihf": "npm:1.61.0"
-    "@oxlint/binding-linux-arm-musleabihf": "npm:1.61.0"
-    "@oxlint/binding-linux-arm64-gnu": "npm:1.61.0"
-    "@oxlint/binding-linux-arm64-musl": "npm:1.61.0"
-    "@oxlint/binding-linux-ppc64-gnu": "npm:1.61.0"
-    "@oxlint/binding-linux-riscv64-gnu": "npm:1.61.0"
-    "@oxlint/binding-linux-riscv64-musl": "npm:1.61.0"
-    "@oxlint/binding-linux-s390x-gnu": "npm:1.61.0"
-    "@oxlint/binding-linux-x64-gnu": "npm:1.61.0"
-    "@oxlint/binding-linux-x64-musl": "npm:1.61.0"
-    "@oxlint/binding-openharmony-arm64": "npm:1.61.0"
-    "@oxlint/binding-win32-arm64-msvc": "npm:1.61.0"
-    "@oxlint/binding-win32-ia32-msvc": "npm:1.61.0"
-    "@oxlint/binding-win32-x64-msvc": "npm:1.61.0"
+    "@oxlint/binding-android-arm-eabi": "npm:1.70.0"
+    "@oxlint/binding-android-arm64": "npm:1.70.0"
+    "@oxlint/binding-darwin-arm64": "npm:1.70.0"
+    "@oxlint/binding-darwin-x64": "npm:1.70.0"
+    "@oxlint/binding-freebsd-x64": "npm:1.70.0"
+    "@oxlint/binding-linux-arm-gnueabihf": "npm:1.70.0"
+    "@oxlint/binding-linux-arm-musleabihf": "npm:1.70.0"
+    "@oxlint/binding-linux-arm64-gnu": "npm:1.70.0"
+    "@oxlint/binding-linux-arm64-musl": "npm:1.70.0"
+    "@oxlint/binding-linux-ppc64-gnu": "npm:1.70.0"
+    "@oxlint/binding-linux-riscv64-gnu": "npm:1.70.0"
+    "@oxlint/binding-linux-riscv64-musl": "npm:1.70.0"
+    "@oxlint/binding-linux-s390x-gnu": "npm:1.70.0"
+    "@oxlint/binding-linux-x64-gnu": "npm:1.70.0"
+    "@oxlint/binding-linux-x64-musl": "npm:1.70.0"
+    "@oxlint/binding-openharmony-arm64": "npm:1.70.0"
+    "@oxlint/binding-win32-arm64-msvc": "npm:1.70.0"
+    "@oxlint/binding-win32-ia32-msvc": "npm:1.70.0"
+    "@oxlint/binding-win32-x64-msvc": "npm:1.70.0"
   peerDependencies:
-    oxlint-tsgolint: ">=0.18.0"
+    oxlint-tsgolint: ">=0.22.1"
+    vite-plus: "*"
   dependenciesMeta:
     "@oxlint/binding-android-arm-eabi":
       optional: true
@@ -1868,9 +1864,11 @@ __metadata:
   peerDependenciesMeta:
     oxlint-tsgolint:
       optional: true
+    vite-plus:
+      optional: true
   bin:
     oxlint: bin/oxlint
-  checksum: 10c0/9f041882e722479a1f1a2f9da57279b9a9f67d45c6ce45a9984bf4134f68ff01d5a0b91162f73968444c84ea4a2627094a26da392455f141e26b74c34ec895d4
+  checksum: 10c0/e28c359a26a739f30e07eb259a6de116bb0b931f3915e00f0ce20c71b594af629fb2a22c501e21690141ce9ac3045fb33ffca26cd0c321d7a34b8b07904bb133
   languageName: node
   linkType: hard
 
@@ -1959,7 +1957,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"picomatch@npm:^4.0.3":
+"picomatch@npm:^4.0.4":
   version: 4.0.4
   resolution: "picomatch@npm:4.0.4"
   checksum: 10c0/e2c6023372cc7b5764719a5ffb9da0f8e781212fa7ca4bd0562db929df8e117460f00dff3cb7509dacfc06b86de924b247f504d0ce1806a37fac4633081466b0
@@ -2191,10 +2189,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tinyexec@npm:^1.0.4":
-  version: 1.1.1
-  resolution: "tinyexec@npm:1.1.1"
-  checksum: 10c0/48433cb32573a767e2b63bb92343cbbae4240d05a19a63f7869f9447491305e7bd82d11daccb79b2628b596ad703a25798226c50bfd1d8e63477fb42af6a5b35
+"tinyexec@npm:^1.2.4":
+  version: 1.2.4
+  resolution: "tinyexec@npm:1.2.4"
+  checksum: 10c0/153b8db6b080194b558ff145b9cffc36b80a6e07babd644dcfbe49c807eee668c876049d28bdee90b96304476f883352f2dad91b3f86bc23832532f4363e66ff
   languageName: node
   linkType: hard
 
@@ -2214,7 +2212,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:6.0.3":
+"typescript@npm:^6.0.3":
   version: 6.0.3
   resolution: "typescript@npm:6.0.3"
   bin:
@@ -2224,7 +2222,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A6.0.3#optional!builtin<compat/typescript>":
+"typescript@patch:typescript@npm%3A^6.0.3#optional!builtin<compat/typescript>":
   version: 6.0.3
   resolution: "typescript@patch:typescript@npm%3A6.0.3#optional!builtin<compat/typescript>::version=6.0.3&hash=5786d5"
   bin:
@@ -2245,13 +2243,13 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "useful-codemods@workspace:."
   dependencies:
-    "@changesets/cli": "npm:^2.30.0"
+    "@changesets/cli": "npm:^2.31.0"
     husky: "npm:^9.1.7"
-    lint-staged: "npm:^16.4.0"
-    oxfmt: "npm:^0.46.0"
-    oxlint: "npm:^1.61.0"
-    oxlint-tsgolint: "npm:^0.21.1"
-    typescript: "npm:6.0.3"
+    lint-staged: "npm:^17.0.7"
+    oxfmt: "npm:^0.55.0"
+    oxlint: "npm:^1.70.0"
+    oxlint-tsgolint: "npm:^0.23.0"
+    typescript: "npm:^6.0.3"
   languageName: unknown
   linkType: soft
 
@@ -2266,6 +2264,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"wrap-ansi@npm:^10.0.0":
+  version: 10.0.0
+  resolution: "wrap-ansi@npm:10.0.0"
+  dependencies:
+    ansi-styles: "npm:^6.2.3"
+    string-width: "npm:^8.2.0"
+    strip-ansi: "npm:^7.1.2"
+  checksum: 10c0/6b163457630fe6d1c72aeed283a7410b2cc7487312df8b0ce96df3fbd64a2a7c948856ea97c25148c848627587c5c7945be474d8e723ab6011bb0756a53a9e89
+  languageName: node
+  linkType: hard
+
 "wrap-ansi@npm:^9.0.0":
   version: 9.0.2
   resolution: "wrap-ansi@npm:9.0.2"
@@ -2277,11 +2286,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yaml@npm:^2.8.2":
-  version: 2.8.3
-  resolution: "yaml@npm:2.8.3"
+"yaml@npm:^2.9.0":
+  version: 2.9.0
+  resolution: "yaml@npm:2.9.0"
   bin:
     yaml: bin.mjs
-  checksum: 10c0/ddff0e11c1b467728d7eb4633db61c5f5de3d8e9373cf84d08fb0cdee03e1f58f02b9f1c51a4a8a865751695addbd465a77f73f1079be91fe5493b29c305fd77
+  checksum: 10c0/f340718df45e97a9551b9bf9dac61c80050bc464513b710debfb5067c380c8472e3b67809cffacb4ab5ffb5e66ef9310816c88b05f371cec60abfedd8c88e0a2
   languageName: node
   linkType: hard

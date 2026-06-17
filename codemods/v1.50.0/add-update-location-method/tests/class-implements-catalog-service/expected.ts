@@ -1,5 +1,5 @@
 import { CatalogService, CatalogServiceRequestOptions } from '@backstage/plugin-catalog-node';
-import { Entity , Location} from '@backstage/catalog-model';
+import { Entity, Location } from '@backstage/catalog-model';
 
 class MyCatalogService implements CatalogService {
   async getEntities(): Promise<Entity[]> {
