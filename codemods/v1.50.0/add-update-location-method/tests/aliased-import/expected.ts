@@ -1,5 +1,5 @@
-import { CatalogApi as MyCatalog , CatalogRequestOptions} from '@backstage/catalog-client';
-import { Entity , Location} from '@backstage/catalog-model';
+import { CatalogApi as MyCatalog, CatalogRequestOptions } from '@backstage/catalog-client';
+import { Entity, Location } from '@backstage/catalog-model';
 
 class MyCatalogClient implements MyCatalog {
   async getEntities(): Promise<Entity[]> {

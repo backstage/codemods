@@ -1,5 +1,5 @@
 
-import { createBackendModule , coreServices} from '@backstage/backend-plugin-api';
+import { createBackendModule, coreServices } from '@backstage/backend-plugin-api';
 
 const rule: CatalogPermissionRuleInput = {
   name: 'my-rule',

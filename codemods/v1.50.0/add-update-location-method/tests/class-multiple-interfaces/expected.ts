@@ -1,5 +1,5 @@
 import { CatalogApi, CatalogRequestOptions } from '@backstage/catalog-client';
-import { Entity , Location} from '@backstage/catalog-model';
+import { Entity, Location } from '@backstage/catalog-model';
 
 interface Disposable {
   dispose(): void;

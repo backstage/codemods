@@ -1,0 +1,55 @@
+---
+'@backstage/add-entity-ref-to-location': patch
+'@backstage/add-jest-peer-dependency': patch
+'@backstage/add-update-location-method': patch
+'@backstage/catalog-node-alpha-to-stable': patch
+'@backstage/dialog-api-show-to-open': patch
+'@backstage/experimental-form-decorators-to-stable': patch
+'@backstage/header-tab-to-nav-tab-item': patch
+'@backstage/humanize-entity-ref-to-presentation': patch
+'@backstage/loading-to-is-pending': patch
+'@backstage/migrate-app-experimental-packages': patch
+'@backstage/migrate-avatar-to-custom': patch
+'@backstage/migrate-blueprints-to-plugin-app-react': patch
+'@backstage/migrate-bui-props-to-intersection': patch
+'@backstage/migrate-checkbox-to-react-aria': patch
+'@backstage/migrate-collapsible-to-accordion': patch
+'@backstage/migrate-column-config-to-react-element': patch
+'@backstage/migrate-gerrit-gitiles-functions': patch
+'@backstage/migrate-nav-item-to-page': patch
+'@backstage/migrate-permissioned-route': patch
+'@backstage/migrate-policy-query-user': patch
+'@backstage/migrate-select-combobox-deprecated-props': patch
+'@backstage/migrate-signals-service': patch
+'@backstage/migrate-surface-to-bg-system': patch
+'@backstage/migrate-table-to-use-table-hook': patch
+'@backstage/migrate-valkey-config': patch
+'@backstage/portable-schema-method-call': patch
+'@backstage/remove-alert-surface-prop': patch
+'@backstage/remove-allow-unknown-extension-config': patch
+'@backstage/remove-any-extension-data-ref': patch
+'@backstage/remove-bootstrap-env-proxy': patch
+'@backstage/remove-catalog-card-variant-props': patch
+'@backstage/remove-create-public-sign-in-app': patch
+'@backstage/remove-immediate-stitching-mode': patch
+'@backstage/remove-stitching-strategy-mode': patch
+'@backstage/rename-bui-css-tokens-v1-47': patch
+'@backstage/rename-bui-css-tokens-v1-48': patch
+'@backstage/rename-bui-css-tokens-v1-52': patch
+'@backstage/rename-bui-header-css-classes': patch
+'@backstage/rename-header-main-class': patch
+'@backstage/rename-header-to-plugin-header': patch
+'@backstage/rename-plugin-header-toolbar': patch
+'@backstage/render-test-app-nav-migration': patch
+'@backstage/replace-create-schema-from-zod': patch
+'@backstage/v1-45-0-migration-recipe': patch
+'@backstage/v1-46-0-migration-recipe': patch
+'@backstage/v1-47-0-migration-recipe': patch
+'@backstage/v1-48-0-migration-recipe': patch
+'@backstage/v1-49-0-migration-recipe': patch
+'@backstage/v1-50-0-migration-recipe': patch
+'@backstage/v1-51-0-migration-recipe': patch
+'@backstage/v1-52-0-migration-recipe': patch
+---
+
+Update devDependencies: @codemod.com/jssg-types 1.5.2 → 1.6.2, codemod 1.7.15 → 1.12.3. Fix test fixtures for updated codemod engine formatting.

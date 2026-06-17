@@ -1,4 +1,4 @@
-import { CatalogClient , catalogServiceRef} from '@backstage/plugin-catalog-node';
+import { CatalogClient, catalogServiceRef } from '@backstage/plugin-catalog-node';
 
 
 export default createBackendModule({

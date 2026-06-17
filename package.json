@@ -10,21 +10,21 @@
     "test": "yarn workspaces foreach -A run test",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
-    "lint": "oxlint --type-aware --type-check --deny-warnings",
-    "lint:fix": "oxlint --type-aware --type-check --fix",
+    "lint": "oxlint --type-aware --type-check --deny-warnings --no-error-on-unmatched-pattern",
+    "lint:fix": "oxlint --type-aware --type-check --fix --no-error-on-unmatched-pattern",
     "prepare": "husky",
     "changeset": "changeset",
     "version-packages": "changeset version && bash scripts/sync-codemod-versions.sh",
     "readme": "bash scripts/generate-readme-codemods.sh"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.30.0",
+    "@changesets/cli": "^2.31.0",
     "husky": "^9.1.7",
-    "lint-staged": "^16.4.0",
-    "oxfmt": "^0.46.0",
-    "oxlint": "^1.61.0",
-    "oxlint-tsgolint": "^0.21.1",
-    "typescript": "6.0.3"
+    "lint-staged": "^17.0.7",
+    "oxfmt": "^0.55.0",
+    "oxlint": "^1.70.0",
+    "oxlint-tsgolint": "^0.23.0",
+    "typescript": "^6.0.3"
   },
   "packageManager": "yarn@4.14.1"
 }

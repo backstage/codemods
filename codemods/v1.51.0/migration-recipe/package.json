@@ -7,6 +7,6 @@
     "test": "yarn exec codemod workflow validate -w workflow.yaml"
   },
   "devDependencies": {
-    "codemod": "1.7.15"
+    "codemod": "1.12.3"
   }
 }
