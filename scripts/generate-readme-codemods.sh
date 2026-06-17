@@ -16,20 +16,25 @@ CODEMODS_DIR="$REPO_ROOT/codemods"
 START_MARKER="<!-- CODEMODS_START -->"
 END_MARKER="<!-- CODEMODS_END -->"
 
-# Render a version table
-render_version() {
-  local version="$1"
-  local version_dir="$CODEMODS_DIR/$version"
+# Render a table for a group of codemods
+render_group() {
+  local group="$1"
+  local group_dir="$CODEMODS_DIR/$group"
 
-  echo "### $version"
+  echo "### $group"
   echo ""
-  # shellcheck disable=SC2016
-  echo "Run the [\`migration-recipe\`](./codemods/$version/migration-recipe) to apply every codemod below in one pass, or run any individual codemod on its own."
-  echo ""
+
+  # Only show migration-recipe link for version directories that have one
+  if [ -d "$group_dir/migration-recipe" ]; then
+    # shellcheck disable=SC2016
+    echo "Run the [\`migration-recipe\`](./codemods/$group/migration-recipe) to apply every codemod below in one pass, or run any individual codemod on its own."
+    echo ""
+  fi
+
   echo "| Codemod | Description |"
   echo "| ------- | ----------- |"
 
-  for codemod_dir in "$version_dir"/*/; do
+  for codemod_dir in "$group_dir"/*/; do
     local name
     name=$(basename "$codemod_dir")
     local yaml="$codemod_dir/codemod.yaml"
@@ -40,15 +45,18 @@ render_version() {
     # Strip "Backstage X.Y.Z: " prefix — the version header already shows it
     desc=$(echo "$desc" | sed 's/^Backstage [0-9.]*: *//')
 
-    echo "| [$name](./codemods/$version/$name) | $desc |"
+    echo "| [$name](./codemods/$group/$name) | $desc |"
   done
 
   echo ""
 }
 
-# Collect all versions (newest first), show only latest 2
-mapfile -t all_versions < <(ls "$CODEMODS_DIR" | sort -Vr)
-total=${#all_versions[@]}
+# Separate version directories (v*) from non-version groups (misc, etc.)
+mapfile -t version_dirs < <(ls "$CODEMODS_DIR" | grep '^v' | sort -Vr)
+mapfile -t other_dirs < <(ls "$CODEMODS_DIR" | grep -v '^v' | grep -v '^\.gitkeep$' | sort)
+
+# Show latest 2 versions
+total=${#version_dirs[@]}
 show=2
 if [ "$total" -lt "$show" ]; then
   show=$total
@@ -56,14 +64,25 @@ fi
 
 # Build the section
 section=""
-for version in "${all_versions[@]:0:$show}"; do
-  section+=$(render_version "$version")
+for version in "${version_dirs[@]:0:$show}"; do
+  section+=$(render_group "$version")
   section+=$'\n'
 done
 
 if [ "$total" -gt "$show" ]; then
   section+="Older versions are available in the [\`codemods/\`](./codemods) directory."$'\n\n'
 fi
+
+# Append non-version groups (misc, etc.) if they contain any codemods
+for group in "${other_dirs[@]}"; do
+  local_dir="$CODEMODS_DIR/$group"
+  # Skip empty groups (only .gitkeep) — count subdirectories with codemod.yaml
+  codemod_count=$(find "$local_dir" -mindepth 2 -maxdepth 2 -name 'codemod.yaml' 2>/dev/null | head -1 || true)
+  if [ -n "$codemod_count" ]; then
+    section+=$(render_group "$group")
+    section+=$'\n'
+  fi
+done
 
 # Check markers exist
 if ! grep -q "$START_MARKER" "$README"; then
@@ -86,4 +105,4 @@ mv "$README.tmp" "$README"
 # Format so the committed output matches what prettier expects
 yarn format "$README" >/dev/null 2>&1 || true
 
-echo "✅ README.md updated with ${all_versions[0]} and ${all_versions[1]} ($total total on disk)"
+echo "✅ README.md updated with ${version_dirs[0]} and ${version_dirs[1]} ($total versions on disk)"

@@ -51,9 +51,13 @@ jobs:
       - name: Get changed codemods
         id: codemods
         run: |
-          dirs=$(git diff --name-only origin/main...HEAD -- 'codemods/' \
-            | awk -F/ 'NF>=3 {print $1"/"$2"/"$3}' | sort -u | tr '\n' ' ')
-          echo "dirs=$dirs" >> "$GITHUB_OUTPUT"
+          candidates=$(git diff --name-only origin/main...HEAD -- 'codemods/' \
+            | awk -F/ 'NF>=3 {print $1"/"$2"/"$3}' | sort -u)
+          dirs=""
+          for d in $candidates; do
+            [ -f "$d/package.json" ] && dirs="$dirs $d"
+          done
+          echo "dirs=$(echo $dirs | xargs)" >> "$GITHUB_OUTPUT"
 
       - name: Format check (changed files)
         if: steps.changed.outputs.files != ''

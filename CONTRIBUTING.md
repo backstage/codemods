@@ -70,16 +70,18 @@ The manual `Publish Codemod (Manual)` workflow (`.github/workflows/publish.yml`)
 
 ## Adding a new codemod
 
-Each codemod lives in its own directory under `codemods/<version>/<codemod-name>/`:
+Each codemod lives in its own directory under `codemods/<group>/<codemod-name>/`:
 
 ```
-codemods/<version>/<codemod-name>/
+codemods/<group>/<codemod-name>/
   scripts/codemod.ts   # Codemod logic (jssg / ast-grep)
   tests/               # Input/expected test fixtures
   codemod.yaml         # Codemod manifest (version is auto-synced)
   workflow.yaml        # Execution workflow
   package.json         # Source of truth for name + version
 ```
+
+The `<group>` is either a Backstage release version (e.g. `v1.52.0`) for migration codemods, or `misc` for codemods not tied to a specific release (e.g. NFS migration).
 
 Conventions to follow:
 
