@@ -1,4 +1,4 @@
-# @backstage/migrate-select-combobox-deprecated-props
+# @backstage/migrate-select-combobox-props
 
 ## 0.2.1
 

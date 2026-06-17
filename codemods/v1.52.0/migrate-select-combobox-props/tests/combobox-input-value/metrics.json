@@ -1,0 +1,11 @@
+{
+  "migrate-select-combobox-props": [
+    {
+      "cardinality": {
+        "action": "search-props-migrated",
+        "component": "Combobox"
+      },
+      "count": 1
+    }
+  ]
+}

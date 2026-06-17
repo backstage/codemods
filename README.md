@@ -14,13 +14,13 @@ See the [Codemod docs](https://docs.codemod.com) for more on building and runnin
 
 Run the [`migration-recipe`](./codemods/v1.52.0/migration-recipe) to apply every codemod below in one pass, or run any individual codemod on its own.
 
-| Codemod                                                                                                 | Description                                                                                    |
-| ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| [migrate-bui-props-to-intersection](./codemods/v1.52.0/migrate-bui-props-to-intersection)               | Migrate ComboboxProps/SelectProps interface extends to type intersection                       |
-| [migrate-select-combobox-deprecated-props](./codemods/v1.52.0/migrate-select-combobox-deprecated-props) | Migrate deprecated Select/Combobox search props and option value to id                         |
-| [migration-recipe](./codemods/v1.52.0/migration-recipe)                                                 | Migration recipe that runs every @backstage v1.52.0 codemod from the registry in a safe order. |
-| [remove-stitching-strategy-mode](./codemods/v1.52.0/remove-stitching-strategy-mode)                     | Remove deprecated catalog.stitchingStrategy.mode from app-config                               |
-| [rename-bui-css-tokens-v1-52](./codemods/v1.52.0/rename-bui-css-tokens-v1-52)                           | Rename deprecated BUI semantic color tokens                                                    |
+| Codemod                                                                                   | Description                                                                                    |
+| ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| [migrate-bui-props-to-intersection](./codemods/v1.52.0/migrate-bui-props-to-intersection) | Migrate ComboboxProps/SelectProps interface extends to type intersection                       |
+| [migrate-select-combobox-props](./codemods/v1.52.0/migrate-select-combobox-props)         | Migrate deprecated Select/Combobox search props and option value to id                         |
+| [migration-recipe](./codemods/v1.52.0/migration-recipe)                                   | Migration recipe that runs every @backstage v1.52.0 codemod from the registry in a safe order. |
+| [remove-stitching-strategy-mode](./codemods/v1.52.0/remove-stitching-strategy-mode)       | Remove deprecated catalog.stitchingStrategy.mode from app-config                               |
+| [rename-bui-css-tokens-v1-52](./codemods/v1.52.0/rename-bui-css-tokens-v1-52)             | Rename deprecated BUI semantic color tokens                                                    |
 
 ### v1.51.0
 
@@ -97,6 +97,4 @@ codemods/
 
 ## License
 
-Copyright 2026 © The Backstage Authors. All rights reserved.
-
-Licensed under the Apache License, Version 2.0: http://www.apache.org/licenses/LICENSE-2.0
+MIT

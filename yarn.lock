@@ -202,9 +202,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@backstage/migrate-select-combobox-deprecated-props@workspace:codemods/v1.52.0/migrate-select-combobox-deprecated-props":
+"@backstage/migrate-select-combobox-props@workspace:codemods/v1.52.0/migrate-select-combobox-props":
   version: 0.0.0-use.local
-  resolution: "@backstage/migrate-select-combobox-deprecated-props@workspace:codemods/v1.52.0/migrate-select-combobox-deprecated-props"
+  resolution: "@backstage/migrate-select-combobox-props@workspace:codemods/v1.52.0/migrate-select-combobox-props"
   dependencies:
     "@codemod.com/jssg-types": "npm:1.6.2"
     codemod: "npm:1.12.3"
