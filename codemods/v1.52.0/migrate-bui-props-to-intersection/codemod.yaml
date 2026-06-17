@@ -1,7 +1,7 @@
 schema_version: '1.0'
 
 name: '@backstage/migrate-bui-props-to-intersection'
-version: '0.1.0'
+version: '0.2.0'
 description: 'Backstage 1.52.0: Migrate ComboboxProps/SelectProps interface extends to type intersection'
 author: 'Paul Schultz<pschultz@redhat.com>'
 license: 'Apache-2.0'
