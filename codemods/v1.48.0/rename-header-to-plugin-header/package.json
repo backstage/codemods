@@ -1,6 +1,6 @@
 {
   "name": "@backstage/rename-header-to-plugin-header",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Backstage 1.48.0: Rename Header to PluginHeader, HeaderProps to PluginHeaderProps, HeaderDefinition to PluginHeaderDefinition in @backstage/ui",
   "type": "module",
   "scripts": {

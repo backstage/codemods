@@ -1,6 +1,6 @@
 {
   "name": "@backstage/migrate-blueprints-to-plugin-app-react",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Backstage 1.48.0: Move blueprint exports from @backstage/frontend-plugin-api to @backstage/plugin-app-react",
   "type": "module",
   "scripts": {

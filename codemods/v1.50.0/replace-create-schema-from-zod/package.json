@@ -1,6 +1,6 @@
 {
   "name": "@backstage/replace-create-schema-from-zod",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Backstage 1.50.0: Replace createSchemaFromZod and config.schema with configSchema",
   "type": "module",
   "scripts": {

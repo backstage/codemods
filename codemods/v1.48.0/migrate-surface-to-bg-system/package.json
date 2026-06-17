@@ -1,6 +1,6 @@
 {
   "name": "@backstage/migrate-surface-to-bg-system",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Backstage 1.48.0: Migrate surface/onSurface props to bg system in @backstage/ui",
   "type": "module",
   "scripts": {

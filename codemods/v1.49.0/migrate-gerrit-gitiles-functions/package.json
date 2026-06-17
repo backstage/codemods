@@ -1,6 +1,6 @@
 {
   "name": "@backstage/migrate-gerrit-gitiles-functions",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Backstage 1.49.0: Rename deprecated Gerrit Gitiles functions in @backstage/integration",
   "type": "module",
   "scripts": {

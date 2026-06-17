@@ -1,7 +1,7 @@
 schema_version: '1.0'
 
 name: '@backstage/v1-45-0-migration-recipe'
-version: '0.2.0'
+version: '0.2.1'
 description: 'Backstage 1.45.0: Migration recipe that runs every @backstage v1.45.0 codemod from the registry in a safe order.'
 author: 'Paul Schultz<pschultz@redhat.com>'
 license: 'Apache-2.0'

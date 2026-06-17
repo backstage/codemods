@@ -1,6 +1,6 @@
 {
   "name": "@backstage/remove-allow-unknown-extension-config",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Backstage 1.49.0: Remove the deprecated allowUnknownExtensionConfig option from createApp()",
   "type": "module",
   "scripts": {

@@ -1,6 +1,6 @@
 {
   "name": "@backstage/rename-bui-css-tokens-v1-48",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Backstage 1.48.0: Rename deprecated BUI CSS tokens and selectors",
   "type": "module",
   "scripts": {

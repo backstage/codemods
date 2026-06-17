@@ -1,6 +1,6 @@
 {
   "name": "@backstage/migrate-valkey-config",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Backstage 1.46.0: Migrate Valkey cache configuration to new native options",
   "type": "module",
   "scripts": {

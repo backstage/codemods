@@ -1,6 +1,6 @@
 {
   "name": "@backstage/remove-any-extension-data-ref",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Backstage 1.49.0: Rename deprecated AnyExtensionDataRef to ExtensionDataRef",
   "type": "module",
   "scripts": {

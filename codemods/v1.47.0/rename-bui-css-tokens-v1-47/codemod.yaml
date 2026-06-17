@@ -1,7 +1,7 @@
 schema_version: '1.0'
 
 name: '@backstage/rename-bui-css-tokens-v1-47'
-version: '0.1.0'
+version: '0.1.1'
 description: 'Backstage 1.47.0: Rename deprecated BUI CSS custom properties (--bui-bg, --bui-bg-tint*) to their new equivalents'
 author: 'Paul Schultz<pschultz@redhat.com>'
 license: 'Apache-2.0'

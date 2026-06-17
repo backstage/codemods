@@ -1,7 +1,7 @@
 schema_version: '1.0'
 
 name: '@backstage/loading-to-is-pending'
-version: '0.2.0'
+version: '0.2.1'
 description: 'Backstage 1.51.0: Rename deprecated loading prop to isPending in @backstage/ui and data-loading to data-ispending in CSS'
 author: 'Paul Schultz<pschultz@redhat.com>'
 license: 'Apache-2.0'
