@@ -22,15 +22,15 @@ If yes → codemod issue with explicit Detection Criteria.
 
 Maps to Issue Generator **skip** rules (behavioral/runtime-only/docs/policy/domain knowledge):
 
-| Signal                                   | Example                                                            |
-| ---------------------------------------- | ------------------------------------------------------------------ |
-| Default behavior change, no code pattern | Catalog pagination sort-field semantics                            |
-| Security / ops configuration             | OIDC CIMD/DCR default pattern                                      |
-| External service filtering default       | MS Graph disabled-user filtering                                   |
-| Dependency version constraint            | `@remixicon/react` cap, Zod v4-only bump                           |
-| Optional large migration                 | React Aria monopackage (could be future codemod — note separately) |
-| Deprecated but not removed               | `Header.breadcrumbs` still present in target release               |
-| Upgrade Helper-only dependency bumps     | Version pins across `package.json` files                           |
+| Signal                                   | Example                                                              |
+| ---------------------------------------- | -------------------------------------------------------------------- |
+| Default behavior change, no code pattern | Catalog pagination sort-field semantics                              |
+| Security / ops configuration             | OIDC CIMD/DCR default pattern                                        |
+| External service filtering default       | MS Graph disabled-user filtering                                     |
+| Dependency version constraint            | `@remixicon/react` cap, Zod v4-only bump                             |
+| Optional large migration                 | React Aria monopackage (could be future codemod — note separately)   |
+| Deprecation requiring semantic judgment  | Behavioral change behind a feature flag (requires testing to verify) |
+| Upgrade Helper-only dependency bumps     | Version pins across `package.json` files                             |
 
 **Ask:** Would automation require understanding runtime semantics or org-specific policy?
 
@@ -53,10 +53,12 @@ Example: one package with two unrelated breaking changes → **two issues** beca
 
 ## Deprecation vs breaking
 
-Both can be codemods. Label type in the inventory table:
+Both can be codemods — **do not skip deprecations by default.** Prior releases consistently ship deprecation codemods (v1.51: `loading-to-is-pending`, `experimental-form-decorators-to-stable`, `remove-immediate-stitching-mode`). Label type in the inventory table:
 
 - **breaking** — removal or incompatible change; CI/types fail after upgrade
 - **deprecation** — still works but warns; codemod is proactive cleanup
+
+A deprecation is a codemod candidate when it is a **mechanical rename** (symbol, prop, CSS token, config key) with a clear before/after. A deprecation is document-only when it requires **semantic judgment** (e.g. choosing between multiple replacement APIs, understanding runtime behavior).
 
 Recipe order convention (from prior releases): **breaking changes first**, grouped by domain, **deprecations last**.
 

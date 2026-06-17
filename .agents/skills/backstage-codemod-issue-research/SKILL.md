@@ -48,12 +48,15 @@ digraph research {
   rankdir=TB;
   sources [label="1. Load sources\n(changelog + release notes + prior issues)"];
   scan [label="2. Extract candidates\n(BREAKING + deprecations)"];
-  classify [label="3. Classify each item\ncodemod | recipe-only doc | out-of-scope"];
-  dedupe [label="4. Dedupe & name packages\n(one issue = one transform)"];
-  inventory [label="5. Publish inventory table\n(get user sign-off)"];
-  issues [label="6. File codemod issues\n(template per item)"];
-  recipe [label="7. File recipe issue\n(blocked by codemods)"];
-  sources -> scan -> classify -> dedupe -> inventory -> issues -> recipe;
+  classify [label="3. Classify each item\ncodemod | recipe-only | out-of-scope"];
+  verify_pr [label="4. Verify out-of-scope\n(investigate linked PRs)"];
+  verify_surface [label="5. Verify consumer surface area\n(grep monorepo + community-plugins)"];
+  sweep [label="6. Sweep Patch Changes\n(deprecated/removed/renamed)"];
+  dedupe [label="7. Dedupe & name packages\n(one issue = one transform)"];
+  inventory [label="8. Publish inventory table\n(get user sign-off)"];
+  issues [label="9. File codemod issues\n(template per item)"];
+  recipe [label="10. File recipe issue\n(blocked by codemods)"];
+  sources -> scan -> classify -> verify_pr -> verify_surface -> sweep -> dedupe -> inventory -> issues -> recipe;
 }
 ```
 
@@ -61,14 +64,15 @@ digraph research {
 
 Use **all** of these — they disagree in useful ways:
 
-| Source                  | Path / command                                                           | What it gives you                                      |
-| ----------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------ |
-| Consolidated changelog  | `backstage/backstage/docs/releases/v1.<minor>.0-changelog.md`            | Per-package entries, diff blocks, **BREAKING** markers |
-| Published release notes | `https://backstage.io/docs/releases/v1.<minor>.0`                        | User-facing framing, migration prose                   |
-| GitHub release          | `gh release view v1.<minor>.0 --repo backstage/backstage`                | Same content, sometimes different emphasis             |
-| Upgrade Helper          | `https://backstage.github.io/upgrade-helper/?to=1.<minor>.0`             | Dependency bumps (usually not codemod targets)         |
-| Prior release issues    | `gh issue view <n> --repo backstage/codemods` for closed v1.(N-1) issues | Issue section order, aiFixup pattern, tone             |
-| Existing codemods       | `codemods/v1.<prior>/` in this repo + `npx codemod search "backstage"`   | Avoid duplicate issues                                 |
+| Source                  | Path / command                                                            | What it gives you                                                                                                      |
+| ----------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Consolidated changelog  | Find locally: `find .. -path '*/docs/releases/v1.<minor>.0-changelog.md'` | Per-package entries, diff blocks, **BREAKING** markers                                                                 |
+| Published release notes | `https://backstage.io/docs/releases/v1.<minor>.0`                         | User-facing framing, migration prose                                                                                   |
+| GitHub release          | `gh release view v1.<minor>.0 --repo backstage/backstage`                 | Same content, sometimes different emphasis                                                                             |
+| BUI Changelog           | `https://ui.backstage.io/changelog`                                       | Component-level CSS class changes, DOM structure details. Load when `@backstage/ui` has breaking or deprecated entries |
+| Upgrade Helper          | `https://backstage.github.io/upgrade-helper/?to=1.<minor>.0`              | Dependency bumps (usually not codemod targets)                                                                         |
+| Prior release issues    | `gh issue view <n> --repo backstage/codemods` for closed v1.(N-1) issues  | Issue section order, aiFixup pattern, tone                                                                             |
+| Existing codemods       | `codemods/v1.<prior>/` in this repo + `npx codemod search "backstage"`    | Avoid duplicate issues                                                                                                 |
 
 Quick scan for breaking markers (from repo root):
 
@@ -90,7 +94,7 @@ For each changelog entry, capture:
 - **Detection signals** — imports, JSX tags, config keys, CSS classes, method names
 - **Official before/after** from the changelog diff block (starting point for issue examples)
 
-Include **deprecations** that are mechanical renames (symbol or prop renames, stable export replacements). Skip entries that are purely additive or internal refactors with "no user-facing API changes."
+**Always include deprecations** that are mechanical renames (symbol or prop renames, stable export replacements, CSS token renames). Prior releases consistently ship deprecation codemods alongside breaking ones — see v1.51's `loading-to-is-pending`, `experimental-form-decorators-to-stable`, and `remove-immediate-stitching-mode`. Bias toward including deprecations, not excluding them. Skip entries that are purely additive or internal refactors with "no user-facing API changes."
 
 Apply [Codemod Issue Generator eligibility](references/codemod-issue-generator.md): only keep candidates that are statically detectable, have a clear before/after, and do not require business-logic judgment for the common case.
 
@@ -109,7 +113,45 @@ Load [`references/classification-guide.md`](references/classification-guide.md) 
 
 Document **out-of-scope** items explicitly in the recipe issue README section — they are as important as the codemods.
 
-### Step 4: Dedupe and name
+### Step 4: Verify out-of-scope items against linked PRs
+
+For each item classified as out-of-scope, find the linked PR:
+
+```bash
+gh pr list --repo backstage/backstage --state merged --search '<description keywords>' --limit 5
+```
+
+Examine the PR diff — changelog descriptions are often ambiguous. PR diffs reveal:
+
+- **Mapping tables** that enable mechanical token/symbol renames (e.g. token deprecation PRs include old → new tables)
+- **Config schema changes** that are simpler than the prose suggests (e.g. a field removal that's just a YAML key delete)
+- **Before/after patterns** in the PR's own test or docs changes
+
+Promote to codemod if the PR evidence shows a statically detectable, mechanical transform that the changelog summary obscured. This step commonly promotes 1–3 items per release.
+
+### Step 5: Verify consumer surface area
+
+For each codemod candidate, grep `backstage/backstage` (excl. source packages and `node_modules`) and `backstage/community-plugins` for the detection pattern:
+
+```bash
+grep -rn '<pattern>' --include='*.ts' --include='*.tsx' --include='*.css' \
+  path/to/backstage | grep -v node_modules | grep -v 'packages/<source-pkg>/src'
+```
+
+Zero consumer matches strengthens the "no aiFixup" and "TODO is sufficient" positions. Real consumer matches inform issue priority and transform confidence.
+
+### Step 6: Sweep Patch Changes for deprecations
+
+After classifying Minor Changes, sweep **all** Patch Changes for `deprecated`, `removed`, `renamed`, `replaced` keywords. Patch-level deprecations (typo fixes, renamed exports, deprecated aliases) are often mechanical renames with clear before/after that the initial BREAKING-focused scan misses.
+
+```bash
+python .agents/skills/backstage-codemod-issue-research/scripts/scan-changelog.py \
+  <changelog-path> --include-patches
+```
+
+Evaluate each for codemod eligibility. Low-surface-area typo fixes (zero consumer matches in monorepo + community-plugins) can be listed in the recipe README out-of-scope rather than getting their own issues.
+
+### Step 7: Dedupe and name
 
 Package name: `@backstage/<kebab-case-descriptive-name>` — verb-led when possible (`migrate-nav-item-to-page`, `rename-header-main-class`).
 
@@ -121,7 +163,7 @@ feat: Backstage 1.<minor>.0 migration - <short human description>
 
 Worktree path (for Implementation notes): `.worktrees/feat/v1.<minor>.0/<codemod-name>`
 
-### Step 5: Inventory table (sign-off gate)
+### Step 8: Inventory table (sign-off gate)
 
 Present a markdown table **before** filing issues:
 
@@ -134,7 +176,7 @@ Present a markdown table **before** filing issues:
 
 Wait for user confirmation on the inventory. Adjust before filing.
 
-### Step 6: File codemod issues
+### Step 9: File codemod issues
 
 Use [`references/issue-template.md`](references/issue-template.md) for each row. **Section order** follows [Codemod Issue Generator](references/codemod-issue-generator.md), plus Backstage extensions:
 
@@ -159,7 +201,7 @@ gh issue create --repo backstage/codemods \
 
 Cross-link related issues when two migrations touch the same package (e.g. two removed APIs in `@backstage/frontend-plugin-api` — separate codemods, note the distinction in Summary).
 
-### Step 7: Recipe issue (last)
+### Step 10: Recipe issue (last)
 
 After all codemod issues exist, file **one recipe issue** modeled on the prior release's migration-recipe issue:
 
@@ -186,6 +228,13 @@ Recommend **Optional: AI fixup step** when the AST codemod will leave systematic
 - Single-symbol renames with exact references
 - YAML/config key rewrites with fixed paths
 - CSS class string replacements with word boundaries
+
+**Check prior art before deciding.** Find prior codemods for the same pattern type and mirror their aiFixup decision unless the new transform has strictly more ambiguity:
+
+- CSS token renames → check `rename-bui-css-tokens-v1-47` / `v1-48` (no aiFixup)
+- YAML config changes → check `remove-immediate-stitching-mode` (no aiFixup)
+- Prop renames → check `loading-to-is-pending` (aiFixup for spread props / namespace imports)
+- Structural JSX → check `migrate-nav-item-to-page` (aiFixup for pairing logic)
 
 When including aiFixup, specify in the issue:
 
@@ -226,6 +275,6 @@ An issue is ready to implement when:
 | File                                                                             | Load when                                     |
 | -------------------------------------------------------------------------------- | --------------------------------------------- |
 | [`references/codemod-issue-generator.md`](references/codemod-issue-generator.md) | Eligibility, granularity, generic issue shape |
-| [`references/issue-template.md`](references/issue-template.md)                   | Writing issue bodies (Step 6)                 |
+| [`references/issue-template.md`](references/issue-template.md)                   | Writing issue bodies (Step 9)                 |
 | [`references/classification-guide.md`](references/classification-guide.md)       | Unsure codemod vs out-of-scope (Step 3)       |
 | [`scripts/scan-changelog.py`](scripts/scan-changelog.py)                         | Initial BREAKING/deprecated sweep (Step 1)    |
