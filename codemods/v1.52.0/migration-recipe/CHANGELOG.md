@@ -1,5 +1,11 @@
 # @backstage/v1-52-0-migration-recipe
 
+## 0.2.2
+
+### Patch Changes
+
+- f510a43: Rename package from @backstage/migrate-select-combobox-deprecated-props to @backstage/migrate-select-combobox-props (50-char registry name limit)
+
 ## 0.2.1
 
 ### Patch Changes

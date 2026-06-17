@@ -1,7 +1,7 @@
 schema_version: '1.0'
 
 name: '@backstage/migrate-select-combobox-props'
-version: '0.2.1'
+version: '0.2.2'
 description: 'Backstage 1.52.0: Migrate deprecated Select/Combobox search props and option value to id'
 author: 'Paul Schultz<pschultz@redhat.com>'
 license: 'Apache-2.0'
