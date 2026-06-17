@@ -1,0 +1,24 @@
+.alert-danger {
+  background: var(--bui-bg-danger);
+  color: var(--bui-fg-danger);
+  border-color: var(--bui-border-danger);
+}
+
+.alert-success {
+  background: var(--bui-bg-success);
+  color: var(--bui-fg-success);
+  border-color: var(--bui-border-success);
+}
+
+.primary-button {
+  background: var(--bui-bg-solid);
+  color: var(--bui-fg-solid);
+}
+
+.primary-button:hover {
+  background: var(--bui-bg-solid-hover);
+}
+
+.card:hover {
+  background: var(--bui-bg-neutral-1-hover);
+}

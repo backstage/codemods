@@ -1,0 +1,24 @@
+.alert-danger {
+  background: var(--bui-negative-bg-subdued);
+  color: var(--bui-fg-negative);
+  border-color: var(--bui-negative-border);
+}
+
+.alert-success {
+  background: var(--bui-positive-bg-subdued);
+  color: var(--bui-fg-positive);
+  border-color: var(--bui-positive-border);
+}
+
+.primary-button {
+  background: var(--bui-accent-bg);
+  color: var(--bui-accent-fg);
+}
+
+.primary-button:hover {
+  background: var(--bui-accent-bg-hover);
+}
+
+.card:hover {
+  background: var(--bui-bg-neutral-1-hover /* TODO(backstage-codemod): --bui-bg-neutral-1-hover deprecated — remove or restyle */);
+}

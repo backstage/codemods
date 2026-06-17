@@ -1,0 +1,11 @@
+{
+  "migrate-select-combobox-deprecated-props": [
+    {
+      "cardinality": {
+        "action": "todo-variable-options",
+        "component": "Select"
+      },
+      "count": 1
+    }
+  ]
+}

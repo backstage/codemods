@@ -1,0 +1,13 @@
+{
+  "name": "@backstage/remove-stitching-strategy-mode",
+  "version": "0.1.0",
+  "description": "Backstage 1.52.0: Remove deprecated catalog.stitchingStrategy.mode from app-config",
+  "type": "module",
+  "scripts": {
+    "test": "yarn exec codemod jssg test -l yaml ./scripts/codemod.ts ./tests && yarn exec codemod workflow validate -w workflow.yaml"
+  },
+  "devDependencies": {
+    "@codemod.com/jssg-types": "1.5.2",
+    "codemod": "1.7.15"
+  }
+}

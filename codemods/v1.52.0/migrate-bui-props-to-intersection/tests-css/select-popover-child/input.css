@@ -1,0 +1,7 @@
+.bui-SelectPopover > .list-item {
+  padding: 8px;
+}
+
+.bui-SelectPopover {
+  border: 1px solid var(--bui-border-2);
+}

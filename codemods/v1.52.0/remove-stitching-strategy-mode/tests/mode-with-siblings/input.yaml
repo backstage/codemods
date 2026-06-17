@@ -1,0 +1,7 @@
+catalog:
+  stitchingStrategy:
+    mode: deferred
+    pollingInterval: { minutes: 1 }
+    stitchTimeout: { seconds: 30 }
+  rules:
+    - allow: [Component]

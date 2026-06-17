@@ -1,0 +1,22 @@
+{
+  "rename-bui-css-tokens-v1-52": [
+    {
+      "cardinality": {
+        "action": "fg-danger-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "fg-info-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "fg-success-renamed"
+      },
+      "count": 1
+    }
+  ]
+}
