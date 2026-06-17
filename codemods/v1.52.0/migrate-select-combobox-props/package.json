@@ -1,5 +1,5 @@
 {
-  "name": "@backstage/migrate-select-combobox-deprecated-props",
+  "name": "@backstage/migrate-select-combobox-props",
   "version": "0.2.1",
   "description": "Backstage 1.52.0: Migrate deprecated Select/Combobox search props and option value to id",
   "type": "module",

@@ -24,4 +24,4 @@ nodes:
 
       - name: 'Migrate deprecated Select/Combobox search props and option value to id'
         codemod:
-          source: '@backstage/migrate-select-combobox-deprecated-props'
+          source: '@backstage/migrate-select-combobox-props'

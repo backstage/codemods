@@ -2,7 +2,7 @@ import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
 
-const migrationMetric = useMetricAtom('migrate-select-combobox-deprecated-props')
+const migrationMetric = useMetricAtom('migrate-select-combobox-props')
 
 const UI_SOURCE = '@backstage/ui'
 const SELECT_COMPONENTS = new Set(['Select'])

@@ -4,12 +4,12 @@ Run every `@backstage/*` v1.52.0 codemod from the [Codemod Registry](https://go.
 
 ## What it runs
 
-| #   | Package                                                                                                                                       | Domain                      | Type        |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- | ----------- |
-| 1   | [`@backstage/migrate-bui-props-to-intersection`](https://go.codemod.com/registry?q=backstage+migrate-bui-props-to-intersection)               | @backstage/ui — type change | breaking    |
-| 2   | [`@backstage/remove-stitching-strategy-mode`](https://go.codemod.com/registry?q=backstage+remove-stitching-strategy-mode)                     | app-config — catalog config | breaking    |
-| 3   | [`@backstage/rename-bui-css-tokens-v1-52`](https://go.codemod.com/registry?q=backstage+rename-bui-css-tokens-v1-52)                           | @backstage/ui — CSS tokens  | deprecation |
-| 4   | [`@backstage/migrate-select-combobox-deprecated-props`](https://go.codemod.com/registry?q=backstage+migrate-select-combobox-deprecated-props) | @backstage/ui — JSX props   | deprecation |
+| #   | Package                                                                                                                         | Domain                      | Type        |
+| --- | ------------------------------------------------------------------------------------------------------------------------------- | --------------------------- | ----------- |
+| 1   | [`@backstage/migrate-bui-props-to-intersection`](https://go.codemod.com/registry?q=backstage+migrate-bui-props-to-intersection) | @backstage/ui — type change | breaking    |
+| 2   | [`@backstage/remove-stitching-strategy-mode`](https://go.codemod.com/registry?q=backstage+remove-stitching-strategy-mode)       | app-config — catalog config | breaking    |
+| 3   | [`@backstage/rename-bui-css-tokens-v1-52`](https://go.codemod.com/registry?q=backstage+rename-bui-css-tokens-v1-52)             | @backstage/ui — CSS tokens  | deprecation |
+| 4   | [`@backstage/migrate-select-combobox-props`](https://go.codemod.com/registry?q=backstage+migrate-select-combobox-props)         | @backstage/ui — JSX props   | deprecation |
 
 ## Usage
 
