@@ -1,0 +1,8 @@
+/* TODO(backstage-codemod): Select popover DOM structure changed — list content is now inside .bui-PopoverContent wrapper */
+.bui-SelectPopover > .list-item {
+  padding: 8px;
+}
+
+.bui-SelectPopover {
+  border: 1px solid var(--bui-border-2);
+}

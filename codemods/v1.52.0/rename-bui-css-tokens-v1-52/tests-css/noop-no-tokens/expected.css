@@ -1,0 +1,5 @@
+.card {
+  background: var(--bui-bg-app);
+  color: var(--bui-fg-primary);
+  border: 1px solid var(--bui-border-2);
+}

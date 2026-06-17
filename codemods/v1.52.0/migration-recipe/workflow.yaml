@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+nodes:
+  - id: apply-recipe
+    name: 'Run every Backstage 1.52.0 codemod in order'
+    type: automatic
+    steps:
+      # --- BREAKING: @backstage/ui ComboboxProps/SelectProps union type change
+      - name: 'Migrate interface extends ComboboxProps/SelectProps to type intersection'
+        codemod:
+          source: '@backstage/migrate-bui-props-to-intersection'
+
+      # --- BREAKING: catalog config cleanup
+      - name: 'Remove deprecated catalog.stitchingStrategy.mode from app-config'
+        codemod:
+          source: '@backstage/remove-stitching-strategy-mode'
+
+      # --- Deprecations (non-breaking in 1.52.0, but recommended to migrate now).
+      - name: 'Rename deprecated BUI semantic color tokens'
+        codemod:
+          source: '@backstage/rename-bui-css-tokens-v1-52'
+
+      - name: 'Migrate deprecated Select/Combobox search props and option value to id'
+        codemod:
+          source: '@backstage/migrate-select-combobox-deprecated-props'

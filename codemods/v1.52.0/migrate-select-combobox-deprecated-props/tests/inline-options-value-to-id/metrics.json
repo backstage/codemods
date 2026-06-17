@@ -1,0 +1,11 @@
+{
+  "migrate-select-combobox-deprecated-props": [
+    {
+      "cardinality": {
+        "action": "option-value-to-id",
+        "component": "Select"
+      },
+      "count": 1
+    }
+  ]
+}

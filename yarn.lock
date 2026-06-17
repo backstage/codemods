@@ -125,6 +125,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/migrate-bui-props-to-intersection@workspace:codemods/v1.52.0/migrate-bui-props-to-intersection":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-bui-props-to-intersection@workspace:codemods/v1.52.0/migrate-bui-props-to-intersection"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/migrate-checkbox-to-react-aria@workspace:codemods/v1.45.0/migrate-checkbox-to-react-aria":
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-checkbox-to-react-aria@workspace:codemods/v1.45.0/migrate-checkbox-to-react-aria"
@@ -189,6 +198,15 @@ __metadata:
   dependencies:
     "@codemod.com/jssg-types": "npm:1.5.2"
     "@jssg/utils": "npm:0.0.5"
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/migrate-select-combobox-deprecated-props@workspace:codemods/v1.52.0/migrate-select-combobox-deprecated-props":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-select-combobox-deprecated-props@workspace:codemods/v1.52.0/migrate-select-combobox-deprecated-props"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
     codemod: "npm:1.7.15"
   languageName: unknown
   linkType: soft
@@ -307,6 +325,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/remove-stitching-strategy-mode@workspace:codemods/v1.52.0/remove-stitching-strategy-mode":
+  version: 0.0.0-use.local
+  resolution: "@backstage/remove-stitching-strategy-mode@workspace:codemods/v1.52.0/remove-stitching-strategy-mode"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/rename-bui-css-tokens-v1-47@workspace:codemods/v1.47.0/rename-bui-css-tokens-v1-47":
   version: 0.0.0-use.local
   resolution: "@backstage/rename-bui-css-tokens-v1-47@workspace:codemods/v1.47.0/rename-bui-css-tokens-v1-47"
@@ -319,6 +346,15 @@ __metadata:
 "@backstage/rename-bui-css-tokens-v1-48@workspace:codemods/v1.48.0/rename-bui-css-tokens-v1-48":
   version: 0.0.0-use.local
   resolution: "@backstage/rename-bui-css-tokens-v1-48@workspace:codemods/v1.48.0/rename-bui-css-tokens-v1-48"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.5.2"
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/rename-bui-css-tokens-v1-52@workspace:codemods/v1.52.0/rename-bui-css-tokens-v1-52":
+  version: 0.0.0-use.local
+  resolution: "@backstage/rename-bui-css-tokens-v1-52@workspace:codemods/v1.52.0/rename-bui-css-tokens-v1-52"
   dependencies:
     "@codemod.com/jssg-types": "npm:1.5.2"
     codemod: "npm:1.7.15"
@@ -432,6 +468,14 @@ __metadata:
 "@backstage/v1-51-0-migration-recipe@workspace:codemods/v1.51.0/migration-recipe":
   version: 0.0.0-use.local
   resolution: "@backstage/v1-51-0-migration-recipe@workspace:codemods/v1.51.0/migration-recipe"
+  dependencies:
+    codemod: "npm:1.7.15"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/v1-52-0-migration-recipe@workspace:codemods/v1.52.0/migration-recipe":
+  version: 0.0.0-use.local
+  resolution: "@backstage/v1-52-0-migration-recipe@workspace:codemods/v1.52.0/migration-recipe"
   dependencies:
     codemod: "npm:1.7.15"
   languageName: unknown

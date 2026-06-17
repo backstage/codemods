@@ -1,0 +1,64 @@
+{
+  "rename-bui-css-tokens-v1-52": [
+    {
+      "cardinality": {
+        "action": "accent-bg-solid-hover-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "accent-bg-solid-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "accent-fg-solid-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "bg-danger-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "bg-success-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "border-danger-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "border-success-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "fg-danger-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "fg-success-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "neutral-1-hover-todo"
+      },
+      "count": 1
+    }
+  ]
+}

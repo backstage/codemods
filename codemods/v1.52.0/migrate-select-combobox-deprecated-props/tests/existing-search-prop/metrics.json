@@ -1,0 +1,11 @@
+{
+  "migrate-select-combobox-deprecated-props": [
+    {
+      "cardinality": {
+        "action": "skipped-existing-search",
+        "component": "Select"
+      },
+      "count": 1
+    }
+  ]
+}

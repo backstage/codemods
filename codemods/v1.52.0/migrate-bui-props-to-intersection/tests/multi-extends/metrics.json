@@ -1,0 +1,11 @@
+{
+  "migrate-bui-props-to-intersection": [
+    {
+      "cardinality": {
+        "action": "interface-to-type",
+        "interface": "MySelectProps"
+      },
+      "count": 1
+    }
+  ]
+}

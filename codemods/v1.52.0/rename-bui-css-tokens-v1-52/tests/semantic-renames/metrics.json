@@ -1,0 +1,76 @@
+{
+  "rename-bui-css-tokens-v1-52": [
+    {
+      "cardinality": {
+        "action": "bg-danger-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "bg-info-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "bg-success-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "bg-warning-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "border-danger-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "border-info-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "border-success-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "border-warning-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "fg-danger-on-bg-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "fg-info-on-bg-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "fg-success-on-bg-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "fg-warning-on-bg-renamed"
+      },
+      "count": 1
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "rename-bui-css-tokens-v1-52": [
+    {
+      "cardinality": {
+        "action": "accent-bg-solid-disabled-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "accent-bg-solid-hover-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "accent-bg-solid-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "accent-fg-solid-disabled-renamed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "accent-fg-solid-renamed"
+      },
+      "count": 1
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "migrate-bui-props-to-intersection": [
+    {
+      "cardinality": {
+        "action": "css-selector-todo-added"
+      },
+      "count": 1
+    }
+  ]
+}

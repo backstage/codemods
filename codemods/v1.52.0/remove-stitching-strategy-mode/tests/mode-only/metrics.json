@@ -1,0 +1,10 @@
+{
+  "remove-stitching-strategy-mode": [
+    {
+      "cardinality": {
+        "action": "block-removed"
+      },
+      "count": 1
+    }
+  ]
+}

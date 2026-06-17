@@ -1,0 +1,6 @@
+catalog:
+  stitchingStrategy:
+    pollingInterval: { minutes: 1 }
+    stitchTimeout: { seconds: 30 }
+  rules:
+    - allow: [Component]
