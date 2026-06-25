@@ -11,6 +11,22 @@
         "action": "remix-dependency-added"
       },
       "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "version-fallback",
+        "package": "@backstage/ui",
+        "reason": "registry-unavailable"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "version-fallback",
+        "package": "@remixicon/react",
+        "reason": "registry-unavailable"
+      },
+      "count": 1
     }
   ]
 }

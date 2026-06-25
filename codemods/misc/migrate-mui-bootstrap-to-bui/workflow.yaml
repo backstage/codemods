@@ -4,14 +4,16 @@ version: '1'
 
 params:
   schema:
+    resolveLatestVersions:
+      type: boolean
+      default: true
+      description: 'Resolve @backstage/ui and @remixicon/react versions from the npm registry (latest release)'
     buiVersion:
       type: string
-      default: '^0.16.0'
-      description: 'Semver range for @backstage/ui (defaults match the MUI foundation migration recipe)'
+      description: 'Override the semver range for @backstage/ui instead of resolving latest from npm'
     remixVersion:
       type: string
-      default: '^4.9.0'
-      description: 'Semver range for @remixicon/react when @material-ui/icons is present'
+      description: 'Override the semver range for @remixicon/react instead of resolving latest from npm'
 
 nodes:
   - id: apply-transforms

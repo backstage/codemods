@@ -2,6 +2,8 @@ import type { Codemod } from 'codemod:ast-grep'
 import type JSON from 'codemod:ast-grep/langs/json'
 import { useMetricAtom } from 'codemod:metrics'
 
+import { resolveLatestCaretRange } from './resolve-latest-version.ts'
+
 const migrationMetric = useMetricAtom('migrate-mui-bootstrap-to-bui')
 
 const MUI_PACKAGES = ['@material-ui/core', '@material-ui/icons', '@material-ui/lab'] as const
@@ -9,13 +11,20 @@ const MUI_PACKAGES = ['@material-ui/core', '@material-ui/icons', '@material-ui/l
 const BUI_PACKAGE = '@backstage/ui'
 const REMIX_PACKAGE = '@remixicon/react'
 
-const DEFAULT_BUI_VERSION = '^0.16.0'
-const DEFAULT_REMIX_VERSION = '^4.9.0'
+/** Offline fallback when registry lookup is disabled or unavailable (e.g. jssg tests). */
+const FALLBACK_BUI_VERSION = '^0.16.0'
+const FALLBACK_REMIX_VERSION = '^4.9.0'
 
 interface PackageJson {
   dependencies?: Record<string, string>
   devDependencies?: Record<string, string>
   [key: string]: unknown
+}
+
+interface PackageJsonCodemodParams {
+  resolveLatestVersions?: boolean
+  buiVersion?: string
+  remixVersion?: string
 }
 
 function sortObjectKeys(obj: Record<string, string>): Record<string, string> {
@@ -54,12 +63,35 @@ function dependencySectionForMui(pkg: PackageJson): 'dependencies' | 'devDepende
   return 'devDependencies'
 }
 
+async function resolveDependencyVersion(
+  packageName: string,
+  params: PackageJsonCodemodParams,
+  paramOverride: string | undefined,
+  fallback: string,
+): Promise<string> {
+  if (paramOverride !== undefined) {
+    return paramOverride
+  }
+
+  if (params.resolveLatestVersions === false) {
+    migrationMetric.increment({ action: 'version-fallback', package: packageName, reason: 'disabled' })
+    return fallback
+  }
+
+  const latest = await resolveLatestCaretRange(packageName)
+  if (latest !== null) {
+    migrationMetric.increment({ action: 'version-resolved', package: packageName, version: latest })
+    return latest
+  }
+
+  migrationMetric.increment({ action: 'version-fallback', package: packageName, reason: 'registry-unavailable' })
+  return fallback
+}
+
 const transform: Codemod<JSON> = async (root, options) => {
   const rootNode = root.root()
   const source = normalizeSource(rootNode.text())
-
-  const buiVersion = options.params.buiVersion ?? DEFAULT_BUI_VERSION
-  const remixVersion = options.params.remixVersion ?? DEFAULT_REMIX_VERSION
+  const params = options.params as PackageJsonCodemodParams
 
   let pkg: PackageJson
   try {
@@ -72,6 +104,8 @@ const transform: Codemod<JSON> = async (root, options) => {
     return Promise.resolve(null)
   }
 
+  const buiVersion = await resolveDependencyVersion(BUI_PACKAGE, params, params.buiVersion, FALLBACK_BUI_VERSION)
+
   const section = dependencySectionForMui(pkg)
   const existingDeps = pkg[section] ?? {}
   let changed = false
@@ -83,6 +117,12 @@ const transform: Codemod<JSON> = async (root, options) => {
   }
 
   if (hasMuiIcons(pkg) && existingDeps[REMIX_PACKAGE] === undefined) {
+    const remixVersion = await resolveDependencyVersion(
+      REMIX_PACKAGE,
+      params,
+      params.remixVersion,
+      FALLBACK_REMIX_VERSION,
+    )
     existingDeps[REMIX_PACKAGE] = remixVersion
     changed = true
     migrationMetric.increment({ action: 'remix-dependency-added' })
