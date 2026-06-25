@@ -129,10 +129,12 @@ function addBuiImport(
       migrationMetric.increment({ action: 'import-added' })
       return true
     }
-  } else if (allImports.length > 0) {
-    const lastImport = allImports.at(-1)
-    if (lastImport) {
-      edits.push(lastImport.replace(`${lastImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
+  } else if (importNodesToRemove.length > 0) {
+    const [importNode] = importNodesToRemove
+    if (importNode) {
+      edits.push(importNode.replace(`import { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
+      migrationMetric.increment({ action: 'import-added' })
+      return true
     }
   }
 
@@ -267,6 +269,42 @@ function buildTagReplacement(info: ChipInfo): string {
   return `<Tag${propsStr} />`
 }
 
+function getNonWhitespaceJsxSiblings(parent: SgNode<TSX>): SgNode<TSX>[] {
+  const children: SgNode<TSX>[] = []
+  for (const child of parent.children()) {
+    const kind = child.kind()
+    if (kind === 'jsx_text' && child.text().trim().length === 0) {
+      continue
+    }
+    children.push(child)
+  }
+  return children
+}
+
+function findConsecutiveChipGroupsForParent(parent: SgNode<TSX>, chipLocalName: string): ChipInfo[][] {
+  const groups: ChipInfo[][] = []
+  let current: ChipInfo[] = []
+
+  for (const sibling of getNonWhitespaceJsxSiblings(parent)) {
+    const info = analyzeChipElement(sibling, chipLocalName)
+    if (info && !info.isInteractive) {
+      current.push(info)
+      continue
+    }
+
+    if (current.length >= 2) {
+      groups.push(current)
+    }
+    current = []
+  }
+
+  if (current.length >= 2) {
+    groups.push(current)
+  }
+
+  return groups
+}
+
 function transformChipElements(
   rootNode: SgNode<TSX>,
   chipLocalName: string,
@@ -291,25 +329,18 @@ function transformChipElements(
     }
   }
 
-  // Group chips by parent for TagGroup detection
-  const parentGroups = new Map<number, ChipInfo[]>()
+  // Group consecutive non-interactive chip siblings for TagGroup
+  const groupedElements = new Set<number>()
+  const processedParents = new Set<number>()
+
   for (const info of chipInfos) {
     const parent = info.element.parent()
-    if (!parent) {
+    if (!parent || processedParents.has(parent.id())) {
       continue
     }
-    const parentId = parent.id()
-    const group = parentGroups.get(parentId) ?? []
-    group.push(info)
-    parentGroups.set(parentId, group)
-  }
+    processedParents.add(parent.id())
 
-  // Track which elements are part of a group
-  const groupedElements = new Set<number>()
-
-  for (const [, group] of parentGroups) {
-    // Only group if 2+ chips are siblings AND all are plain display chips
-    if (group.length >= 2 && group.every((c) => !c.isInteractive)) {
+    for (const group of findConsecutiveChipGroupsForParent(parent, chipLocalName)) {
       needsTagGroup = true
       const tags = group.map((c) => buildTagReplacement(c))
       const tagGroupContent = tags.join('\n  ')

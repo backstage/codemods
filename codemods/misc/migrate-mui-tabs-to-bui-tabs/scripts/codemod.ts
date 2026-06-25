@@ -178,10 +178,12 @@ function addBuiImport(
       migrationMetric.increment({ action: 'import-added' })
       return true
     }
-  } else if (allImports.length > 0) {
-    const lastImport = allImports.at(-1)
-    if (lastImport) {
-      edits.push(lastImport.replace(`${lastImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
+  } else if (importNodesToRemove.length > 0) {
+    const [importNode] = importNodesToRemove
+    if (importNode) {
+      edits.push(importNode.replace(`import { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
+      migrationMetric.increment({ action: 'import-added' })
+      return true
     }
   }
 
@@ -338,8 +340,8 @@ function rewriteTabsOnChangeHandler(attr: SgNode<TSX>): string | null {
     return `{key => ${replaceIdentifier(bodyText, valueName, 'key')}}`
   }
 
-  const rewrittenBody = replaceIdentifier(replaceIdentifier(bodyText, eventName, 'undefined'), valueName, 'key')
-  return `{(key) => ${rewrittenBody}}`
+  // Handler references the event param — cannot safely rewrite without breaking semantics
+  return null
 }
 
 function findTabListOnChange(element: SgNode<TSX>, tabListLocalName: string | undefined): SgNode<TSX> | null {
@@ -577,10 +579,18 @@ function transformTabElements(
       const tabListOnChange = findTabListOnChange(el, tabListLocalName)
       if (tabListOnChange) {
         const rewritten = rewriteTabsOnChangeHandler(tabListOnChange)
-        if (rewritten !== null) {
-          newProps.push(`onSelectionChange=${rewritten}`)
-          migrationMetric.increment({ action: 'onChange-rewritten' })
+        if (rewritten === null) {
+          preserveImport = true
+          edits.push(
+            el.replace(
+              `<>{/* TODO(backstage-codemod): verify custom tab orientation or selection logic manually (event-referenced-onChange) */}\n${el.text()}</>`,
+            ),
+          )
+          migrationMetric.increment({ action: 'todo-inserted', reason: 'event-referenced-onChange' })
+          continue
         }
+        newProps.push(`onSelectionChange=${rewritten}`)
+        migrationMetric.increment({ action: 'onChange-rewritten' })
       }
 
       const propsStr = newProps.length > 0 ? ` ${newProps.join(' ')}` : ''
@@ -645,10 +655,18 @@ function transformTabElements(
       const onChangeAttr = getPropAttr(opening, 'onChange')
       if (onChangeAttr) {
         const rewritten = rewriteTabsOnChangeHandler(onChangeAttr)
-        if (rewritten !== null) {
-          newTabsProps.push(`onSelectionChange=${rewritten}`)
-          migrationMetric.increment({ action: 'onChange-rewritten' })
+        if (rewritten === null) {
+          preserveImport = true
+          edits.push(
+            el.replace(
+              `<>{/* TODO(backstage-codemod): verify custom tab orientation or selection logic manually (event-referenced-onChange) */}\n${el.text()}</>`,
+            ),
+          )
+          migrationMetric.increment({ action: 'todo-inserted', reason: 'event-referenced-onChange' })
+          continue
         }
+        newTabsProps.push(`onSelectionChange=${rewritten}`)
+        migrationMetric.increment({ action: 'onChange-rewritten' })
       }
 
       const tabsPropsStr = newTabsProps.length > 0 ? ` ${newTabsProps.join(' ')}` : ''

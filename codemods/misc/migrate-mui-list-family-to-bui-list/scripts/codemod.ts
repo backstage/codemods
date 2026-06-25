@@ -161,10 +161,12 @@ function addBuiImport(
       migrationMetric.increment({ action: 'import-added' })
       return true
     }
-  } else if (allImports.length > 0) {
-    const lastImport = allImports.at(-1)
-    if (lastImport) {
-      edits.push(lastImport.replace(`${lastImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
+  } else if (importNodesToRemove.length > 0) {
+    const [importNode] = importNodesToRemove
+    if (importNode) {
+      edits.push(importNode.replace(`import { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
+      migrationMetric.increment({ action: 'import-added' })
+      return true
     }
   }
 
@@ -237,6 +239,14 @@ function getNonWhitespaceChildren(element: SgNode<TSX>): SgNode<TSX>[] {
     children.push(child)
   }
   return children
+}
+
+function formatIconProp(iconContent: string): string {
+  const trimmed = iconContent.trim()
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    return `icon=${trimmed}`
+  }
+  return `icon={${trimmed}}`
 }
 
 interface ListItemAnalysis {
@@ -446,7 +456,7 @@ function transformListElements(
       const props: string[] = []
 
       if (analysis.iconContent) {
-        props.push(`icon={${analysis.iconContent}}`)
+        props.push(formatIconProp(analysis.iconContent))
       }
 
       if (analysis.secondaryText !== null) {

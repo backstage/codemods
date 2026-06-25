@@ -1,7 +1,10 @@
-
+import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
-import { Menu, MenuItem, MenuTrigger } from '@backstage/ui';
 
 const MyComponent = ({ open, onClose }: { open: boolean; onClose: () => void }) => (
-  <MenuTrigger isOpen={open} onOpenChange={isOpen => !isOpen && onClose()}><Menu><MenuItem onAction={handleEdit}>Edit</MenuItem><MenuItem onAction={handleDelete}>Delete</MenuItem></Menu></MenuTrigger>
+  <>{/* TODO(backstage-codemod): finish menu host migration manually (no-trigger-element) */}
+<Menu open={open} onClose={onClose}>
+    <MenuItem onClick={handleEdit}>Edit</MenuItem>
+    <MenuItem onClick={handleDelete}>Delete</MenuItem>
+  </Menu></>
 );
