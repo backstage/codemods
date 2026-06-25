@@ -372,9 +372,13 @@ function transformCheckboxGroupChildren(groupElement: SgNode<TSX>, localNames: M
           return null
         }
         const props: string[] = []
-        const checkedRaw = getPropRawValue(controlEl, 'checked')
-        if (checkedRaw !== null) {
-          props.push(`isSelected=${checkedRaw}`)
+        if (hasProp(controlEl, 'checked')) {
+          const checkedRaw = getPropRawValue(controlEl, 'checked')
+          if (checkedRaw !== null && checkedRaw !== '') {
+            props.push(`isSelected=${checkedRaw}`)
+          } else {
+            props.push('isSelected')
+          }
         }
         const onChangeRaw = getPropRawValue(controlEl, 'onChange')
         if (onChangeRaw !== null) {

@@ -222,6 +222,11 @@ function hasProp(opening: SgNode<TSX>, propName: string): boolean {
   return getPropAttr(opening, propName) !== null
 }
 
+function getParamName(paramNode: SgNode<TSX>): string {
+  const ident = paramNode.find({ rule: { kind: 'identifier' } })
+  return ident?.text() ?? paramNode.text().replace(/:.*$/, '').trim()
+}
+
 /**
  * Check if the onChange handler is a trivial arrow `(_e, val) => ...`
  * where the event param is unused (starts with _).
@@ -266,12 +271,12 @@ function tryRewriteOnChangeHandler(attr: SgNode<TSX>): string | null {
   }
 
   // Event param must start with _ to indicate unused
-  const eventName = eventParam.text()
+  const eventName = getParamName(eventParam)
   if (!eventName.startsWith('_')) {
     return null
   }
 
-  const valueText = valueParam.text()
+  const valueText = getParamName(valueParam)
   const body = arrow.field('body')
   if (!body) {
     return null

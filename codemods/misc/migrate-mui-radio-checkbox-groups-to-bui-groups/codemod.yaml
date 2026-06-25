@@ -11,7 +11,7 @@ workflow: 'workflow.yaml'
 targets:
   languages: ['tsx', 'ts']
 
-keywords: ['backstage', 'migration', 'mui', 'bui', 'radio', 'checkbox', 'groups', 'bui']
+keywords: ['backstage', 'migration', 'mui', 'bui', 'radio', 'checkbox', 'groups']
 
 registry:
   access: 'public'
