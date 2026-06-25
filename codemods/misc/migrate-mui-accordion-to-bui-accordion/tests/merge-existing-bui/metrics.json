@@ -1,0 +1,34 @@
+{
+  "migrate-mui-accordion-to-bui-accordion": [
+    {
+      "cardinality": {
+        "action": "accordion-migrated"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "details-migrated"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-merged"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-removed"
+      },
+      "count": 3
+    },
+    {
+      "cardinality": {
+        "action": "summary-migrated"
+      },
+      "count": 1
+    }
+  ]
+}

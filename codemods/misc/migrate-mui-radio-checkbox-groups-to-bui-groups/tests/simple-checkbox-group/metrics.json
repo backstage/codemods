@@ -1,0 +1,28 @@
+{
+  "migrate-mui-radio-checkbox-groups-to-bui-groups": [
+    {
+      "cardinality": {
+        "action": "checkbox-group-migrated"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "checkbox-option-migrated"
+      },
+      "count": 2
+    },
+    {
+      "cardinality": {
+        "action": "import-added"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-removed"
+      },
+      "count": 3
+    }
+  ]
+}
