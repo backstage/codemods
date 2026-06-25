@@ -212,8 +212,9 @@ function getSimpleHandlerFromProp(opening: SgNode<TSX>, propName: string): strin
       children.push(child)
     }
   }
-  if (children.length === 1 && children[0]!.is('identifier')) {
-    return children[0].text()
+  const [onlyChild] = children
+  if (children.length === 1 && onlyChild?.is('identifier')) {
+    return onlyChild.text()
   }
   return null
 }
@@ -331,7 +332,10 @@ function transformTooltipElements(rootNode: SgNode<TSX>, tooltipLocalName: strin
       continue
     }
 
-    const child = children[0]!
+    const [child] = children
+    if (!child) {
+      continue
+    }
     const childText = child.text()
 
     let tooltipContent: string
@@ -364,29 +368,32 @@ function transformTooltipElements(rootNode: SgNode<TSX>, tooltipLocalName: strin
   return migrated
 }
 
-const transform: Codemod<TSX> = async (root) => {
+const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
   const { tooltipLocalName, importNodesToRemove } = collectTooltipImports(rootNode)
 
   if (!tooltipLocalName) {
-    return null
+    return Promise.resolve(null)
   }
 
   const migrated = transformTooltipElements(rootNode, tooltipLocalName, edits)
 
   if (!migrated) {
-    return edits.length > 0 ? rootNode.commitEdits(edits) : null
+    return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
   }
 
   const buiNames = ['Tooltip', 'TooltipTrigger']
   const existingBui = findImportStatementsFrom(rootNode, BUI_SOURCE)
 
   if (existingBui.length === 0 && importNodesToRemove.length === 1) {
-    edits.push(importNodesToRemove[0]!.replace(`import { ${buiNames.join(', ')} } from '${BUI_SOURCE}';`))
-    migrationMetric.increment({ action: 'import-added' })
-    migrationMetric.increment({ action: 'import-removed' })
+    const [importToReplace] = importNodesToRemove
+    if (importToReplace) {
+      edits.push(importToReplace.replace(`import { ${buiNames.join(', ')} } from '${BUI_SOURCE}';`))
+      migrationMetric.increment({ action: 'import-added' })
+      migrationMetric.increment({ action: 'import-removed' })
+    }
   } else {
     addBuiImport(rootNode, buiNames, edits)
     for (const imp of importNodesToRemove) {
@@ -395,7 +402,7 @@ const transform: Codemod<TSX> = async (root) => {
     }
   }
 
-  return edits.length > 0 ? rootNode.commitEdits(edits) : null
+  return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }
 
 export default transform

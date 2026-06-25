@@ -344,14 +344,14 @@ function transformAlertElements(
   }
 }
 
-const transform: Codemod<TSX> = async (root) => {
+const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
   const { alertLocalName, alertTitleLocalName, importNodesToRemove } = collectAlertImports(rootNode)
 
   if (!alertLocalName) {
-    return null
+    return Promise.resolve(null)
   }
 
   for (const imp of importNodesToRemove) {
@@ -362,7 +362,7 @@ const transform: Codemod<TSX> = async (root) => {
   buildBuiImportEdit(rootNode, edits)
   transformAlertElements(rootNode, alertLocalName, alertTitleLocalName, edits)
 
-  return edits.length > 0 ? rootNode.commitEdits(edits) : null
+  return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }
 
 export default transform

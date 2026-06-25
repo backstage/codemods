@@ -326,14 +326,14 @@ function transformButtonElements(rootNode: SgNode<TSX>, buttonLocalName: string,
   }
 }
 
-const transform: Codemod<TSX> = async (root) => {
+const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
   const { buttonLocalName, importNodesToRemove } = collectButtonImports(rootNode)
 
   if (!buttonLocalName) {
-    return null
+    return Promise.resolve(null)
   }
 
   // Remove MUI imports
@@ -348,7 +348,7 @@ const transform: Codemod<TSX> = async (root) => {
   // Transform JSX elements
   transformButtonElements(rootNode, buttonLocalName, edits)
 
-  return edits.length > 0 ? rootNode.commitEdits(edits) : null
+  return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }
 
 export default transform
