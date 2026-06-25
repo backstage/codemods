@@ -40,6 +40,16 @@ Run the [`migration-recipe`](./codemods/v1.51.0/migration-recipe) to apply every
 
 Older versions are available in the [`codemods/`](./codemods) directory.
 
+### misc
+
+| Codemod                                                                                          | Description                                       |
+| ------------------------------------------------------------------------------------------------ | ------------------------------------------------- |
+| [migrate-mui-alert-to-bui-alert](./codemods/misc/migrate-mui-alert-to-bui-alert)                 | MUI 4 to BUI: Replace MUI Alert with BUI Alert    |
+| [migrate-mui-button-to-bui-button](./codemods/misc/migrate-mui-button-to-bui-button)             | MUI 4 to BUI: Replace MUI Button with BUI Button  |
+| [migrate-mui-icon-button-to-button-icon](./codemods/misc/migrate-mui-icon-button-to-button-icon) | MUI 4 to BUI: Replace IconButton with ButtonIcon  |
+| [migrate-mui-tooltip-to-bui-tooltip](./codemods/misc/migrate-mui-tooltip-to-bui-tooltip)         | MUI 4 to BUI: Replace Tooltip with TooltipTrigger |
+| [migrate-mui-typography-to-text](./codemods/misc/migrate-mui-typography-to-text)                 | MUI 4 to BUI: Replace Typography with Text        |
+
 <!-- CODEMODS_END -->
 
 ## Usage
