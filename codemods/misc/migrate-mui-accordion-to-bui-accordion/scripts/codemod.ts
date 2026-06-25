@@ -216,8 +216,9 @@ function extractSummaryTitle(summaryElement: SgNode<TSX>): { title: string | nul
   }
 
   // Single text node
-  if (children.length === 1 && children[0]!.kind() === 'jsx_text') {
-    const text = children[0]!.text().trim()
+  const [firstChild] = children
+  if (children.length === 1 && firstChild?.kind() === 'jsx_text') {
+    const text = firstChild.text().trim()
     return { title: text.length > 0 ? text : null, isComplex: false }
   }
 
@@ -232,11 +233,12 @@ function extractSummaryTitle(summaryElement: SgNode<TSX>): { title: string | nul
 
   // Single Typography element wrapping text
   if (children.length === 1) {
-    const child = children[0]!
-    if (child.kind() === 'jsx_element') {
+    const child = firstChild
+    if (child?.kind() === 'jsx_element') {
       const innerChildren = getNonWhitespaceChildren(child)
-      if (innerChildren.length === 1 && innerChildren[0]!.kind() === 'jsx_text') {
-        const text = innerChildren[0]!.text().trim()
+      const [innerChild] = innerChildren
+      if (innerChildren.length === 1 && innerChild?.kind() === 'jsx_text') {
+        const text = innerChild.text().trim()
         if (text.length > 0) {
           return { title: text, isComplex: false }
         }
@@ -394,14 +396,14 @@ function transformAccordionElements(rootNode: SgNode<TSX>, localNames: Map<strin
   }
 }
 
-const transform: Codemod<TSX> = async (root) => {
+const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
   const { localNames, importNodesToRemove } = collectAccordionImports(rootNode)
 
   if (localNames.size === 0) {
-    return null
+    return Promise.resolve(null)
   }
 
   // Remove MUI imports
@@ -427,7 +429,7 @@ const transform: Codemod<TSX> = async (root) => {
   // Transform elements
   transformAccordionElements(rootNode, localNames, edits)
 
-  return edits.length > 0 ? rootNode.commitEdits(edits) : null
+  return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }
 
 export default transform

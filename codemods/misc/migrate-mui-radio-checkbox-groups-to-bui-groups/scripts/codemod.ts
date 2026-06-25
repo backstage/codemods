@@ -447,7 +447,7 @@ function transformGroupElements(rootNode: SgNode<TSX>, localNames: Map<string, s
   return usedBuiNames
 }
 
-const transform: Codemod<TSX> = async (root) => {
+const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
@@ -457,7 +457,7 @@ const transform: Codemod<TSX> = async (root) => {
     (v) => v === 'RadioGroup' || v === 'FormGroup' || v === 'FormControlLabel',
   )
   if (!hasTarget) {
-    return null
+    return Promise.resolve(null)
   }
 
   for (const imp of importNodesToRemove) {
@@ -471,7 +471,7 @@ const transform: Codemod<TSX> = async (root) => {
     addBuiImport(rootNode, [...usedBuiNames], edits)
   }
 
-  return edits.length > 0 ? rootNode.commitEdits(edits) : null
+  return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }
 
 export default transform
