@@ -9,7 +9,7 @@ nodes:
     steps:
       - name: 'Scan source files for remaining @material-ui/* imports'
         js-ast-grep:
-          js_file: scripts/scan-mui-usage.ts
+          js_file: scripts/codemod.ts
           language: 'tsx'
           semantic_analysis: file
           include:
@@ -19,7 +19,7 @@ nodes:
             - '**/node_modules/**'
       - name: 'Remove @material-ui/* packages when no longer imported in the package'
         js-ast-grep:
-          js_file: scripts/codemod.ts
+          js_file: scripts/package-json-codemod.ts
           language: 'json'
           include:
             - '**/package.json'

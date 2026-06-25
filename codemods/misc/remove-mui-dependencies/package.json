@@ -4,7 +4,7 @@
   "description": "MUI 4 to BUI: Remove unused @material-ui/* dependencies from package.json",
   "type": "module",
   "scripts": {
-    "test": "yarn exec codemod jssg test -l tsx ./scripts/scan-mui-usage.ts ./tests && yarn exec codemod jssg test -l json --allow-fs ./scripts/codemod.ts ./tests && yarn exec codemod workflow validate -w workflow.yaml"
+    "test": "yarn exec codemod jssg test -l tsx ./scripts/codemod.ts ./tests && yarn exec codemod jssg test -l json ./scripts/package-json-codemod.ts ./tests && yarn exec codemod workflow validate -w workflow.yaml"
   },
   "devDependencies": {
     "@codemod.com/jssg-types": "1.6.2",
