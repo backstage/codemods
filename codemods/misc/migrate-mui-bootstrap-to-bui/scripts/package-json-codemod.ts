@@ -9,9 +9,8 @@ const MUI_PACKAGES = ['@material-ui/core', '@material-ui/icons', '@material-ui/l
 const BUI_PACKAGE = '@backstage/ui'
 const REMIX_PACKAGE = '@remixicon/react'
 
-/** Match semver caret ranges used by other Backstage codemods (e.g. add-jest-peer-dependency). */
-const BUI_VERSION = '^0.16.0'
-const REMIX_VERSION = '^4.9.0'
+const DEFAULT_BUI_VERSION = '^0.16.0'
+const DEFAULT_REMIX_VERSION = '^4.9.0'
 
 interface PackageJson {
   dependencies?: Record<string, string>
@@ -55,9 +54,12 @@ function dependencySectionForMui(pkg: PackageJson): 'dependencies' | 'devDepende
   return 'devDependencies'
 }
 
-const transform: Codemod<JSON> = (root) => {
+const transform: Codemod<JSON> = async (root, options) => {
   const rootNode = root.root()
   const source = normalizeSource(rootNode.text())
+
+  const buiVersion = options.params.buiVersion ?? DEFAULT_BUI_VERSION
+  const remixVersion = options.params.remixVersion ?? DEFAULT_REMIX_VERSION
 
   let pkg: PackageJson
   try {
@@ -75,13 +77,13 @@ const transform: Codemod<JSON> = (root) => {
   let changed = false
 
   if (existingDeps[BUI_PACKAGE] === undefined) {
-    existingDeps[BUI_PACKAGE] = BUI_VERSION
+    existingDeps[BUI_PACKAGE] = buiVersion
     changed = true
     migrationMetric.increment({ action: 'bui-dependency-added' })
   }
 
   if (hasMuiIcons(pkg) && existingDeps[REMIX_PACKAGE] === undefined) {
-    existingDeps[REMIX_PACKAGE] = REMIX_VERSION
+    existingDeps[REMIX_PACKAGE] = remixVersion
     changed = true
     migrationMetric.increment({ action: 'remix-dependency-added' })
   }

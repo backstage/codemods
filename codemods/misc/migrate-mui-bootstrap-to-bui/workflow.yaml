@@ -2,6 +2,17 @@
 
 version: '1'
 
+params:
+  schema:
+    buiVersion:
+      type: string
+      default: '^0.16.0'
+      description: 'Semver range for @backstage/ui (defaults match the MUI foundation migration recipe)'
+    remixVersion:
+      type: string
+      default: '^4.9.0'
+      description: 'Semver range for @remixicon/react when @material-ui/icons is present'
+
 nodes:
   - id: apply-transforms
     name: 'Apply AST Transformations'

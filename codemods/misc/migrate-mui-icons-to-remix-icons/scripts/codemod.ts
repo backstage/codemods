@@ -327,7 +327,10 @@ function transformIconJsx(rootNode: SgNode<TSX>, iconLocalNames: Set<string>, ed
       newProps.push(`size={${sizeNum}}`)
     }
 
-    const droppedProps = new Set(['fontSize', 'color'])
+    const droppedProps = new Set<string>()
+    if (sizeNum) {
+      droppedProps.add('fontSize')
+    }
     const allAttrs = el.findAll({ rule: { kind: 'jsx_attribute' } })
     for (const attr of allAttrs) {
       const propIdent = attr.find({ rule: { kind: 'property_identifier' } })

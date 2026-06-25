@@ -20,6 +20,26 @@ const BOX_FLEX_PROP_MAP: Record<string, string> = {
 /** Box props that trigger a TODO — polymorphic or complex usage. */
 const BOX_TODO_PROPS = new Set(['component', 'clone', 'css', 'sx', 'classes'])
 
+/** MUI spacing shorthand props — no deterministic BUI mapping yet. */
+const BOX_SPACING_PROPS = new Set([
+  'p',
+  'px',
+  'py',
+  'pt',
+  'pb',
+  'pl',
+  'pr',
+  'm',
+  'mx',
+  'my',
+  'mt',
+  'mb',
+  'ml',
+  'mr',
+  'padding',
+  'margin',
+])
+
 /** Paper props that trigger a TODO. */
 const PAPER_TODO_PROPS = new Set(['variant', 'elevation', 'square', 'component', 'classes'])
 
@@ -162,13 +182,10 @@ function removeUnusedLayoutImports(
       continue
     }
 
-    if (
-      defaultName &&
+    const defaultIsUnusedLayout =
+      defaultName !== null &&
       localNames.has(defaultName) &&
       !isMuiComponentStillUsed(rootNode, defaultName, migratedLocalNames)
-    ) {
-      // Default + named imports: drop the default binding when unused; trim named below.
-    }
 
     const remainingSpecifiers = allSpecifiers.filter((spec) => {
       const identifiers = spec.findAll({
@@ -186,10 +203,17 @@ function removeUnusedLayoutImports(
       return isMuiComponentStillUsed(rootNode, localName, migratedLocalNames)
     })
 
-    if (remainingSpecifiers.length === 0) {
+    const importSource = imp.find({ rule: { kind: 'string_fragment' } })?.text()
+
+    if (remainingSpecifiers.length === 0 && (defaultIsUnusedLayout || !defaultName)) {
       edits.push(imp.replace(''))
       removedImportIds.add(imp.id())
       migrationMetric.increment({ action: 'import-removed' })
+    } else if (defaultIsUnusedLayout && remainingSpecifiers.length > 0 && importSource) {
+      edits.push(
+        imp.replace(`import { ${remainingSpecifiers.map((s) => s.text()).join(', ')} } from '${importSource}';`),
+      )
+      migrationMetric.increment({ action: 'import-trimmed' })
     } else if (remainingSpecifiers.length < allSpecifiers.length) {
       const namedImports = imp.find({ rule: { kind: 'named_imports' } })
       if (namedImports) {
@@ -330,6 +354,14 @@ function isFlexBox(opening: SgNode<TSX>): boolean {
 }
 
 function transformBoxElement(el: SgNode<TSX>, opening: SgNode<TSX>, edits: Edit[]): string | null {
+  for (const prop of BOX_SPACING_PROPS) {
+    if (hasProp(opening, prop)) {
+      edits.push(el.replace(`{/* TODO(backstage-codemod): verify BUI layout mapping manually */}\n${el.text()}`))
+      migrationMetric.increment({ action: 'todo-inserted', reason: 'box-spacing' })
+      return null
+    }
+  }
+
   // Check for TODO-triggering props
   for (const prop of BOX_TODO_PROPS) {
     if (hasProp(opening, prop)) {
@@ -377,15 +409,6 @@ function transformBoxElement(el: SgNode<TSX>, opening: SgNode<TSX>, edits: Edit[
     }
     const propName = propIdent.text()
     if (handledProps.has(propName)) {
-      continue
-    }
-    // Skip MUI-only spacing shorthand props
-    if (
-      ['p', 'px', 'py', 'pt', 'pb', 'pl', 'pr', 'm', 'mx', 'my', 'mt', 'mb', 'ml', 'mr', 'padding', 'margin'].includes(
-        propName,
-      )
-    ) {
-      migrationMetric.increment({ action: 'spacing-prop-dropped', prop: propName })
       continue
     }
     newProps.push(attr.text())
@@ -574,6 +597,14 @@ function buildGridItemProps(opening: SgNode<TSX>): { props: string[]; isTodo: bo
   return { props, isTodo: false }
 }
 
+function replaceJsxOpeningTag(opening: SgNode<TSX>, tagName: string, propsStr: string, edits: Edit[]): void {
+  edits.push(opening.replace(`<${tagName}${propsStr}>`))
+}
+
+function replaceJsxClosingTag(closing: SgNode<TSX>, tagName: string, edits: Edit[]): void {
+  edits.push(closing.replace(`</${tagName}>`))
+}
+
 function transformGridElement(el: SgNode<TSX>, opening: SgNode<TSX>, edits: Edit[]): string | null {
   for (const prop of GRID_TODO_PROPS) {
     if (hasProp(opening, prop)) {
@@ -607,8 +638,11 @@ function transformGridElement(el: SgNode<TSX>, opening: SgNode<TSX>, edits: Edit
     if (isSelfClosing) {
       edits.push(el.replace(`<Grid.Root${propsStr} />`))
     } else {
-      const children = getChildContent(el)
-      edits.push(el.replace(`<Grid.Root${propsStr}>${children}</Grid.Root>`))
+      replaceJsxOpeningTag(opening, 'Grid.Root', propsStr, edits)
+      const closing = el.children().find((child) => child.kind() === 'jsx_closing_element')
+      if (closing) {
+        replaceJsxClosingTag(closing, 'Grid.Root', edits)
+      }
     }
 
     migrationMetric.increment({ action: 'grid-container-to-root' })
@@ -627,8 +661,11 @@ function transformGridElement(el: SgNode<TSX>, opening: SgNode<TSX>, edits: Edit
   if (isSelfClosing) {
     edits.push(el.replace(`<Grid.Item${propsStr} />`))
   } else {
-    const children = getChildContent(el)
-    edits.push(el.replace(`<Grid.Item${propsStr}>${children}</Grid.Item>`))
+    replaceJsxOpeningTag(opening, 'Grid.Item', propsStr, edits)
+    const closing = el.children().find((child) => child.kind() === 'jsx_closing_element')
+    if (closing) {
+      replaceJsxClosingTag(closing, 'Grid.Item', edits)
+    }
   }
 
   migrationMetric.increment({ action: 'grid-item-migrated' })

@@ -57,6 +57,19 @@ function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode
   })
 }
 
+function getDefaultImportName(imp: SgNode<TSX>): string | null {
+  const clause = imp.find({ rule: { kind: 'import_clause' } })
+  if (!clause) {
+    return null
+  }
+  for (const child of clause.children()) {
+    if (child.is('identifier')) {
+      return child.text()
+    }
+  }
+  return null
+}
+
 function getNamedImportLocalName(imp: SgNode<TSX>, targetName: string): string | null {
   for (const spec of imp.findAll({ rule: { kind: 'import_specifier' } })) {
     const identifiers = spec.findAll({
@@ -98,6 +111,10 @@ function collectStylesImports(rootNode: SgNode<TSX>): StylesImportInfo {
       }
 
       if (ms || cs || ws) {
+        if (getDefaultImportName(imp)) {
+          continue
+        }
+
         const allSpecifiers = imp.findAll({ rule: { kind: 'import_specifier' } })
         const targetCount = (ms ? 1 : 0) + (cs ? 1 : 0) + (ws ? 1 : 0)
         if (targetCount >= allSpecifiers.length) {
@@ -542,7 +559,7 @@ const transform: Codemod<TSX> = async (root) => {
     const survivingImports = rootNode
       .findAll({ rule: { kind: 'import_statement' } })
       .filter((imp) => !importsToRemoveIds.has(imp.id()))
-    const cssImportLine = `import styles from '${cssModuleImportPath}';\n`
+    const cssImportLine = `import styles from '${cssModuleImportPath}';`
 
     if (!hasCssModuleImport(rootNode, cssModuleImportPath)) {
       if (survivingImports.length > 0) {
@@ -561,7 +578,7 @@ const transform: Codemod<TSX> = async (root) => {
           edits.push({
             startPos: firstNode.range().start.index,
             endPos: firstNode.range().start.index,
-            insertedText: cssImportLine,
+            insertedText: `${cssImportLine}\n`,
           })
         }
       }
