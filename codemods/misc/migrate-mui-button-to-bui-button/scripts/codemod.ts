@@ -98,7 +98,7 @@ function collectButtonImports(rootNode: SgNode<TSX>): {
   return { buttonLocalName, importNodesToRemove }
 }
 
-function addButtonToBuiImport(rootNode: SgNode<TSX>, edits: Edit[]): void {
+function addButtonToBuiImport(rootNode: SgNode<TSX>, importNodesToRemove: SgNode<TSX>[], edits: Edit[]): boolean {
   const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
   const existingImport = existingImports[0] ?? null
 
@@ -128,16 +128,38 @@ function addButtonToBuiImport(rootNode: SgNode<TSX>, edits: Edit[]): void {
         migrationMetric.increment({ action: 'import-merged' })
       }
     }
-  } else {
-    const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
-    if (allImports.length > 0) {
-      const lastImport = allImports.at(-1)
-      if (lastImport) {
-        edits.push(lastImport.replace(`${lastImport.text()}\nimport { Button } from '${BUI_SOURCE}';`))
-      }
-    }
-    migrationMetric.increment({ action: 'import-added' })
+    return false
   }
+
+  const removableIds = new Set(importNodesToRemove.map((imp) => imp.id()))
+  const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
+  const anchorImport = [...allImports].reverse().find((imp) => !removableIds.has(imp.id())) ?? null
+
+  if (anchorImport) {
+    edits.push(anchorImport.replace(`${anchorImport.text()}\nimport { Button } from '${BUI_SOURCE}';`))
+  } else if (importNodesToRemove.length === 1) {
+    const [importNode] = importNodesToRemove
+    if (importNode) {
+      edits.push(importNode.replace(`import { Button } from '${BUI_SOURCE}';`))
+      migrationMetric.increment({ action: 'import-added' })
+      return true
+    }
+  } else if (allImports.length > 0) {
+    const lastImport = allImports.at(-1)
+    if (lastImport) {
+      edits.push(lastImport.replace(`${lastImport.text()}\nimport { Button } from '${BUI_SOURCE}';`))
+    }
+  }
+
+  migrationMetric.increment({ action: 'import-added' })
+  return false
+}
+
+function withTodoComment(comment: string, elementText: string): string {
+  return `<>
+  ${comment}
+  ${elementText}
+</>`
 }
 
 function getElementName(opening: SgNode<TSX>): string | null {
@@ -196,7 +218,13 @@ function isPropDynamic(opening: SgNode<TSX>, propName: string): boolean {
   return attr.find({ rule: { kind: 'jsx_expression' } }) !== null
 }
 
-function transformButtonElements(rootNode: SgNode<TSX>, buttonLocalName: string, edits: Edit[]): void {
+function transformButtonElements(
+  rootNode: SgNode<TSX>,
+  buttonLocalName: string,
+  edits: Edit[],
+): { preserveImport: boolean; migrated: boolean } {
+  let preserveImport = false
+  let migrated = false
   const jsxElements = rootNode.findAll({
     rule: {
       any: [{ kind: 'jsx_element' }, { kind: 'jsx_self_closing_element' }],
@@ -244,9 +272,13 @@ function transformButtonElements(rootNode: SgNode<TSX>, buttonLocalName: string,
     }
 
     if (needsTodo) {
+      preserveImport = true
       edits.push(
         el.replace(
-          `{/* TODO(backstage-codemod): verify Button intent manually (${todoReasons.join(', ')}) */}\n${el.text()}`,
+          withTodoComment(
+            `{/* TODO(backstage-codemod): verify Button intent manually (${todoReasons.join(', ')}) */}`,
+            el.text(),
+          ),
         ),
       )
       migrationMetric.increment({ action: 'todo-inserted', reason: todoReasons.join(', ') })
@@ -264,8 +296,14 @@ function transformButtonElements(rootNode: SgNode<TSX>, buttonLocalName: string,
         newProps.push(`variant="${buiVariant}"`)
       } else {
         // Unknown static variant — keep as-is with TODO
+        preserveImport = true
         edits.push(
-          el.replace(`{/* TODO(backstage-codemod): verify Button intent manually (unknown-variant) */}\n${el.text()}`),
+          el.replace(
+            withTodoComment(
+              '{/* TODO(backstage-codemod): verify Button intent manually (unknown-variant) */}',
+              el.text(),
+            ),
+          ),
         )
         migrationMetric.increment({ action: 'todo-inserted', reason: 'unknown-variant' })
         continue
@@ -322,8 +360,11 @@ function transformButtonElements(rootNode: SgNode<TSX>, buttonLocalName: string,
       edits.push(el.replace(`<Button${propsStr}>${children}</Button>`))
     }
 
+    migrated = true
     migrationMetric.increment({ action: 'button-migrated', variant: variantValue ?? 'default' })
   }
+
+  return { preserveImport, migrated }
 }
 
 const transform: Codemod<TSX> = (root) => {
@@ -336,17 +377,23 @@ const transform: Codemod<TSX> = (root) => {
     return Promise.resolve(null)
   }
 
-  // Remove MUI imports
-  for (const imp of importNodesToRemove) {
-    edits.push(imp.replace(''))
-    migrationMetric.increment({ action: 'import-removed' })
+  const { preserveImport, migrated } = transformButtonElements(rootNode, buttonLocalName, edits)
+
+  let replacedImport = false
+  if (migrated) {
+    replacedImport = addButtonToBuiImport(rootNode, importNodesToRemove, edits)
   }
 
-  // Add BUI import
-  addButtonToBuiImport(rootNode, edits)
-
-  // Transform JSX elements
-  transformButtonElements(rootNode, buttonLocalName, edits)
+  if (!preserveImport) {
+    for (const imp of importNodesToRemove) {
+      if (replacedImport && imp.id() === importNodesToRemove[0]?.id()) {
+        migrationMetric.increment({ action: 'import-removed' })
+        continue
+      }
+      edits.push(imp.replace(''))
+      migrationMetric.increment({ action: 'import-removed' })
+    }
+  }
 
   return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }

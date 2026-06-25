@@ -117,7 +117,7 @@ function collectAlertImports(rootNode: SgNode<TSX>): {
   return { alertLocalName, alertTitleLocalName, importNodesToRemove }
 }
 
-function buildBuiImportEdit(rootNode: SgNode<TSX>, edits: Edit[]): void {
+function buildBuiImportEdit(rootNode: SgNode<TSX>, importNodesToRemove: SgNode<TSX>[], edits: Edit[]): boolean {
   const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
   const existingImport = existingImports[0] ?? null
 
@@ -147,16 +147,38 @@ function buildBuiImportEdit(rootNode: SgNode<TSX>, edits: Edit[]): void {
         migrationMetric.increment({ action: 'import-merged' })
       }
     }
-  } else {
-    const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
-    if (allImports.length > 0) {
-      const lastImport = allImports.at(-1)
-      if (lastImport) {
-        edits.push(lastImport.replace(`${lastImport.text()}\nimport { Alert } from '${BUI_SOURCE}';`))
-      }
-    }
-    migrationMetric.increment({ action: 'import-added' })
+    return false
   }
+
+  const removableIds = new Set(importNodesToRemove.map((imp) => imp.id()))
+  const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
+  const anchorImport = [...allImports].reverse().find((imp) => !removableIds.has(imp.id())) ?? null
+
+  if (anchorImport) {
+    edits.push(anchorImport.replace(`${anchorImport.text()}\nimport { Alert } from '${BUI_SOURCE}';`))
+  } else if (importNodesToRemove.length === 1) {
+    const [importNode] = importNodesToRemove
+    if (importNode) {
+      edits.push(importNode.replace(`import { Alert } from '${BUI_SOURCE}';`))
+      migrationMetric.increment({ action: 'import-added' })
+      return true
+    }
+  } else if (allImports.length > 0) {
+    const lastImport = allImports.at(-1)
+    if (lastImport) {
+      edits.push(lastImport.replace(`${lastImport.text()}\nimport { Alert } from '${BUI_SOURCE}';`))
+    }
+  }
+
+  migrationMetric.increment({ action: 'import-added' })
+  return false
+}
+
+function withTodoComment(comment: string, elementText: string): string {
+  return `<>
+  ${comment}
+  ${elementText}
+</>`
 }
 
 function getSeverityValue(opening: SgNode<TSX>): { value: string | null; isDynamic: boolean } {
@@ -268,7 +290,9 @@ function transformAlertElements(
   alertLocalName: string,
   alertTitleLocalName: string | null,
   edits: Edit[],
-): void {
+): { preserveImport: boolean; migrated: boolean } {
+  let preserveImport = false
+  let migrated = false
   const jsxElements = rootNode.findAll({
     rule: {
       any: [{ kind: 'jsx_element' }, { kind: 'jsx_self_closing_element' }],
@@ -287,21 +311,28 @@ function transformAlertElements(
       continue
     }
 
-    if (hasProp(opening, 'action') || hasProp(opening, 'onClose')) {
+    const insertTodo = (reason: string) => {
+      preserveImport = true
       edits.push(
-        el.replace(`{/* TODO(backstage-codemod): migrate Alert actions or complex children manually */}\n${el.text()}`),
+        el.replace(
+          withTodoComment(
+            '{/* TODO(backstage-codemod): migrate Alert actions or complex children manually */}',
+            el.text(),
+          ),
+        ),
       )
-      migrationMetric.increment({ action: 'todo-inserted', reason: 'action-or-onClose' })
+      migrationMetric.increment({ action: 'todo-inserted', reason })
+    }
+
+    if (hasProp(opening, 'action') || hasProp(opening, 'onClose')) {
+      insertTodo('action-or-onClose')
       continue
     }
 
     const { value: severityValue, isDynamic } = getSeverityValue(opening)
 
     if (isDynamic) {
-      edits.push(
-        el.replace(`{/* TODO(backstage-codemod): migrate Alert actions or complex children manually */}\n${el.text()}`),
-      )
-      migrationMetric.increment({ action: 'todo-inserted', reason: 'dynamic-severity' })
+      insertTodo('dynamic-severity')
       continue
     }
 
@@ -314,6 +345,7 @@ function transformAlertElements(
       }
       props.push('icon')
       edits.push(el.replace(`<Alert ${props.join(' ')} />`))
+      migrated = true
       migrationMetric.increment({ action: 'alert-migrated', variant: 'self-closing' })
       continue
     }
@@ -321,10 +353,7 @@ function transformAlertElements(
     const { title, description, hasComplexContent } = extractChildContent(el, alertTitleLocalName)
 
     if (hasComplexContent) {
-      edits.push(
-        el.replace(`{/* TODO(backstage-codemod): migrate Alert actions or complex children manually */}\n${el.text()}`),
-      )
-      migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-children' })
+      insertTodo('complex-children')
       continue
     }
 
@@ -340,8 +369,11 @@ function transformAlertElements(
       props.push(`description="${description}"`)
     }
     edits.push(el.replace(`<Alert ${props.join(' ')} />`))
+    migrated = true
     migrationMetric.increment({ action: 'alert-migrated', variant: title ? 'with-title' : 'simple' })
   }
+
+  return { preserveImport, migrated }
 }
 
 const transform: Codemod<TSX> = (root) => {
@@ -354,13 +386,23 @@ const transform: Codemod<TSX> = (root) => {
     return Promise.resolve(null)
   }
 
-  for (const imp of importNodesToRemove) {
-    edits.push(imp.replace(''))
-    migrationMetric.increment({ action: 'import-removed' })
+  const { preserveImport, migrated } = transformAlertElements(rootNode, alertLocalName, alertTitleLocalName, edits)
+
+  let replacedImport = false
+  if (migrated) {
+    replacedImport = buildBuiImportEdit(rootNode, importNodesToRemove, edits)
   }
 
-  buildBuiImportEdit(rootNode, edits)
-  transformAlertElements(rootNode, alertLocalName, alertTitleLocalName, edits)
+  if (!preserveImport) {
+    for (const imp of importNodesToRemove) {
+      if (replacedImport && imp.id() === importNodesToRemove[0]?.id()) {
+        migrationMetric.increment({ action: 'import-removed' })
+        continue
+      }
+      edits.push(imp.replace(''))
+      migrationMetric.increment({ action: 'import-removed' })
+    }
+  }
 
   return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }

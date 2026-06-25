@@ -262,6 +262,13 @@ function getAttrStringValue(
   return { value: '', isDynamic: false, attrNode: attr }
 }
 
+function withTodoComment(comment: string, elementText: string): string {
+  return `<>
+  ${comment}
+  ${elementText}
+</>`
+}
+
 function getOpeningElement(el: SgNode<TSX>): SgNode<TSX> | null {
   if (el.is('jsx_self_closing_element')) {
     return el
@@ -313,7 +320,9 @@ function transformTypographyElements(
     // Check for unmappable dynamic values
     if (variantDynamic || colorDynamic) {
       preservedLocalNames.add(componentLocalName)
-      edits.push(el.replace(`{/* TODO(backstage-codemod): verify Text variant manually */}\n${el.text()}`))
+      edits.push(
+        el.replace(withTodoComment('{/* TODO(backstage-codemod): verify Text variant manually */}', el.text())),
+      )
       migrationMetric.increment({ action: 'todo-inserted', reason: 'dynamic-props' })
       continue
     }
@@ -339,7 +348,9 @@ function transformTypographyElements(
 
     if (needsTodo) {
       preservedLocalNames.add(componentLocalName)
-      edits.push(el.replace(`{/* TODO(backstage-codemod): verify Text variant manually */}\n${el.text()}`))
+      edits.push(
+        el.replace(withTodoComment('{/* TODO(backstage-codemod): verify Text variant manually */}', el.text())),
+      )
       migrationMetric.increment({ action: 'todo-inserted', reason: 'unmapped-variant-or-color' })
       continue
     }
@@ -384,21 +395,31 @@ function transformTypographyElements(
     }
 
     const propsStr = newProps.length > 0 ? ` ${newProps.join(' ')}` : ''
+    const gutterBottomTodo = gutterBottomAttr
+      ? '{/* TODO(backstage-codemod): verify Text variant manually (gutterBottom) */}'
+      : null
+
+    const wrapWithGutterBottomTodo = (content: string): string => {
+      if (!gutterBottomTodo) {
+        return content
+      }
+      return withTodoComment(gutterBottomTodo, content)
+    }
 
     if (isSelfClosing) {
-      edits.push(el.replace(`<Text${propsStr} />`))
+      edits.push(el.replace(wrapWithGutterBottomTodo(`<Text${propsStr} />`)))
     } else {
-      // Preserve children via AST traversal
       const children = el
         .children()
         .filter((c) => c.kind() !== 'jsx_opening_element' && c.kind() !== 'jsx_closing_element')
         .map((c) => c.text())
         .join('')
 
-      edits.push(el.replace(`<Text${propsStr}>${children}</Text>`))
+      edits.push(el.replace(wrapWithGutterBottomTodo(`<Text${propsStr}>${children}</Text>`)))
     }
 
     if (gutterBottomAttr) {
+      migrationMetric.increment({ action: 'todo-inserted', reason: 'gutterBottom' })
       migrationMetric.increment({ action: 'gutterBottom-dropped' })
     }
     migrated = true
