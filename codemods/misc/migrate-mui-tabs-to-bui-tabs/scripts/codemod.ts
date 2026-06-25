@@ -67,11 +67,36 @@ function getNamedImportLocalName(imp: SgNode<TSX>, targetName: string): string |
 interface TabImports {
   localNames: Map<string, string>
   importNodesToRemove: SgNode<TSX>[]
+  barrelImportsToPrune: { imp: SgNode<TSX>; source: string; migratedNames: string[] }[]
+}
+
+function getImportedName(spec: SgNode<TSX>): string | null {
+  const identifiers = spec.findAll({
+    rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
+  })
+  return identifiers[0]?.text() ?? null
+}
+
+function pruneBarrelImport(imp: SgNode<TSX>, migratedNames: string[], source: string, edits: Edit[]): void {
+  const specifiers = imp.findAll({ rule: { kind: 'import_specifier' } })
+  const remainingSpecs = specifiers.filter((spec) => {
+    const importedName = getImportedName(spec)
+    return importedName !== null && !migratedNames.includes(importedName)
+  })
+
+  if (remainingSpecs.length === 0) {
+    edits.push(imp.replace(''))
+  } else {
+    const specTexts = remainingSpecs.map((spec) => spec.text()).join(', ')
+    edits.push(imp.replace(`import { ${specTexts} } from '${source}';`))
+  }
+  migrationMetric.increment({ action: 'import-removed' })
 }
 
 function collectTabImports(rootNode: SgNode<TSX>): TabImports {
   const localNames = new Map<string, string>()
   const importNodesToRemove: SgNode<TSX>[] = []
+  const barrelImportsToPrune: { imp: SgNode<TSX>; source: string; migratedNames: string[] }[] = []
 
   const corePaths = ['Tabs', 'Tab']
   for (const componentName of corePaths) {
@@ -96,40 +121,44 @@ function collectTabImports(rootNode: SgNode<TSX>): TabImports {
   }
 
   for (const imp of findImportStatementsFrom(rootNode, '@material-ui/core')) {
-    let foundCount = 0
+    const migratedNames: string[] = []
     for (const componentName of corePaths) {
       const localName = getNamedImportLocalName(imp, componentName)
       if (localName) {
         localNames.set(localName, componentName)
-        foundCount++
+        migratedNames.push(componentName)
       }
     }
-    if (foundCount > 0) {
+    if (migratedNames.length > 0) {
       const allSpecifiers = imp.findAll({ rule: { kind: 'import_specifier' } })
-      if (foundCount >= allSpecifiers.length) {
+      if (migratedNames.length >= allSpecifiers.length) {
         importNodesToRemove.push(imp)
+      } else {
+        barrelImportsToPrune.push({ imp, source: '@material-ui/core', migratedNames })
       }
     }
   }
 
   for (const imp of findImportStatementsFrom(rootNode, '@material-ui/lab')) {
-    let foundCount = 0
+    const migratedNames: string[] = []
     for (const componentName of labPaths) {
       const localName = getNamedImportLocalName(imp, componentName)
       if (localName) {
         localNames.set(localName, componentName)
-        foundCount++
+        migratedNames.push(componentName)
       }
     }
-    if (foundCount > 0) {
+    if (migratedNames.length > 0) {
       const allSpecifiers = imp.findAll({ rule: { kind: 'import_specifier' } })
-      if (foundCount >= allSpecifiers.length) {
+      if (migratedNames.length >= allSpecifiers.length) {
         importNodesToRemove.push(imp)
+      } else {
+        barrelImportsToPrune.push({ imp, source: '@material-ui/lab', migratedNames })
       }
     }
   }
 
-  return { localNames, importNodesToRemove }
+  return { localNames, importNodesToRemove, barrelImportsToPrune }
 }
 
 function addBuiImport(
@@ -711,7 +740,7 @@ const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
-  const { localNames, importNodesToRemove } = collectTabImports(rootNode)
+  const { localNames, importNodesToRemove, barrelImportsToPrune } = collectTabImports(rootNode)
 
   if (localNames.size === 0) {
     return Promise.resolve(null)
@@ -725,6 +754,9 @@ const transform: Codemod<TSX> = (root) => {
   }
 
   if (!preserveImport) {
+    for (const { imp, source, migratedNames } of barrelImportsToPrune) {
+      pruneBarrelImport(imp, migratedNames, source, edits)
+    }
     for (const imp of importNodesToRemove) {
       if (replacedImport && imp.id() === importNodesToRemove[0]?.id()) {
         migrationMetric.increment({ action: 'import-removed' })
