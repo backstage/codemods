@@ -1,8 +1,6 @@
 import type { Codemod } from 'codemod:ast-grep'
 import type JSON from 'codemod:ast-grep/langs/json'
 import { useMetricAtom } from 'codemod:metrics'
-// oxlint-disable-next-line unicorn/prefer-node-protocol -- fs/promises is the typed LLRT entrypoint
-import { access, constants, readdir, readFile } from 'fs/promises'
 
 const migrationMetric = useMetricAtom('remove-mui-dependencies')
 const muiUsageMetric = useMetricAtom('mui-import-usage')
@@ -10,12 +8,6 @@ const muiUsageMetric = useMetricAtom('mui-import-usage')
 const MUI_PACKAGES = ['@material-ui/core', '@material-ui/icons', '@material-ui/lab', '@material-ui/styles'] as const
 
 type MuiPackage = (typeof MUI_PACKAGES)[number]
-
-const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs'])
-
-const SOURCE_DIRS = ['src', 'dev'] as const
-
-const SKIP_DIRS = new Set(['node_modules', 'dist', 'dist-types', 'build', 'coverage', '.git', 'target'])
 
 interface PackageJson {
   dependencies?: Record<string, string>
@@ -82,82 +74,6 @@ function getUsedPackagesFromMetrics(packageDir: string): Set<MuiPackage> {
   return used
 }
 
-async function collectSourceFiles(dir: string): Promise<string[]> {
-  const entries = await readdir(dir, { withFileTypes: true })
-  const files: string[] = []
-
-  for (const entry of entries) {
-    const fullPath = `${dir}/${entry.name}`.replaceAll('\\', '/')
-    if (entry.isDirectory()) {
-      if (SKIP_DIRS.has(entry.name)) {
-        continue
-      }
-      files.push(...(await collectSourceFiles(fullPath)))
-      continue
-    }
-
-    if (!entry.isFile()) {
-      continue
-    }
-
-    const dotIndex = entry.name.lastIndexOf('.')
-    if (dotIndex === -1) {
-      continue
-    }
-
-    const ext = entry.name.slice(dotIndex)
-    if (SOURCE_EXTENSIONS.has(ext)) {
-      files.push(fullPath)
-    }
-  }
-
-  return files
-}
-
-async function directoryExists(dir: string): Promise<boolean> {
-  try {
-    await access(dir, constants.F_OK)
-    return true
-  } catch {
-    return false
-  }
-}
-
-async function scanSourceFilesForMuiUsage(dir: string, used: Set<MuiPackage>): Promise<void> {
-  const files = await collectSourceFiles(dir)
-
-  for (const file of files) {
-    const content = await readFile(file, 'utf8')
-    for (const pkg of MUI_PACKAGES) {
-      if (content.includes(pkg)) {
-        used.add(pkg)
-      }
-    }
-  }
-}
-
-async function getUsedMuiPackagesViaFs(packageDir: string): Promise<Set<MuiPackage>> {
-  const used = new Set<MuiPackage>()
-
-  for (const sourceDir of SOURCE_DIRS) {
-    const dir = `${packageDir}/${sourceDir}`.replaceAll('\\', '/')
-    if (await directoryExists(dir)) {
-      await scanSourceFilesForMuiUsage(dir, used)
-    }
-  }
-
-  return used
-}
-
-async function resolveUsedMuiPackages(packageDir: string): Promise<Set<MuiPackage>> {
-  const fromMetrics = getUsedPackagesFromMetrics(packageDir)
-  if (fromMetrics.size > 0) {
-    return fromMetrics
-  }
-
-  return getUsedMuiPackagesViaFs(packageDir)
-}
-
 function removeUnusedMuiPackages(
   section: Record<string, string> | undefined,
   usedPackages: Set<MuiPackage>,
@@ -183,7 +99,7 @@ function removeUnusedMuiPackages(
   return { deps: sortObjectKeys(deps), removed }
 }
 
-const transform: Codemod<JSON> = async (root) => {
+const transform: Codemod<JSON> = (root) => {
   const rootNode = root.root()
   const source = normalizeSource(rootNode.text())
 
@@ -191,15 +107,15 @@ const transform: Codemod<JSON> = async (root) => {
   try {
     pkg = globalThis.JSON.parse(source) as PackageJson
   } catch {
-    return null
+    return Promise.resolve(null)
   }
 
   if (listMuiDependencies(pkg).length === 0) {
-    return null
+    return Promise.resolve(null)
   }
 
   const packageDir = getPackageDir(root)
-  const usedPackages = await resolveUsedMuiPackages(packageDir)
+  const usedPackages = getUsedPackagesFromMetrics(packageDir)
 
   const { deps: dependencies, removed: removedFromDependencies } = removeUnusedMuiPackages(
     pkg.dependencies,
@@ -213,7 +129,7 @@ const transform: Codemod<JSON> = async (root) => {
   const removed = [...removedFromDependencies, ...removedFromDevDependencies]
   if (removed.length === 0) {
     migrationMetric.increment({ action: 'skipped-still-in-use' })
-    return null
+    return Promise.resolve(null)
   }
 
   for (const name of removed) {
@@ -228,10 +144,10 @@ const transform: Codemod<JSON> = async (root) => {
   const result = `${globalThis.JSON.stringify(pkg, null, indent)}\n`
 
   if (result === source) {
-    return null
+    return Promise.resolve(null)
   }
 
-  return result
+  return Promise.resolve(result)
 }
 
 export default transform
