@@ -283,7 +283,7 @@ function rewriteTabsOnChangeHandler(attr: SgNode<TSX>): string | null {
   }
 
   const params = arrow.field('parameters')
-  if (!params || params.kind() !== 'formal_parameters') {
+  if (params?.kind() !== 'formal_parameters') {
     return null
   }
 
@@ -298,8 +298,13 @@ function rewriteTabsOnChangeHandler(attr: SgNode<TSX>): string | null {
     return null
   }
 
-  const eventName = getParamName(paramChildren[0]!)
-  const valueName = getParamName(paramChildren[1]!)
+  const [firstParam, secondParam] = paramChildren
+  if (!firstParam || !secondParam) {
+    return null
+  }
+
+  const eventName = getParamName(firstParam)
+  const valueName = getParamName(secondParam)
 
   const body = arrow.field('body')
   if (!body) {
@@ -449,7 +454,10 @@ function transformChildren(element: SgNode<TSX>, localNames: Map<string, string>
       if (childOpening) {
         const childName = getElementName(childOpening)
         if (childName && localNames.has(childName)) {
-          const muiName = localNames.get(childName)!
+          const muiName = localNames.get(childName)
+          if (!muiName) {
+            continue
+          }
 
           if (muiName === 'Tab') {
             parts.push(transformTabElement(childOpening))
@@ -649,14 +657,14 @@ function transformTabElements(rootNode: SgNode<TSX>, localNames: Map<string, str
   return usedBuiNames
 }
 
-const transform: Codemod<TSX> = async (root) => {
+const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
   const { localNames, importNodesToRemove } = collectTabImports(rootNode)
 
   if (localNames.size === 0) {
-    return null
+    return Promise.resolve(null)
   }
 
   for (const imp of importNodesToRemove) {
@@ -668,7 +676,7 @@ const transform: Codemod<TSX> = async (root) => {
 
   addBuiImport(rootNode, [...usedBuiNames], edits)
 
-  return edits.length > 0 ? rootNode.commitEdits(edits) : null
+  return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }
 
 export default transform

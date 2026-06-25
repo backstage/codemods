@@ -204,14 +204,6 @@ function getPropRawValue(opening: SgNode<TSX>, propName: string): string | null 
   return null
 }
 
-function getChildContent(element: SgNode<TSX>): string {
-  return element
-    .children()
-    .filter((child) => child.kind() !== 'jsx_opening_element' && child.kind() !== 'jsx_closing_element')
-    .map((child) => child.text())
-    .join('')
-}
-
 function getNonWhitespaceChildren(element: SgNode<TSX>): SgNode<TSX>[] {
   const children: SgNode<TSX>[] = []
   for (const child of element.children()) {
@@ -299,8 +291,9 @@ function analyzeListItem(el: SgNode<TSX>, localNames: Map<string, string>): List
       if (childName && childName === listItemIconLocal) {
         if (kind === 'jsx_element') {
           const iconChildren = getNonWhitespaceChildren(child)
-          if (iconChildren.length === 1) {
-            result.iconContent = iconChildren[0]!.text()
+          const [iconChild] = iconChildren
+          if (iconChild) {
+            result.iconContent = iconChild.text()
           } else {
             result.hasComplexContent = true
           }
@@ -448,14 +441,14 @@ function transformListElements(rootNode: SgNode<TSX>, localNames: Map<string, st
   }
 }
 
-const transform: Codemod<TSX> = async (root) => {
+const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
   const { localNames, importNodesToRemove } = collectListImports(rootNode)
 
   if (localNames.size === 0) {
-    return null
+    return Promise.resolve(null)
   }
 
   // Remove MUI imports
@@ -486,7 +479,7 @@ const transform: Codemod<TSX> = async (root) => {
   // Transform elements
   transformListElements(rootNode, localNames, edits)
 
-  return edits.length > 0 ? rootNode.commitEdits(edits) : null
+  return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }
 
 export default transform
