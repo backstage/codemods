@@ -83,9 +83,15 @@ function collectChipImports(rootNode: SgNode<TSX>): {
   return { chipLocalName, importNodesToRemove }
 }
 
-function addBuiImport(rootNode: SgNode<TSX>, names: string[], edits: Edit[]): void {
+function addBuiImport(
+  rootNode: SgNode<TSX>,
+  names: string[],
+  importNodesToRemove: SgNode<TSX>[],
+  edits: Edit[],
+): boolean {
   const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
   const existingImport = existingImports[0] ?? null
+  const sortedNames = [...names].sort()
 
   if (existingImport) {
     const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
@@ -105,19 +111,33 @@ function addBuiImport(rootNode: SgNode<TSX>, names: string[], edits: Edit[]): vo
       edits.push(namedImports.replace(`{ ${existing.join(', ')} }`))
       migrationMetric.increment({ action: 'import-merged' })
     }
-  } else {
-    const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
-    const sortedNames = [...names].sort()
-    if (allImports.length > 0) {
-      const lastImport = allImports.at(-1)
-      if (lastImport) {
-        edits.push(
-          lastImport.replace(`${lastImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`),
-        )
-      }
-    }
-    migrationMetric.increment({ action: 'import-added' })
+    return false
   }
+
+  const removableIds = new Set(importNodesToRemove.map((imp) => imp.id()))
+  const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
+  const anchorImport = [...allImports].reverse().find((imp) => !removableIds.has(imp.id())) ?? null
+
+  if (anchorImport) {
+    edits.push(
+      anchorImport.replace(`${anchorImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`),
+    )
+  } else if (importNodesToRemove.length === 1) {
+    const [importNode] = importNodesToRemove
+    if (importNode) {
+      edits.push(importNode.replace(`import { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
+      migrationMetric.increment({ action: 'import-added' })
+      return true
+    }
+  } else if (allImports.length > 0) {
+    const lastImport = allImports.at(-1)
+    if (lastImport) {
+      edits.push(lastImport.replace(`${lastImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
+    }
+  }
+
+  migrationMetric.increment({ action: 'import-added' })
+  return false
 }
 
 function hasProp(opening: SgNode<TSX>, propName: string): boolean {
@@ -251,8 +271,10 @@ function transformChipElements(
   rootNode: SgNode<TSX>,
   chipLocalName: string,
   edits: Edit[],
-): { needsTagGroup: boolean } {
+): { needsTagGroup: boolean; preserveImport: boolean; migrated: boolean } {
   let needsTagGroup = false
+  let preserveImport = false
+  let migrated = false
 
   const jsxElements = rootNode.findAll({
     rule: {
@@ -296,6 +318,7 @@ function transformChipElements(
         continue
       }
       edits.push(firstChip.element.replace(`<TagGroup>\n  ${tagGroupContent}\n</TagGroup>`))
+      migrated = true
       migrationMetric.increment({ action: 'tag-group-created', count: `${group.length}` })
 
       for (let i = 1; i < group.length; i++) {
@@ -317,9 +340,10 @@ function transformChipElements(
     }
 
     if (info.isInteractive) {
+      preserveImport = true
       edits.push(
         info.element.replace(
-          `{/* TODO(backstage-codemod): verify interactive chip migration manually */}\n${info.element.text()}`,
+          `<>{/* TODO(backstage-codemod): verify interactive chip migration manually */}\n${info.element.text()}</>`,
         ),
       )
       migrationMetric.increment({ action: 'todo-inserted', reason: 'interactive-chip' })
@@ -327,10 +351,11 @@ function transformChipElements(
     }
 
     edits.push(info.element.replace(buildTagReplacement(info)))
+    migrated = true
     migrationMetric.increment({ action: 'chip-migrated' })
   }
 
-  return { needsTagGroup }
+  return { needsTagGroup, preserveImport, migrated }
 }
 
 const transform: Codemod<TSX> = (root) => {
@@ -343,21 +368,27 @@ const transform: Codemod<TSX> = (root) => {
     return Promise.resolve(null)
   }
 
-  // Remove MUI imports
-  for (const imp of importNodesToRemove) {
-    edits.push(imp.replace(''))
-    migrationMetric.increment({ action: 'import-removed' })
+  const { needsTagGroup, preserveImport, migrated } = transformChipElements(rootNode, chipLocalName, edits)
+
+  let replacedImport = false
+  if (migrated) {
+    const importNames = ['Tag']
+    if (needsTagGroup) {
+      importNames.push('TagGroup')
+    }
+    replacedImport = addBuiImport(rootNode, importNames, importNodesToRemove, edits)
   }
 
-  // Transform chip elements
-  const { needsTagGroup } = transformChipElements(rootNode, chipLocalName, edits)
-
-  // Add BUI import
-  const importNames = ['Tag']
-  if (needsTagGroup) {
-    importNames.push('TagGroup')
+  if (!preserveImport) {
+    for (const imp of importNodesToRemove) {
+      if (replacedImport && imp.id() === importNodesToRemove[0]?.id()) {
+        migrationMetric.increment({ action: 'import-removed' })
+        continue
+      }
+      edits.push(imp.replace(''))
+      migrationMetric.increment({ action: 'import-removed' })
+    }
   }
-  addBuiImport(rootNode, importNames, edits)
 
   return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }

@@ -113,9 +113,15 @@ function collectMenuImports(rootNode: SgNode<TSX>): MenuImports {
   return { localNames, importNodesToRemove }
 }
 
-function addBuiImport(rootNode: SgNode<TSX>, names: string[], edits: Edit[]): void {
+function addBuiImport(
+  rootNode: SgNode<TSX>,
+  names: string[],
+  importNodesToRemove: SgNode<TSX>[],
+  edits: Edit[],
+): boolean {
   const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
   const existingImport = existingImports[0] ?? null
+  const sortedNames = [...names].sort()
 
   if (existingImport) {
     const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
@@ -135,19 +141,33 @@ function addBuiImport(rootNode: SgNode<TSX>, names: string[], edits: Edit[]): vo
       edits.push(namedImports.replace(`{ ${existing.join(', ')} }`))
       migrationMetric.increment({ action: 'import-merged' })
     }
-  } else {
-    const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
-    const sortedNames = [...names].sort()
-    if (allImports.length > 0) {
-      const lastImport = allImports.at(-1)
-      if (lastImport) {
-        edits.push(
-          lastImport.replace(`${lastImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`),
-        )
-      }
-    }
-    migrationMetric.increment({ action: 'import-added' })
+    return false
   }
+
+  const removableIds = new Set(importNodesToRemove.map((imp) => imp.id()))
+  const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
+  const anchorImport = [...allImports].reverse().find((imp) => !removableIds.has(imp.id())) ?? null
+
+  if (anchorImport) {
+    edits.push(
+      anchorImport.replace(`${anchorImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`),
+    )
+  } else if (importNodesToRemove.length === 1) {
+    const [importNode] = importNodesToRemove
+    if (importNode) {
+      edits.push(importNode.replace(`import { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
+      migrationMetric.increment({ action: 'import-added' })
+      return true
+    }
+  } else if (allImports.length > 0) {
+    const lastImport = allImports.at(-1)
+    if (lastImport) {
+      edits.push(lastImport.replace(`${lastImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
+    }
+  }
+
+  migrationMetric.increment({ action: 'import-added' })
+  return false
 }
 
 function getElementName(opening: SgNode<TSX>): string | null {
@@ -363,7 +383,14 @@ function unwrapMenuList(
   return getChildContent(element)
 }
 
-function transformMenuElements(rootNode: SgNode<TSX>, localNames: Map<string, string>, edits: Edit[]): void {
+function transformMenuElements(
+  rootNode: SgNode<TSX>,
+  localNames: Map<string, string>,
+  edits: Edit[],
+): { preserveImport: boolean; migrated: boolean; buiNames: Set<string> } {
+  let preserveImport = false
+  let migrated = false
+  const buiNames = new Set<string>()
   const menuListLocalName = [...localNames.entries()].find(([, v]) => v === 'MenuList')?.[0] ?? null
   const menuItemLocalName = [...localNames.entries()].find(([, v]) => v === 'MenuItem')?.[0] ?? null
 
@@ -414,9 +441,10 @@ function transformMenuElements(rootNode: SgNode<TSX>, localNames: Map<string, st
     }
 
     if (needsTodo) {
+      preserveImport = true
       edits.push(
         el.replace(
-          `{/* TODO(backstage-codemod): finish menu host migration manually (${todoReasons.join(', ')}) */}\n${el.text()}`,
+          `<>{/* TODO(backstage-codemod): finish menu host migration manually (${todoReasons.join(', ')}) */}\n${el.text()}</>`,
         ),
       )
       migrationMetric.increment({ action: 'todo-inserted', reason: todoReasons.join(', ') })
@@ -425,6 +453,8 @@ function transformMenuElements(rootNode: SgNode<TSX>, localNames: Map<string, st
 
     if (isSelfClosing) {
       edits.push(el.replace('<Menu />'))
+      buiNames.add('Menu')
+      migrated = true
       migrationMetric.increment({ action: 'menu-migrated', variant: 'self-closing' })
       continue
     }
@@ -447,9 +477,10 @@ function transformMenuElements(rootNode: SgNode<TSX>, localNames: Map<string, st
           triggerProps.push(`onOpenChange={isOpen => !isOpen && ${simpleHandler}()}`)
           migrationMetric.increment({ action: 'onClose-rewritten' })
         } else {
+          preserveImport = true
           edits.push(
             el.replace(
-              `{/* TODO(backstage-codemod): finish menu host migration manually (complex-onClose) */}\n${el.text()}`,
+              `<>{/* TODO(backstage-codemod): finish menu host migration manually (complex-onClose) */}\n${el.text()}</>`,
             ),
           )
           migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-onClose' })
@@ -459,12 +490,20 @@ function transformMenuElements(rootNode: SgNode<TSX>, localNames: Map<string, st
 
       const triggerPropsStr = triggerProps.length > 0 ? ` ${triggerProps.join(' ')}` : ''
       menuOutput = `<MenuTrigger${triggerPropsStr}>${menuOutput}</MenuTrigger>`
+      buiNames.add('MenuTrigger')
       migrationMetric.increment({ action: 'menu-trigger-wrapped' })
     }
 
+    buiNames.add('Menu')
+    if (menuItemLocalName) {
+      buiNames.add('MenuItem')
+    }
     edits.push(el.replace(menuOutput))
+    migrated = true
     migrationMetric.increment({ action: 'menu-migrated', variant: muiName === 'Popover' ? 'popover' : 'menu' })
   }
+
+  return { preserveImport, migrated, buiNames }
 }
 
 const transform: Codemod<TSX> = (root) => {
@@ -477,27 +516,23 @@ const transform: Codemod<TSX> = (root) => {
     return Promise.resolve(null)
   }
 
-  // Remove MUI imports
-  for (const imp of importNodesToRemove) {
-    edits.push(imp.replace(''))
-    migrationMetric.increment({ action: 'import-removed' })
+  const { preserveImport, migrated, buiNames } = transformMenuElements(rootNode, localNames, edits)
+
+  let replacedImport = false
+  if (migrated) {
+    replacedImport = addBuiImport(rootNode, [...buiNames], importNodesToRemove, edits)
   }
 
-  // Determine which BUI names we need
-  const buiNames = new Set<string>()
-  for (const [, muiName] of localNames) {
-    if (muiName === 'Menu' || muiName === 'Popover' || muiName === 'MenuList') {
-      buiNames.add('Menu')
-      buiNames.add('MenuTrigger')
-    }
-    if (muiName === 'MenuItem') {
-      buiNames.add('MenuItem')
+  if (!preserveImport) {
+    for (const imp of importNodesToRemove) {
+      if (replacedImport && imp.id() === importNodesToRemove[0]?.id()) {
+        migrationMetric.increment({ action: 'import-removed' })
+        continue
+      }
+      edits.push(imp.replace(''))
+      migrationMetric.increment({ action: 'import-removed' })
     }
   }
-  addBuiImport(rootNode, [...buiNames], edits)
-
-  // Transform elements
-  transformMenuElements(rootNode, localNames, edits)
 
   return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }

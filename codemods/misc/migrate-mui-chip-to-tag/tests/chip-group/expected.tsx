@@ -1,4 +1,4 @@
-
+import { Tag, TagGroup } from '@backstage/ui';
 
 const Tags = () => (
   <>

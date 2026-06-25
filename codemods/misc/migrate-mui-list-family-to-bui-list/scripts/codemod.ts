@@ -115,9 +115,15 @@ function collectListImports(rootNode: SgNode<TSX>): ListImports {
   return { localNames, importNodesToRemove }
 }
 
-function addBuiImport(rootNode: SgNode<TSX>, names: string[], edits: Edit[]): void {
+function addBuiImport(
+  rootNode: SgNode<TSX>,
+  names: string[],
+  importNodesToRemove: SgNode<TSX>[],
+  edits: Edit[],
+): boolean {
   const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
   const existingImport = existingImports[0] ?? null
+  const sortedNames = [...names].sort()
 
   if (existingImport) {
     const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
@@ -137,19 +143,33 @@ function addBuiImport(rootNode: SgNode<TSX>, names: string[], edits: Edit[]): vo
       edits.push(namedImports.replace(`{ ${existing.join(', ')} }`))
       migrationMetric.increment({ action: 'import-merged' })
     }
-  } else {
-    const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
-    const sortedNames = [...names].sort()
-    if (allImports.length > 0) {
-      const lastImport = allImports.at(-1)
-      if (lastImport) {
-        edits.push(
-          lastImport.replace(`${lastImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`),
-        )
-      }
-    }
-    migrationMetric.increment({ action: 'import-added' })
+    return false
   }
+
+  const removableIds = new Set(importNodesToRemove.map((imp) => imp.id()))
+  const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
+  const anchorImport = [...allImports].reverse().find((imp) => !removableIds.has(imp.id())) ?? null
+
+  if (anchorImport) {
+    edits.push(
+      anchorImport.replace(`${anchorImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`),
+    )
+  } else if (importNodesToRemove.length === 1) {
+    const [importNode] = importNodesToRemove
+    if (importNode) {
+      edits.push(importNode.replace(`import { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
+      migrationMetric.increment({ action: 'import-added' })
+      return true
+    }
+  } else if (allImports.length > 0) {
+    const lastImport = allImports.at(-1)
+    if (lastImport) {
+      edits.push(lastImport.replace(`${lastImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
+    }
+  }
+
+  migrationMetric.increment({ action: 'import-added' })
+  return false
 }
 
 function getElementName(opening: SgNode<TSX>): string | null {
@@ -356,12 +376,20 @@ function analyzeListItem(el: SgNode<TSX>, localNames: Map<string, string>): List
   return result
 }
 
-function transformListElements(rootNode: SgNode<TSX>, localNames: Map<string, string>, edits: Edit[]): void {
+function transformListElements(
+  rootNode: SgNode<TSX>,
+  localNames: Map<string, string>,
+  edits: Edit[],
+): { preserveImport: boolean; migrated: boolean; buiNames: Set<string> } {
+  let preserveImport = false
+  let migrated = false
+  const buiNames = new Set<string>()
+
   const listLocalName = [...localNames.entries()].find(([, v]) => v === 'List')?.[0] ?? null
   const listItemLocalName = [...localNames.entries()].find(([, v]) => v === 'ListItem')?.[0] ?? null
 
   if (!listLocalName && !listItemLocalName) {
-    return
+    return { preserveImport, migrated, buiNames }
   }
 
   const jsxElements = rootNode
@@ -394,6 +422,11 @@ function transformListElements(rootNode: SgNode<TSX>, localNames: Map<string, st
     if (muiName === 'ListItem') {
       if (isSelfClosing) {
         edits.push(el.replace('<ListRow />'))
+        buiNames.add('ListRow')
+        if (listLocalName) {
+          buiNames.add('List')
+        }
+        migrated = true
         migrationMetric.increment({ action: 'list-item-migrated' })
         continue
       }
@@ -401,7 +434,10 @@ function transformListElements(rootNode: SgNode<TSX>, localNames: Map<string, st
       const analysis = analyzeListItem(el, localNames)
 
       if (analysis.hasTodoProps || analysis.hasComplexContent) {
-        edits.push(el.replace(`{/* TODO(backstage-codemod): verify nonstandard list row manually */}\n${el.text()}`))
+        preserveImport = true
+        edits.push(
+          el.replace(`<>{/* TODO(backstage-codemod): verify nonstandard list row manually */}\n${el.text()}</>`),
+        )
         migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-list-item' })
         continue
       }
@@ -435,10 +471,17 @@ function transformListElements(rootNode: SgNode<TSX>, localNames: Map<string, st
         edits.push(el.replace(`<ListRow${propsStr} />`))
       }
 
+      buiNames.add('ListRow')
+      if (listLocalName) {
+        buiNames.add('List')
+      }
+      migrated = true
       migrationMetric.increment({ action: 'list-item-migrated' })
       continue
     }
   }
+
+  return { preserveImport, migrated, buiNames }
 }
 
 const transform: Codemod<TSX> = (root) => {
@@ -451,33 +494,23 @@ const transform: Codemod<TSX> = (root) => {
     return Promise.resolve(null)
   }
 
-  // Remove MUI imports
-  for (const imp of importNodesToRemove) {
-    edits.push(imp.replace(''))
-    migrationMetric.increment({ action: 'import-removed' })
+  const { preserveImport, migrated, buiNames } = transformListElements(rootNode, localNames, edits)
+
+  let replacedImport = false
+  if (migrated) {
+    replacedImport = addBuiImport(rootNode, [...buiNames], importNodesToRemove, edits)
   }
 
-  // Determine BUI names needed
-  const buiNames = new Set<string>()
-  for (const [, muiName] of localNames) {
-    if (muiName === 'List' || muiName === 'ListSubheader') {
-      buiNames.add('List')
-    }
-    if (
-      muiName === 'ListItem' ||
-      muiName === 'ListItemIcon' ||
-      muiName === 'ListItemText' ||
-      muiName === 'ListItemAvatar' ||
-      muiName === 'ListItemSecondaryAction'
-    ) {
-      buiNames.add('ListRow')
+  if (!preserveImport) {
+    for (const imp of importNodesToRemove) {
+      if (replacedImport && imp.id() === importNodesToRemove[0]?.id()) {
+        migrationMetric.increment({ action: 'import-removed' })
+        continue
+      }
+      edits.push(imp.replace(''))
+      migrationMetric.increment({ action: 'import-removed' })
     }
   }
-
-  addBuiImport(rootNode, [...buiNames], edits)
-
-  // Transform elements
-  transformListElements(rootNode, localNames, edits)
 
   return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }
