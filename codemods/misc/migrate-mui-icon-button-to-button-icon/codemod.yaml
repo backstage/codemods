@@ -11,7 +11,7 @@ workflow: 'workflow.yaml'
 targets:
   languages: ['tsx', 'ts']
 
-keywords: ['backstage', 'migration', 'mui', 'bui', 'icon', 'button', 'button', 'icon']
+keywords: ['backstage', 'migration', 'mui', 'bui', 'icon-button', 'button-icon']
 
 registry:
   access: 'public'

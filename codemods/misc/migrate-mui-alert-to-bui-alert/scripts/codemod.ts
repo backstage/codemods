@@ -180,6 +180,9 @@ function buildBuiImportEdit(rootNode: SgNode<TSX>, importNodesToRemove: SgNode<T
         names.sort()
         edits.push(namedImports.replace(`{ ${names.join(', ')} }`))
         migrationMetric.increment({ action: 'import-merged' })
+      } else {
+        edits.push(existingImport.replace(`${existingImport.text()}\nimport { Alert } from '${BUI_SOURCE}';`))
+        migrationMetric.increment({ action: 'import-added' })
       }
     }
     return false
@@ -256,6 +259,39 @@ function hasProp(opening: SgNode<TSX>, propName: string): boolean {
     },
   })
   return attr !== null
+}
+
+function getPropRawValue(opening: SgNode<TSX>, propName: string): string | null {
+  const attr = opening.find({
+    rule: {
+      kind: 'jsx_attribute',
+      has: {
+        kind: 'property_identifier',
+        regex: `^${escapeRegex(propName)}$`,
+      },
+    },
+  })
+  if (!attr) {
+    return null
+  }
+  for (const child of attr.children()) {
+    const kind = child.kind()
+    if (kind === 'string' || kind === 'jsx_expression') {
+      return child.text()
+    }
+  }
+  return ''
+}
+
+function shouldAddDefaultIcon(opening: SgNode<TSX>): boolean {
+  if (hasProp(opening, 'iconMapping')) {
+    return false
+  }
+  if (!hasProp(opening, 'icon')) {
+    return true
+  }
+  const iconValue = getPropRawValue(opening, 'icon')
+  return iconValue === '' || iconValue === '{true}' || iconValue === 'true'
 }
 
 function extractChildContent(
@@ -378,7 +414,9 @@ function transformAlertElements(
       if (status) {
         props.push(`status="${status}"`)
       }
-      props.push('icon')
+      if (shouldAddDefaultIcon(opening)) {
+        props.push('icon')
+      }
       edits.push(el.replace(`<Alert ${props.join(' ')} />`))
       migrated = true
       migrationMetric.increment({ action: 'alert-migrated', variant: 'self-closing' })
@@ -396,7 +434,9 @@ function transformAlertElements(
     if (status) {
       props.push(`status="${status}"`)
     }
-    props.push('icon')
+    if (shouldAddDefaultIcon(opening)) {
+      props.push('icon')
+    }
     if (title) {
       props.push(`title="${title}"`)
     }
