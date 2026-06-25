@@ -172,9 +172,7 @@ function extractCssRules(styleObjNode: SgNode<TSX>): { rules: CssRule[]; hasDyna
     // Get the value — skip key and colon
     const valueNode = child
       .children()
-      .filter(
-        (c) => c.kind() !== 'property_identifier' && c.kind() !== ':' && c.kind() !== 'string' && c.kind() !== ',',
-      )[0]
+      .find((c) => c.kind() !== 'property_identifier' && c.kind() !== ':' && c.kind() !== 'string' && c.kind() !== ',')
 
     if (!valueNode) {
       continue
@@ -217,14 +215,14 @@ function extractCssRules(styleObjNode: SgNode<TSX>): { rules: CssRule[]; hasDyna
 
       const propValueNode = propPair
         .children()
-        .filter(
+        .find(
           (c) =>
             c.kind() !== 'property_identifier' &&
             c.kind() !== ':' &&
             c.kind() !== 'string' &&
             c.kind() !== ',' &&
             c.kind() !== propKeyNode.kind(),
-        )[0]
+        )
 
       if (!propValueNode) {
         ruleHasDynamic = true
@@ -300,7 +298,7 @@ function deriveCssModuleFilePath(filename: string): string {
 }
 
 async function writeCssModuleFile(cssFilePath: string, content: string): Promise<void> {
-  const writeCss: Codemod<CSS> = async () => content
+  const writeCss: Codemod<CSS> = () => Promise.resolve(content)
   await jssgTransform(writeCss, cssFilePath, 'css')
 }
 
@@ -348,6 +346,12 @@ const transform: Codemod<TSX> = async (root) => {
     }
   }
 
+  if (!makeStylesLocal) {
+    return edits.length > 0 ? rootNode.commitEdits(edits) : null
+  }
+
+  const makeStylesPattern = escapeRegex(makeStylesLocal)
+
   // Find the makeStyles call: const useStyles = makeStyles(...)
   const makeStylesDeclarations = rootNode.findAll({
     rule: {
@@ -359,7 +363,7 @@ const transform: Codemod<TSX> = async (root) => {
           has: {
             field: 'function',
             kind: 'identifier',
-            regex: `^${escapeRegex(makeStylesLocal!)}$`,
+            regex: `^${makeStylesPattern}$`,
           },
         },
       },
@@ -387,7 +391,7 @@ const transform: Codemod<TSX> = async (root) => {
         has: {
           field: 'function',
           kind: 'identifier',
-          regex: `^${escapeRegex(makeStylesLocal!)}$`,
+          regex: `^${makeStylesPattern}$`,
         },
       },
     })
@@ -470,7 +474,7 @@ const transform: Codemod<TSX> = async (root) => {
         })
       }
     } else {
-      const firstNode = rootNode.children()[0]
+      const [firstNode] = rootNode.children()
       if (firstNode) {
         edits.push({
           startPos: firstNode.range().start.index,
@@ -502,7 +506,10 @@ const transform: Codemod<TSX> = async (root) => {
 
     for (const hookCall of hookCalls) {
       const hookDeclarator = hookCall.find({ rule: { kind: 'variable_declarator' } })
-      const classesName = hookDeclarator?.field('name')?.text()
+      if (!hookDeclarator) {
+        continue
+      }
+      const classesName = hookDeclarator.field('name')?.text()
 
       if (classesName) {
         // Replace all classes.X references with styles.X

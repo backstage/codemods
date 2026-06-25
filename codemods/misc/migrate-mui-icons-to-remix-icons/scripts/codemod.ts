@@ -372,14 +372,14 @@ function transformExtensionIconSlots(rootNode: SgNode<TSX>, iconLocalNames: Set<
   }
 }
 
-const transform: Codemod<TSX> = async (root) => {
+const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
   const { icons, namespaceImports } = collectIconImports(rootNode)
 
   if (icons.length === 0 && namespaceImports.length === 0) {
-    return null
+    return Promise.resolve(null)
   }
 
   for (const nsImp of namespaceImports) {
@@ -419,7 +419,7 @@ const transform: Codemod<TSX> = async (root) => {
   transformIconJsx(rootNode, iconLocalNames, edits)
   transformExtensionIconSlots(rootNode, iconLocalNames, edits)
 
-  return edits.length > 0 ? rootNode.commitEdits(edits) : null
+  return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }
 
 export default transform

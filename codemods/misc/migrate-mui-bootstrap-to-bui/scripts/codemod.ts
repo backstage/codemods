@@ -31,37 +31,37 @@ function hasBuiCssImport(rootNode: SgNode<TSX>): boolean {
   return cssImports.length > 0
 }
 
-const transform: Codemod<TSX> = async (root) => {
+const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
   // Only process files that contain @material-ui imports
   if (!hasMuiImports(rootNode)) {
-    return null
+    return Promise.resolve(null)
   }
 
   // Skip if the BUI CSS import is already present
   if (hasBuiCssImport(rootNode)) {
     migrationMetric.increment({ action: 'already-bootstrapped' })
-    return null
+    return Promise.resolve(null)
   }
 
   // Find the first import statement to insert before it
   const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
   if (allImports.length === 0) {
-    return null
+    return Promise.resolve(null)
   }
 
-  const firstImport = allImports[0]
+  const [firstImport] = allImports
   if (!firstImport) {
-    return null
+    return Promise.resolve(null)
   }
 
   // Insert the BUI CSS import before the first import
   edits.push(firstImport.replace(`import '${BUI_CSS_IMPORT}';\n${firstImport.text()}`))
   migrationMetric.increment({ action: 'css-import-added' })
 
-  return edits.length > 0 ? rootNode.commitEdits(edits) : null
+  return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }
 
 export default transform

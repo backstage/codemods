@@ -163,7 +163,7 @@ function removeUnusedLayoutImports(
       const identifiers = spec.findAll({
         rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
       })
-      const importedNameNode = identifiers[0]
+      const [importedNameNode] = identifiers
       if (!importedNameNode) {
         return true
       }
@@ -672,14 +672,14 @@ function transformLayoutElements(rootNode: SgNode<TSX>, localNames: Map<string, 
   return usedBuiNames
 }
 
-const transform: Codemod<TSX> = async (root) => {
+const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
   const { localNames, importNodes } = collectLayoutImports(rootNode)
 
   if (localNames.size === 0) {
-    return null
+    return Promise.resolve(null)
   }
 
   // Transform elements before removing imports so TODO paths keep MUI imports.
@@ -691,7 +691,7 @@ const transform: Codemod<TSX> = async (root) => {
     addBuiImport(rootNode, [...usedBuiNames], edits)
   }
 
-  return edits.length > 0 ? rootNode.commitEdits(edits) : null
+  return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }
 
 export default transform

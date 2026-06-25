@@ -55,7 +55,7 @@ function dependencySectionForMui(pkg: PackageJson): 'dependencies' | 'devDepende
   return 'devDependencies'
 }
 
-const transform: Codemod<JSON> = async (root) => {
+const transform: Codemod<JSON> = (root) => {
   const rootNode = root.root()
   const source = normalizeSource(rootNode.text())
 
@@ -63,11 +63,11 @@ const transform: Codemod<JSON> = async (root) => {
   try {
     pkg = globalThis.JSON.parse(source) as PackageJson
   } catch {
-    return null
+    return Promise.resolve(null)
   }
 
   if (!hasMuiDependency(pkg)) {
-    return null
+    return Promise.resolve(null)
   }
 
   const section = dependencySectionForMui(pkg)
@@ -88,7 +88,7 @@ const transform: Codemod<JSON> = async (root) => {
 
   if (!changed) {
     migrationMetric.increment({ action: 'already-bootstrapped-deps' })
-    return null
+    return Promise.resolve(null)
   }
 
   pkg[section] = sortObjectKeys(existingDeps)
@@ -98,10 +98,10 @@ const transform: Codemod<JSON> = async (root) => {
   const result = `${globalThis.JSON.stringify(pkg, null, indent)}\n`
 
   if (result === source) {
-    return null
+    return Promise.resolve(null)
   }
 
-  return result
+  return Promise.resolve(result)
 }
 
 export default transform
