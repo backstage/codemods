@@ -1,0 +1,11 @@
+{
+  "migrate-mui-accordion-to-bui-accordion": [
+    {
+      "cardinality": {
+        "action": "todo-inserted",
+        "reason": "expanded, onChange"
+      },
+      "count": 1
+    }
+  ]
+}

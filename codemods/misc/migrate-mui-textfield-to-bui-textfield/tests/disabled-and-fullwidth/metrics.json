@@ -1,0 +1,44 @@
+{
+  "migrate-mui-textfield-to-bui-textfield": [
+    {
+      "cardinality": {
+        "action": "import-added"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-removed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "prop-dropped",
+        "prop": "fullWidth"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "prop-renamed",
+        "from": "disabled",
+        "to": "isDisabled"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "textfield-migrated"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "todo-inserted",
+        "reason": "fullWidth"
+      },
+      "count": 1
+    }
+  ]
+}
