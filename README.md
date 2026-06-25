@@ -40,6 +40,16 @@ Run the [`migration-recipe`](./codemods/v1.51.0/migration-recipe) to apply every
 
 Older versions are available in the [`codemods/`](./codemods) directory.
 
+### misc
+
+| Codemod                                                                                                            | Description                                                             |
+| ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
+| [migrate-mui-accordion-to-bui-accordion](./codemods/misc/migrate-mui-accordion-to-bui-accordion)                   | MUI 4 to BUI: Replace Accordion with BUI Accordion                      |
+| [migrate-mui-radio-checkbox-groups-to-bui-groups](./codemods/misc/migrate-mui-radio-checkbox-groups-to-bui-groups) | MUI 4 to BUI: Replace radio and checkbox group patterns with BUI groups |
+| [migrate-mui-select-family-to-bui-select](./codemods/misc/migrate-mui-select-family-to-bui-select)                 | MUI 4 to BUI: Replace Select wrapper patterns with BUI Select           |
+| [migrate-mui-slider-to-bui-slider](./codemods/misc/migrate-mui-slider-to-bui-slider)                               | MUI 4 to BUI: Replace Slider with BUI Slider                            |
+| [migrate-mui-textfield-to-bui-textfield](./codemods/misc/migrate-mui-textfield-to-bui-textfield)                   | MUI 4 to BUI: Replace TextField with BUI TextField                      |
+
 <!-- CODEMODS_END -->
 
 ## Usage

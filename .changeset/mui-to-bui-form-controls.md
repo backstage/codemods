@@ -2,7 +2,7 @@
 '@backstage/migrate-mui-select-family-to-bui-select': minor
 '@backstage/migrate-mui-textfield-to-bui-textfield': minor
 '@backstage/migrate-mui-accordion-to-bui-accordion': minor
-'@backstage/migrate-mui-radio-checkbox-groups-to-bui-groups': minor
+'@backstage/migrate-mui-radio-checkbox-to-bui': minor
 '@backstage/migrate-mui-slider-to-bui-slider': minor
 ---
 

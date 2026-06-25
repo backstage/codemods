@@ -2,7 +2,7 @@ import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
 
-const migrationMetric = useMetricAtom('migrate-mui-radio-checkbox-groups-to-bui-groups')
+const migrationMetric = useMetricAtom('migrate-mui-radio-checkbox-to-bui')
 
 const BUI_SOURCE = '@backstage/ui'
 
