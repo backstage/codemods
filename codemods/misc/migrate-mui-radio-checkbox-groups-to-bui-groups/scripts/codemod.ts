@@ -170,17 +170,12 @@ function addBuiImport(
     edits.push(
       anchorImport.replace(`${anchorImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`),
     )
-  } else if (importNodesToRemove.length === 1) {
+  } else if (importNodesToRemove.length >= 1) {
     const [importNode] = importNodesToRemove
     if (importNode) {
       edits.push(importNode.replace(`import { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
       migrationMetric.increment({ action: 'import-added' })
       return true
-    }
-  } else if (allImports.length > 0) {
-    const lastImport = allImports.at(-1)
-    if (lastImport) {
-      edits.push(lastImport.replace(`${lastImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
     }
   }
   migrationMetric.increment({ action: 'import-added' })

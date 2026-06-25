@@ -1,6 +1,5 @@
 
 
-import Checkbox from '@material-ui/core/Checkbox';
 import { Checkbox, CheckboxGroup } from '@backstage/ui';
 
 const MyComponent = () => (

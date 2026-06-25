@@ -6,6 +6,6 @@ import { Accordion, AccordionPanel, AccordionTrigger, Button } from '@backstage/
 const MyComponent = () => (
   <>
     <Button>Save</Button>
-    <Accordion><AccordionTrigger title="Info" /><AccordionPanel>Details</AccordionPanel></Accordion>
+    <Accordion><AccordionTrigger title={"Info"} /><AccordionPanel>Details</AccordionPanel></Accordion>
   </>
 );
