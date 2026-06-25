@@ -491,7 +491,18 @@ const GRID_TODO_PROPS = new Set([
 ])
 
 function hasBooleanProp(opening: SgNode<TSX>, propName: string): boolean {
-  return getPropAttr(opening, propName) !== null
+  const attr = getPropAttr(opening, propName)
+  if (!attr) {
+    return false
+  }
+
+  const jsxExpr = attr.find({ rule: { kind: 'jsx_expression' } })
+  if (!jsxExpr) {
+    return true
+  }
+
+  const inner = jsxExpr.text().slice(1, -1).trim()
+  return inner !== 'false'
 }
 
 function getPropStaticNumericValue(opening: SgNode<TSX>, propName: string): string | null {

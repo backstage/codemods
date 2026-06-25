@@ -356,6 +356,45 @@ function transformIconJsx(rootNode: SgNode<TSX>, iconLocalNames: Set<string>, ed
   }
 }
 
+function isBlueprintMakeCall(call: SgNode<TSX>): boolean {
+  const fn = call.field('function')
+  if (fn?.kind() !== 'member_expression') {
+    return false
+  }
+
+  const method = fn.find({ rule: { kind: 'property_identifier' } })?.text()
+  if (method !== 'make' && method !== 'makeWithOverrides') {
+    return false
+  }
+
+  return /Blueprint\.(?:make|makeWithOverrides)$/.test(fn.text().replaceAll(/\s/g, ''))
+}
+
+function isObjectInExtensionConfig(objectNode: SgNode<TSX>): boolean {
+  let current: SgNode<TSX> | null = objectNode
+  while (current) {
+    if (current.kind() === 'arguments') {
+      const call = current.parent()
+      if (call?.kind() === 'call_expression' && isBlueprintMakeCall(call)) {
+        return true
+      }
+    }
+    current = current.parent()
+  }
+  return false
+}
+
+function isExtensionConfigIconPair(pair: SgNode<TSX>): boolean {
+  let current: SgNode<TSX> | null = pair
+  while (current) {
+    if (current.kind() === 'object' && isObjectInExtensionConfig(current)) {
+      return true
+    }
+    current = current.parent()
+  }
+  return false
+}
+
 function transformExtensionIconSlots(rootNode: SgNode<TSX>, iconLocalNames: Set<string>, edits: Edit[]): void {
   const iconPairs = rootNode.findAll({
     rule: {
@@ -368,6 +407,10 @@ function transformExtensionIconSlots(rootNode: SgNode<TSX>, iconLocalNames: Set<
   })
 
   for (const pair of iconPairs) {
+    if (!isExtensionConfigIconPair(pair)) {
+      continue
+    }
+
     const valueNode = pair.field('value')
     if (!valueNode || !valueNode.is('identifier')) {
       continue

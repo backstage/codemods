@@ -13,8 +13,10 @@ nodes:
           language: 'tsx'
           semantic_analysis: file
           include:
-            - '**/*.ts'
-            - '**/*.tsx'
+            - '**/src/**/*.ts'
+            - '**/src/**/*.tsx'
+            - '**/dev/**/*.ts'
+            - '**/dev/**/*.tsx'
           exclude:
             - '**/node_modules/**'
       - name: 'Remove @material-ui/* packages when no longer imported in the package'

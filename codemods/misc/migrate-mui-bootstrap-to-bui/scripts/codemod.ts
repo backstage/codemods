@@ -31,7 +31,7 @@ function normalizeFilePath(filename: string): string {
 function isAppEntryFile(filename: string, rootNode: SgNode<TSX>): boolean {
   const normalized = normalizeFilePath(filename)
 
-  if (/(?:^|\/)App\.tsx?$/.test(normalized)) {
+  if (/(?:^|\/)packages\/app\/src\/App\.tsx?$/.test(normalized)) {
     return true
   }
   if (/(?:^|\/)src\/index\.tsx?$/.test(normalized)) {
