@@ -1,5 +1,5 @@
 {
-  "migrate-mui-radio-checkbox-groups-to-bui-groups": [
+  "migrate-mui-radio-checkbox-to-bui": [
     {
       "cardinality": {
         "action": "checkbox-group-migrated"

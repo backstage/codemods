@@ -1,1 +1,1 @@
-# @backstage/migrate-mui-radio-checkbox-groups-to-bui-groups
+# @backstage/migrate-mui-radio-checkbox-to-bui
