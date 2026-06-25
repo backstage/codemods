@@ -10,7 +10,7 @@
       "cardinality": {
         "action": "version-fallback",
         "package": "@backstage/ui",
-        "reason": "registry-unavailable"
+        "reason": "disabled"
       },
       "count": 1
     }

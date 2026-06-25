@@ -73,7 +73,7 @@ async function resolveDependencyVersion(
     return paramOverride
   }
 
-  if (params.resolveLatestVersions === false) {
+  if (params.resolveLatestVersions !== true) {
     migrationMetric.increment({ action: 'version-fallback', package: packageName, reason: 'disabled' })
     return fallback
   }
