@@ -361,6 +361,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/remove-mui-dependencies@workspace:codemods/misc/remove-mui-dependencies":
+  version: 0.0.0-use.local
+  resolution: "@backstage/remove-mui-dependencies@workspace:codemods/misc/remove-mui-dependencies"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/remove-stitching-strategy-mode@workspace:codemods/v1.52.0/remove-stitching-strategy-mode":
   version: 0.0.0-use.local
   resolution: "@backstage/remove-stitching-strategy-mode@workspace:codemods/v1.52.0/remove-stitching-strategy-mode"

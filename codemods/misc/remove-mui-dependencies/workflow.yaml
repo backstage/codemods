@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+nodes:
+  - id: apply-transforms
+    name: 'Remove unused MUI dependencies from package.json'
+    type: automatic
+    steps:
+      - name: 'Scan source files for remaining @material-ui/* imports'
+        js-ast-grep:
+          js_file: scripts/scan-mui-usage.ts
+          language: 'tsx'
+          semantic_analysis: file
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+      - name: 'Remove @material-ui/* packages when no longer imported in the package'
+        js-ast-grep:
+          js_file: scripts/codemod.ts
+          language: 'json'
+          include:
+            - '**/package.json'
+          exclude:
+            - '**/node_modules/**'
