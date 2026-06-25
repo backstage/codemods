@@ -204,8 +204,9 @@ function getSimpleOnCloseHandler(opening: SgNode<TSX>): string | null {
       children.push(child)
     }
   }
-  if (children.length === 1 && children[0]!.is('identifier')) {
-    return children[0].text()
+  const [onlyChild] = children
+  if (children.length === 1 && onlyChild?.is('identifier')) {
+    return onlyChild.text()
   }
   return null
 }
@@ -339,8 +340,8 @@ function unwrapMenuList(
 
   // If the only meaningful child is a MenuList, unwrap it
   if (meaningfulChildren.length === 1) {
-    const onlyChild = meaningfulChildren[0]!
-    if (onlyChild.kind() === 'jsx_element') {
+    const [onlyChild] = meaningfulChildren
+    if (onlyChild?.kind() === 'jsx_element') {
       const childOpening = onlyChild.child(0)
       if (childOpening) {
         const childName = getElementName(childOpening)
@@ -466,14 +467,14 @@ function transformMenuElements(rootNode: SgNode<TSX>, localNames: Map<string, st
   }
 }
 
-const transform: Codemod<TSX> = async (root) => {
+const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
   const { localNames, importNodesToRemove } = collectMenuImports(rootNode)
 
   if (localNames.size === 0) {
-    return null
+    return Promise.resolve(null)
   }
 
   // Remove MUI imports
@@ -498,7 +499,7 @@ const transform: Codemod<TSX> = async (root) => {
   // Transform elements
   transformMenuElements(rootNode, localNames, edits)
 
-  return edits.length > 0 ? rootNode.commitEdits(edits) : null
+  return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }
 
 export default transform

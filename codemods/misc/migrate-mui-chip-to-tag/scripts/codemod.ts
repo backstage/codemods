@@ -291,11 +291,18 @@ function transformChipElements(
       needsTagGroup = true
       const tags = group.map((c) => buildTagReplacement(c))
       const tagGroupContent = tags.join('\n  ')
-      edits.push(group[0]!.element.replace(`<TagGroup>\n  ${tagGroupContent}\n</TagGroup>`))
+      const [firstChip] = group
+      if (!firstChip) {
+        continue
+      }
+      edits.push(firstChip.element.replace(`<TagGroup>\n  ${tagGroupContent}\n</TagGroup>`))
       migrationMetric.increment({ action: 'tag-group-created', count: `${group.length}` })
 
       for (let i = 1; i < group.length; i++) {
-        edits.push(group[i]!.element.replace(''))
+        const chip = group[i]
+        if (chip) {
+          edits.push(chip.element.replace(''))
+        }
       }
       for (const c of group) {
         groupedElements.add(c.element.id())
@@ -326,14 +333,14 @@ function transformChipElements(
   return { needsTagGroup }
 }
 
-const transform: Codemod<TSX> = async (root) => {
+const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
   const { chipLocalName, importNodesToRemove } = collectChipImports(rootNode)
 
   if (!chipLocalName) {
-    return null
+    return Promise.resolve(null)
   }
 
   // Remove MUI imports
@@ -352,7 +359,7 @@ const transform: Codemod<TSX> = async (root) => {
   }
   addBuiImport(rootNode, importNames, edits)
 
-  return edits.length > 0 ? rootNode.commitEdits(edits) : null
+  return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }
 
 export default transform

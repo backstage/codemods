@@ -208,8 +208,9 @@ function getSimpleOnCloseHandler(opening: SgNode<TSX>): string | null {
       children.push(child)
     }
   }
-  if (children.length === 1 && children[0]!.is('identifier')) {
-    return children[0].text()
+  const [onlyChild] = children
+  if (children.length === 1 && onlyChild?.is('identifier')) {
+    return onlyChild.text()
   }
   return null
 }
@@ -244,7 +245,7 @@ function transformFooterCloseButtons(content: string, closeHandler: string | nul
     'g',
   )
 
-  return content.replace(buttonPattern, (_match, attrs, label) => {
+  return content.replace(buttonPattern, (_match: string, attrs: string, label: string) => {
     migrationMetric.increment({ action: 'footer-close-button-migrated' })
     const extraAttrs = attrs.trim()
     const attrStr = extraAttrs.length > 0 ? ` ${extraAttrs}` : ''
@@ -273,7 +274,10 @@ function transformDialogChildren(
       if (childOpening) {
         const childName = getElementName(childOpening)
         if (childName && localNames.has(childName)) {
-          const muiName = localNames.get(childName)!
+          const muiName = localNames.get(childName)
+          if (!muiName) {
+            continue
+          }
           const buiName = COMPONENT_MAP[muiName]
           if (buiName) {
             let innerContent = getChildContent(child)
@@ -425,14 +429,14 @@ function transformDialogElements(
   }
 }
 
-const transform: Codemod<TSX> = async (root) => {
+const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
   const { localNames, importNodesToRemove } = collectDialogImports(rootNode)
 
   if (localNames.size === 0) {
-    return null
+    return Promise.resolve(null)
   }
 
   for (const imp of importNodesToRemove) {
@@ -452,7 +456,7 @@ const transform: Codemod<TSX> = async (root) => {
   transformDialogElements(rootNode, localNames, edits, buiNames)
   addBuiImport(rootNode, [...buiNames], edits)
 
-  return edits.length > 0 ? rootNode.commitEdits(edits) : null
+  return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }
 
 export default transform
