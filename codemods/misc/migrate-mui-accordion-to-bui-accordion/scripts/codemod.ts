@@ -5,6 +5,7 @@ import { useMetricAtom } from 'codemod:metrics'
 const migrationMetric = useMetricAtom('migrate-mui-accordion-to-bui-accordion')
 
 const BUI_SOURCE = '@backstage/ui'
+const MUI_BARREL_SOURCE = '@material-ui/core'
 
 const MUI_ACCORDION_COMPONENTS = ['Accordion', 'AccordionSummary', 'AccordionDetails', 'AccordionActions']
 
@@ -24,6 +25,39 @@ const SUMMARY_TODO_PROPS = new Set(['classes', 'IconButtonProps'])
 
 function escapeRegex(str: string): string {
   return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function wrapWithTodo(todoComment: string, elementText: string): string {
+  return `<>
+${todoComment}
+${elementText}
+</>`
+}
+
+function rebuildImportWithout(importStmt: SgNode<TSX>, specifiersToRemove: Set<string>): string {
+  const specifiers = importStmt.findAll({ rule: { kind: 'import_specifier' } })
+  const remaining: string[] = []
+  for (const spec of specifiers) {
+    const identifiers = spec.findAll({
+      rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
+    })
+    const importedName = identifiers[0]?.text()
+    if (importedName && !specifiersToRemove.has(importedName)) {
+      remaining.push(spec.text())
+    }
+  }
+
+  if (remaining.length === 0) {
+    return ''
+  }
+
+  const sourceNode = importStmt.find({ rule: { kind: 'string' } })
+  const sourceText = sourceNode?.text() ?? `'${MUI_BARREL_SOURCE}'`
+
+  if (remaining.length <= 2) {
+    return `import { ${remaining.join(', ')} } from ${sourceText};`
+  }
+  return `import {\n  ${remaining.join(',\n  ')},\n} from ${sourceText};`
 }
 
 function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode<TSX>[] {
@@ -71,11 +105,13 @@ function getNamedImportLocalName(imp: SgNode<TSX>, targetName: string): string |
 interface AccordionImports {
   localNames: Map<string, string>
   importNodesToRemove: SgNode<TSX>[]
+  barrelImportsToPrune: { imp: SgNode<TSX>; namesToRemove: Set<string> }[]
 }
 
 function collectAccordionImports(rootNode: SgNode<TSX>): AccordionImports {
   const localNames = new Map<string, string>()
   const importNodesToRemove: SgNode<TSX>[] = []
+  const barrelImportsToPrune: { imp: SgNode<TSX>; namesToRemove: Set<string> }[] = []
 
   for (const componentName of MUI_ACCORDION_COMPONENTS) {
     for (const imp of findImportStatementsFrom(rootNode, `@material-ui/core/${componentName}`)) {
@@ -87,27 +123,34 @@ function collectAccordionImports(rootNode: SgNode<TSX>): AccordionImports {
     }
   }
 
-  for (const imp of findImportStatementsFrom(rootNode, '@material-ui/core')) {
-    let foundCount = 0
+  for (const imp of findImportStatementsFrom(rootNode, MUI_BARREL_SOURCE)) {
+    const foundNames = new Set<string>()
     for (const componentName of MUI_ACCORDION_COMPONENTS) {
       const localName = getNamedImportLocalName(imp, componentName)
       if (localName) {
         localNames.set(localName, componentName)
-        foundCount++
+        foundNames.add(componentName)
       }
     }
-    if (foundCount > 0) {
+    if (foundNames.size > 0) {
       const allSpecifiers = imp.findAll({ rule: { kind: 'import_specifier' } })
-      if (foundCount >= allSpecifiers.length) {
+      if (foundNames.size >= allSpecifiers.length) {
         importNodesToRemove.push(imp)
+      } else {
+        barrelImportsToPrune.push({ imp, namesToRemove: foundNames })
       }
     }
   }
 
-  return { localNames, importNodesToRemove }
+  return { localNames, importNodesToRemove, barrelImportsToPrune }
 }
 
-function addBuiImport(rootNode: SgNode<TSX>, names: string[], edits: Edit[]): void {
+function addBuiImport(
+  rootNode: SgNode<TSX>,
+  importNodesToRemove: SgNode<TSX>[],
+  names: string[],
+  edits: Edit[],
+): boolean {
   const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
   const existingImport = existingImports[0] ?? null
 
@@ -129,19 +172,33 @@ function addBuiImport(rootNode: SgNode<TSX>, names: string[], edits: Edit[]): vo
       edits.push(namedImports.replace(`{ ${existing.join(', ')} }`))
       migrationMetric.increment({ action: 'import-merged' })
     }
-  } else {
-    const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
-    const sortedNames = [...names].sort()
-    if (allImports.length > 0) {
-      const lastImport = allImports.at(-1)
-      if (lastImport) {
-        edits.push(
-          lastImport.replace(`${lastImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`),
-        )
-      }
-    }
-    migrationMetric.increment({ action: 'import-added' })
+    return false
   }
+
+  const sortedNames = [...names].sort()
+  const removableIds = new Set(importNodesToRemove.map((imp) => imp.id()))
+  const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
+  const anchorImport = [...allImports].reverse().find((imp) => !removableIds.has(imp.id())) ?? null
+
+  if (anchorImport) {
+    edits.push(
+      anchorImport.replace(`${anchorImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`),
+    )
+  } else if (importNodesToRemove.length === 1) {
+    const [importNode] = importNodesToRemove
+    if (importNode) {
+      edits.push(importNode.replace(`import { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
+      migrationMetric.increment({ action: 'import-added' })
+      return true
+    }
+  } else if (allImports.length > 0) {
+    const lastImport = allImports.at(-1)
+    if (lastImport) {
+      edits.push(lastImport.replace(`${lastImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
+    }
+  }
+  migrationMetric.increment({ action: 'import-added' })
+  return false
 }
 
 function getElementName(opening: SgNode<TSX>): string | null {
@@ -327,10 +384,16 @@ function transformAccordionChildren(accordionElement: SgNode<TSX>, localNames: M
   return parts.join('')
 }
 
-function transformAccordionElements(rootNode: SgNode<TSX>, localNames: Map<string, string>, edits: Edit[]): void {
+function transformAccordionElements(
+  rootNode: SgNode<TSX>,
+  localNames: Map<string, string>,
+  edits: Edit[],
+): { preserveImport: boolean; migrated: boolean } {
+  let preserveImport = false
+  let migrated = false
   const accordionLocalName = [...localNames.entries()].find(([, v]) => v === 'Accordion')?.[0]
   if (!accordionLocalName) {
-    return
+    return { preserveImport: false, migrated: false }
   }
 
   const jsxElements = rootNode.findAll({
@@ -362,9 +425,13 @@ function transformAccordionElements(rootNode: SgNode<TSX>, localNames: Map<strin
     }
 
     if (needsTodo) {
+      preserveImport = true
       edits.push(
         el.replace(
-          `{/* TODO(backstage-codemod): finish accordion migration manually (${todoReasons.join(', ')}) */}\n${el.text()}`,
+          wrapWithTodo(
+            `{/* TODO(backstage-codemod): finish accordion migration manually (${todoReasons.join(', ')}) */}`,
+            el.text(),
+          ),
         ),
       )
       migrationMetric.increment({ action: 'todo-inserted', reason: todoReasons.join(', ') })
@@ -373,6 +440,7 @@ function transformAccordionElements(rootNode: SgNode<TSX>, localNames: Map<strin
 
     if (isSelfClosing) {
       edits.push(el.replace('<Accordion />'))
+      migrated = true
       migrationMetric.increment({ action: 'accordion-migrated' })
       continue
     }
@@ -382,9 +450,13 @@ function transformAccordionElements(rootNode: SgNode<TSX>, localNames: Map<strin
 
     if (transformedChildren === null) {
       // Complex content — TODO the whole thing
+      preserveImport = true
       edits.push(
         el.replace(
-          `{/* TODO(backstage-codemod): finish accordion migration manually (complex-summary) */}\n${el.text()}`,
+          wrapWithTodo(
+            `{/* TODO(backstage-codemod): finish accordion migration manually (complex-summary) */}`,
+            el.text(),
+          ),
         ),
       )
       migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-summary' })
@@ -392,42 +464,57 @@ function transformAccordionElements(rootNode: SgNode<TSX>, localNames: Map<strin
     }
 
     edits.push(el.replace(`<Accordion>${transformedChildren}</Accordion>`))
+    migrated = true
     migrationMetric.increment({ action: 'accordion-migrated' })
   }
+
+  return { preserveImport, migrated }
 }
 
 const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
-  const { localNames, importNodesToRemove } = collectAccordionImports(rootNode)
+  const { localNames, importNodesToRemove, barrelImportsToPrune } = collectAccordionImports(rootNode)
 
   if (localNames.size === 0) {
     return Promise.resolve(null)
   }
 
-  // Remove MUI imports
-  for (const imp of importNodesToRemove) {
-    edits.push(imp.replace(''))
-    migrationMetric.increment({ action: 'import-removed' })
-  }
+  const { preserveImport, migrated } = transformAccordionElements(rootNode, localNames, edits)
 
-  // Determine BUI names needed
   const buiNames = new Set<string>()
-  buiNames.add('Accordion')
-  for (const [, muiName] of localNames) {
-    if (muiName === 'AccordionSummary') {
-      buiNames.add('AccordionTrigger')
-    }
-    if (muiName === 'AccordionDetails') {
-      buiNames.add('AccordionPanel')
+  if (migrated) {
+    buiNames.add('Accordion')
+    for (const [, muiName] of localNames) {
+      if (muiName === 'AccordionSummary') {
+        buiNames.add('AccordionTrigger')
+      }
+      if (muiName === 'AccordionDetails') {
+        buiNames.add('AccordionPanel')
+      }
     }
   }
 
-  addBuiImport(rootNode, [...buiNames], edits)
+  let replacedImport = false
+  if (buiNames.size > 0) {
+    replacedImport = addBuiImport(rootNode, importNodesToRemove, [...buiNames], edits)
+  }
 
-  // Transform elements
-  transformAccordionElements(rootNode, localNames, edits)
+  if (!preserveImport) {
+    for (const { imp, namesToRemove } of barrelImportsToPrune) {
+      edits.push(imp.replace(rebuildImportWithout(imp, namesToRemove)))
+      migrationMetric.increment({ action: 'import-pruned' })
+    }
+    for (const imp of importNodesToRemove) {
+      if (replacedImport && imp.id() === importNodesToRemove[0]?.id()) {
+        migrationMetric.increment({ action: 'import-removed' })
+        continue
+      }
+      edits.push(imp.replace(''))
+      migrationMetric.increment({ action: 'import-removed' })
+    }
+  }
 
   return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }

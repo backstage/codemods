@@ -5,6 +5,7 @@ import { useMetricAtom } from 'codemod:metrics'
 const migrationMetric = useMetricAtom('migrate-mui-slider-to-bui-slider')
 
 const BUI_SOURCE = '@backstage/ui'
+const MUI_BARREL_SOURCE = '@material-ui/core'
 
 /** Props that rename mechanically. */
 const PROP_RENAMES: Record<string, string> = {
@@ -45,6 +46,39 @@ const TODO_PROPS = new Set([
 
 function escapeRegex(str: string): string {
   return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function wrapWithTodo(todoComment: string, elementText: string): string {
+  return `<>
+${todoComment}
+${elementText}
+</>`
+}
+
+function rebuildImportWithout(importStmt: SgNode<TSX>, specifiersToRemove: Set<string>): string {
+  const specifiers = importStmt.findAll({ rule: { kind: 'import_specifier' } })
+  const remaining: string[] = []
+  for (const spec of specifiers) {
+    const identifiers = spec.findAll({
+      rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
+    })
+    const importedName = identifiers[0]?.text()
+    if (importedName && !specifiersToRemove.has(importedName)) {
+      remaining.push(spec.text())
+    }
+  }
+
+  if (remaining.length === 0) {
+    return ''
+  }
+
+  const sourceNode = importStmt.find({ rule: { kind: 'string' } })
+  const sourceText = sourceNode?.text() ?? `'${MUI_BARREL_SOURCE}'`
+
+  if (remaining.length <= 2) {
+    return `import { ${remaining.join(', ')} } from ${sourceText};`
+  }
+  return `import {\n  ${remaining.join(',\n  ')},\n} from ${sourceText};`
 }
 
 function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode<TSX>[] {
@@ -92,9 +126,11 @@ function getNamedImportLocalName(imp: SgNode<TSX>, targetName: string): string |
 function collectSliderImports(rootNode: SgNode<TSX>): {
   sliderLocalName: string | null
   importNodesToRemove: SgNode<TSX>[]
+  barrelImportsToPrune: { imp: SgNode<TSX>; namesToRemove: Set<string> }[]
 } {
   let sliderLocalName: string | null = null
   const importNodesToRemove: SgNode<TSX>[] = []
+  const barrelImportsToPrune: { imp: SgNode<TSX>; namesToRemove: Set<string> }[] = []
 
   // Default import: import Slider from '@material-ui/core/Slider'
   for (const imp of findImportStatementsFrom(rootNode, '@material-ui/core/Slider')) {
@@ -103,21 +139,23 @@ function collectSliderImports(rootNode: SgNode<TSX>): {
   }
 
   // Named import from barrel: import { Slider } from '@material-ui/core'
-  for (const imp of findImportStatementsFrom(rootNode, '@material-ui/core')) {
+  for (const imp of findImportStatementsFrom(rootNode, MUI_BARREL_SOURCE)) {
     const localName = getNamedImportLocalName(imp, 'Slider')
     if (localName) {
       sliderLocalName = localName
       const allSpecifiers = imp.findAll({ rule: { kind: 'import_specifier' } })
       if (allSpecifiers.length <= 1) {
         importNodesToRemove.push(imp)
+      } else {
+        barrelImportsToPrune.push({ imp, namesToRemove: new Set(['Slider']) })
       }
     }
   }
 
-  return { sliderLocalName, importNodesToRemove }
+  return { sliderLocalName, importNodesToRemove, barrelImportsToPrune }
 }
 
-function addSliderToBuiImport(rootNode: SgNode<TSX>, edits: Edit[]): void {
+function addSliderToBuiImport(rootNode: SgNode<TSX>, importNodesToRemove: SgNode<TSX>[], edits: Edit[]): boolean {
   const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
   const existingImport = existingImports[0] ?? null
 
@@ -137,16 +175,31 @@ function addSliderToBuiImport(rootNode: SgNode<TSX>, edits: Edit[]): void {
       edits.push(namedImports.replace(`{ ${names.join(', ')} }`))
       migrationMetric.increment({ action: 'import-merged' })
     }
-  } else {
-    const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
-    if (allImports.length > 0) {
-      const lastImport = allImports.at(-1)
-      if (lastImport) {
-        edits.push(lastImport.replace(`${lastImport.text()}\nimport { Slider } from '${BUI_SOURCE}';`))
-      }
-    }
-    migrationMetric.increment({ action: 'import-added' })
+    return false
   }
+
+  const removableIds = new Set(importNodesToRemove.map((imp) => imp.id()))
+  const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
+  const anchorImport = [...allImports].reverse().find((imp) => !removableIds.has(imp.id())) ?? null
+
+  if (anchorImport) {
+    edits.push(anchorImport.replace(`${anchorImport.text()}\nimport { Slider } from '${BUI_SOURCE}';`))
+  } else if (importNodesToRemove.length === 1) {
+    const [importNode] = importNodesToRemove
+    if (importNode) {
+      edits.push(importNode.replace(`import { Slider } from '${BUI_SOURCE}';`))
+      migrationMetric.increment({ action: 'import-added' })
+      return true
+    }
+  } else if (allImports.length > 0) {
+    const lastImport = allImports.at(-1)
+    if (lastImport) {
+      edits.push(lastImport.replace(`${lastImport.text()}\nimport { Slider } from '${BUI_SOURCE}';`))
+    }
+  }
+
+  migrationMetric.increment({ action: 'import-added' })
+  return false
 }
 
 function getElementName(opening: SgNode<TSX>): string | null {
@@ -233,7 +286,13 @@ function tryRewriteOnChangeHandler(attr: SgNode<TSX>): string | null {
   return `{${valueText} => ${bodyText}}`
 }
 
-function transformSliderElements(rootNode: SgNode<TSX>, sliderLocalName: string, edits: Edit[]): void {
+function transformSliderElements(
+  rootNode: SgNode<TSX>,
+  sliderLocalName: string,
+  edits: Edit[],
+): { preserveImport: boolean; migrated: boolean } {
+  let preserveImport = false
+  let migrated = false
   const jsxElements = rootNode.findAll({
     rule: {
       any: [{ kind: 'jsx_element' }, { kind: 'jsx_self_closing_element' }],
@@ -264,105 +323,97 @@ function transformSliderElements(rootNode: SgNode<TSX>, sliderLocalName: string,
     }
 
     if (needsTodo) {
+      preserveImport = true
       edits.push(
         el.replace(
-          `{/* TODO(backstage-codemod): finish slider migration manually (${todoReasons.join(', ')}) */}\n${el.text()}`,
+          wrapWithTodo(
+            `{/* TODO(backstage-codemod): finish slider migration manually (${todoReasons.join(', ')}) */}`,
+            el.text(),
+          ),
         ),
       )
       migrationMetric.increment({ action: 'todo-inserted', reason: todoReasons.join(', ') })
       continue
     }
 
-    // Build new props
     const newProps: string[] = []
     let handlerTodo = false
 
-    const allAttrs = opening.findAll({ rule: { kind: 'jsx_attribute' } })
-    for (const attr of allAttrs) {
-      const propIdent = attr.find({ rule: { kind: 'property_identifier' } })
-      if (!propIdent) {
-        continue
-      }
-      const propName = propIdent.text()
-
-      // Rename props
-      const renamed = PROP_RENAMES[propName]
-      if (renamed) {
-        let valuePart: string | null = null
-        for (const child of attr.children()) {
-          const kind = child.kind()
-          if (kind === 'string' || kind === 'jsx_expression') {
-            valuePart = child.text()
+    for (const child of opening.children()) {
+      const kind = child.kind()
+      if (kind === 'jsx_attribute') {
+        const propIdent = child.find({ rule: { kind: 'property_identifier' } })
+        if (!propIdent) {
+          continue
+        }
+        const propName = propIdent.text()
+        const renamed = PROP_RENAMES[propName]
+        if (renamed) {
+          let valuePart: string | null = null
+          for (const attrChild of child.children()) {
+            const attrKind = attrChild.kind()
+            if (attrKind === 'string' || attrKind === 'jsx_expression') {
+              valuePart = attrChild.text()
+              break
+            }
+          }
+          newProps.push(valuePart !== null ? `${renamed}=${valuePart}` : renamed)
+          migrationMetric.increment({ action: 'prop-renamed', from: propName, to: renamed })
+          continue
+        }
+        if (propName === 'onChange') {
+          const rewritten = tryRewriteOnChangeHandler(child)
+          if (rewritten !== null) {
+            newProps.push(`onChange=${rewritten}`)
+            migrationMetric.increment({ action: 'onChange-rewritten' })
+          } else {
+            preserveImport = true
+            edits.push(
+              el.replace(
+                wrapWithTodo(
+                  `{/* TODO(backstage-codemod): finish slider migration manually (complex-onChange) */}`,
+                  el.text(),
+                ),
+              ),
+            )
+            migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-onChange' })
+            handlerTodo = true
             break
           }
+          continue
         }
-        if (valuePart !== null) {
-          newProps.push(`${renamed}=${valuePart}`)
-        } else {
-          newProps.push(renamed)
+        if (propName === 'onChangeCommitted') {
+          const rewritten = tryRewriteOnChangeHandler(child)
+          if (rewritten !== null) {
+            newProps.push(`onChangeEnd=${rewritten}`)
+            migrationMetric.increment({ action: 'onChangeCommitted-rewritten' })
+          } else {
+            preserveImport = true
+            edits.push(
+              el.replace(
+                wrapWithTodo(
+                  `{/* TODO(backstage-codemod): finish slider migration manually (onChangeCommitted) */}`,
+                  el.text(),
+                ),
+              ),
+            )
+            migrationMetric.increment({ action: 'todo-inserted', reason: 'onChangeCommitted' })
+            handlerTodo = true
+          }
+          continue
         }
-        migrationMetric.increment({ action: 'prop-renamed', from: propName, to: renamed })
-        continue
-      }
-
-      // Handle onChange
-      if (propName === 'onChange') {
-        const rewritten = tryRewriteOnChangeHandler(attr)
-        if (rewritten !== null) {
-          newProps.push(`onChange=${rewritten}`)
-          migrationMetric.increment({ action: 'onChange-rewritten' })
-        } else {
-          // Non-trivial handler — insert TODO for whole element
-          edits.push(
-            el.replace(
-              `{/* TODO(backstage-codemod): finish slider migration manually (complex-onChange) */}\n${el.text()}`,
-            ),
-          )
-          migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-onChange' })
-          handlerTodo = true
-          break
+        if (PASSTHROUGH_PROPS.has(propName)) {
+          newProps.push(child.text())
+          continue
         }
-        continue
+        newProps.push(child.text())
+      } else if (kind === 'jsx_expression' && child.text().startsWith('{...')) {
+        newProps.push(child.text())
       }
-
-      // Handle onChangeCommitted → onChangeEnd when handler is trivial
-      if (propName === 'onChangeCommitted') {
-        const rewritten = tryRewriteOnChangeHandler(attr)
-        if (rewritten !== null) {
-          newProps.push(`onChangeEnd=${rewritten}`)
-          migrationMetric.increment({ action: 'onChangeCommitted-rewritten' })
-        } else {
-          edits.push(
-            el.replace(
-              `{/* TODO(backstage-codemod): finish slider migration manually (onChangeCommitted) */}\n${el.text()}`,
-            ),
-          )
-          migrationMetric.increment({ action: 'todo-inserted', reason: 'onChangeCommitted' })
-          handlerTodo = true
-        }
-        continue
-      }
-
-      // Passthrough props
-      if (PASSTHROUGH_PROPS.has(propName)) {
-        newProps.push(attr.text())
-        continue
-      }
-
-      // Unknown prop — preserve as-is
-      newProps.push(attr.text())
     }
 
     if (handlerTodo) {
       continue
-    }
-
-    // Preserve spread attributes
-    const spreadAttrs = opening.findAll({ rule: { kind: 'jsx_expression' } })
-    for (const spread of spreadAttrs) {
-      if (spread.text().startsWith('{...')) {
-        newProps.push(spread.text())
-      }
     }
 
     const propsStr = newProps.length > 0 ? ` ${newProps.join(' ')}` : ''
@@ -379,31 +430,44 @@ function transformSliderElements(rootNode: SgNode<TSX>, sliderLocalName: string,
       edits.push(el.replace(`<Slider${propsStr}>${children}</Slider>`))
     }
 
+    migrated = true
     migrationMetric.increment({ action: 'slider-migrated' })
   }
+
+  return { preserveImport, migrated }
 }
 
 const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
-  const { sliderLocalName, importNodesToRemove } = collectSliderImports(rootNode)
+  const { sliderLocalName, importNodesToRemove, barrelImportsToPrune } = collectSliderImports(rootNode)
 
   if (!sliderLocalName) {
     return Promise.resolve(null)
   }
 
-  // Remove MUI imports
-  for (const imp of importNodesToRemove) {
-    edits.push(imp.replace(''))
-    migrationMetric.increment({ action: 'import-removed' })
+  const { preserveImport, migrated } = transformSliderElements(rootNode, sliderLocalName, edits)
+
+  let replacedImport = false
+  if (migrated) {
+    replacedImport = addSliderToBuiImport(rootNode, importNodesToRemove, edits)
   }
 
-  // Add BUI import
-  addSliderToBuiImport(rootNode, edits)
-
-  // Transform JSX elements
-  transformSliderElements(rootNode, sliderLocalName, edits)
+  if (!preserveImport) {
+    for (const { imp, namesToRemove } of barrelImportsToPrune) {
+      edits.push(imp.replace(rebuildImportWithout(imp, namesToRemove)))
+      migrationMetric.increment({ action: 'import-pruned' })
+    }
+    for (const imp of importNodesToRemove) {
+      if (replacedImport && imp.id() === importNodesToRemove[0]?.id()) {
+        migrationMetric.increment({ action: 'import-removed' })
+        continue
+      }
+      edits.push(imp.replace(''))
+      migrationMetric.increment({ action: 'import-removed' })
+    }
+  }
 
   return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }

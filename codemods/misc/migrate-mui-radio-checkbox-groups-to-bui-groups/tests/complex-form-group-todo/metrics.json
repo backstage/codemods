@@ -2,12 +2,6 @@
   "migrate-mui-radio-checkbox-to-bui": [
     {
       "cardinality": {
-        "action": "import-removed"
-      },
-      "count": 3
-    },
-    {
-      "cardinality": {
         "action": "todo-inserted",
         "reason": "complex-form-group"
       },
