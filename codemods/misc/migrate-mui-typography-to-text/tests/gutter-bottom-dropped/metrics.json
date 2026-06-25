@@ -20,6 +20,13 @@
     },
     {
       "cardinality": {
+        "action": "todo-inserted",
+        "reason": "gutterBottom"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
         "action": "typography-migrated",
         "component": "Typography"
       },

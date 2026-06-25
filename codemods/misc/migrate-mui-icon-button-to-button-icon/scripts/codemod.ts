@@ -80,7 +80,7 @@ function collectIconButtonImports(rootNode: SgNode<TSX>): {
   return { iconButtonLocalName, importNodesToRemove }
 }
 
-function addButtonIconToBuiImport(rootNode: SgNode<TSX>, edits: Edit[]): void {
+function addButtonIconToBuiImport(rootNode: SgNode<TSX>, importNodesToRemove: SgNode<TSX>[], edits: Edit[]): boolean {
   const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
   const existingImport = existingImports[0] ?? null
 
@@ -110,16 +110,38 @@ function addButtonIconToBuiImport(rootNode: SgNode<TSX>, edits: Edit[]): void {
         migrationMetric.increment({ action: 'import-merged' })
       }
     }
-  } else {
-    const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
-    if (allImports.length > 0) {
-      const lastImport = allImports.at(-1)
-      if (lastImport) {
-        edits.push(lastImport.replace(`${lastImport.text()}\nimport { ButtonIcon } from '${BUI_SOURCE}';`))
-      }
-    }
-    migrationMetric.increment({ action: 'import-added' })
+    return false
   }
+
+  const removableIds = new Set(importNodesToRemove.map((imp) => imp.id()))
+  const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
+  const anchorImport = [...allImports].reverse().find((imp) => !removableIds.has(imp.id())) ?? null
+
+  if (anchorImport) {
+    edits.push(anchorImport.replace(`${anchorImport.text()}\nimport { ButtonIcon } from '${BUI_SOURCE}';`))
+  } else if (importNodesToRemove.length === 1) {
+    const [importNode] = importNodesToRemove
+    if (importNode) {
+      edits.push(importNode.replace(`import { ButtonIcon } from '${BUI_SOURCE}';`))
+      migrationMetric.increment({ action: 'import-added' })
+      return true
+    }
+  } else if (allImports.length > 0) {
+    const lastImport = allImports.at(-1)
+    if (lastImport) {
+      edits.push(lastImport.replace(`${lastImport.text()}\nimport { ButtonIcon } from '${BUI_SOURCE}';`))
+    }
+  }
+
+  migrationMetric.increment({ action: 'import-added' })
+  return false
+}
+
+function withTodoComment(comment: string, elementText: string): string {
+  return `<>
+  ${comment}
+  ${elementText}
+</>`
 }
 
 function getElementName(opening: SgNode<TSX>): string | null {
@@ -172,7 +194,13 @@ function isSingleIconChild(child: SgNode<TSX>): boolean {
 /** Props that are dropped silently (MUI-specific, no BUI equivalent). */
 const DROPPED_PROPS = new Set(['size', 'edge', 'color', 'disableRipple', 'disableFocusRipple'])
 
-function transformIconButtonElements(rootNode: SgNode<TSX>, iconButtonLocalName: string, edits: Edit[]): void {
+function transformIconButtonElements(
+  rootNode: SgNode<TSX>,
+  iconButtonLocalName: string,
+  edits: Edit[],
+): { preserveImport: boolean; migrated: boolean } {
+  let preserveImport = false
+  let migrated = false
   const jsxElements = rootNode.findAll({
     rule: {
       any: [{ kind: 'jsx_element' }, { kind: 'jsx_self_closing_element' }],
@@ -191,29 +219,33 @@ function transformIconButtonElements(rootNode: SgNode<TSX>, iconButtonLocalName:
       continue
     }
 
-    // Self-closing IconButton has no icon child — TODO
+    const insertTodo = (reason: string) => {
+      preserveImport = true
+      edits.push(
+        el.replace(
+          withTodoComment('{/* TODO(backstage-codemod): verify ButtonIcon accessibility manually */}', el.text()),
+        ),
+      )
+      migrationMetric.increment({ action: 'todo-inserted', reason })
+    }
+
     if (isSelfClosing) {
-      edits.push(el.replace(`{/* TODO(backstage-codemod): verify ButtonIcon accessibility manually */}\n${el.text()}`))
-      migrationMetric.increment({ action: 'todo-inserted', reason: 'no-children' })
+      insertTodo('no-children')
       continue
     }
 
-    // Need exactly one icon child
     const children = getJsxChildren(el)
     const [iconChild] = children
     if (children.length !== 1 || !iconChild || !isSingleIconChild(iconChild)) {
-      edits.push(el.replace(`{/* TODO(backstage-codemod): verify ButtonIcon accessibility manually */}\n${el.text()}`))
-      migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-children' })
+      insertTodo('complex-children')
       continue
     }
 
     const iconText = iconChild.text()
 
-    // Check for aria-label — required for accessibility
     const hasAriaLabel = hasProp(opening, 'aria-label')
     if (!hasAriaLabel) {
-      edits.push(el.replace(`{/* TODO(backstage-codemod): verify ButtonIcon accessibility manually */}\n${el.text()}`))
-      migrationMetric.increment({ action: 'todo-inserted', reason: 'missing-aria-label' })
+      insertTodo('missing-aria-label')
       continue
     }
 
@@ -271,8 +303,11 @@ function transformIconButtonElements(rootNode: SgNode<TSX>, iconButtonLocalName:
 
     const propsStr = newProps.length > 0 ? ` ${newProps.join(' ')}` : ''
     edits.push(el.replace(`<ButtonIcon${propsStr} />`))
+    migrated = true
     migrationMetric.increment({ action: 'icon-button-migrated' })
   }
+
+  return { preserveImport, migrated }
 }
 
 const transform: Codemod<TSX> = (root) => {
@@ -285,17 +320,23 @@ const transform: Codemod<TSX> = (root) => {
     return Promise.resolve(null)
   }
 
-  // Remove MUI imports
-  for (const imp of importNodesToRemove) {
-    edits.push(imp.replace(''))
-    migrationMetric.increment({ action: 'import-removed' })
+  const { preserveImport, migrated } = transformIconButtonElements(rootNode, iconButtonLocalName, edits)
+
+  let replacedImport = false
+  if (migrated) {
+    replacedImport = addButtonIconToBuiImport(rootNode, importNodesToRemove, edits)
   }
 
-  // Add BUI import
-  addButtonIconToBuiImport(rootNode, edits)
-
-  // Transform JSX elements
-  transformIconButtonElements(rootNode, iconButtonLocalName, edits)
+  if (!preserveImport) {
+    for (const imp of importNodesToRemove) {
+      if (replacedImport && imp.id() === importNodesToRemove[0]?.id()) {
+        migrationMetric.increment({ action: 'import-removed' })
+        continue
+      }
+      edits.push(imp.replace(''))
+      migrationMetric.increment({ action: 'import-removed' })
+    }
+  }
 
   return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }
