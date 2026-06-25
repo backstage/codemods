@@ -1,0 +1,17 @@
+{
+  "migrate-mui-radio-checkbox-groups-to-bui-groups": [
+    {
+      "cardinality": {
+        "action": "import-removed"
+      },
+      "count": 3
+    },
+    {
+      "cardinality": {
+        "action": "todo-inserted",
+        "reason": "complex-form-group"
+      },
+      "count": 1
+    }
+  ]
+}

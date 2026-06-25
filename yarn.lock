@@ -172,6 +172,51 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/migrate-mui-accordion-to-bui-accordion@workspace:codemods/misc/migrate-mui-accordion-to-bui-accordion":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-mui-accordion-to-bui-accordion@workspace:codemods/misc/migrate-mui-accordion-to-bui-accordion"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/migrate-mui-radio-checkbox-groups-to-bui-groups@workspace:codemods/misc/migrate-mui-radio-checkbox-groups-to-bui-groups":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-mui-radio-checkbox-groups-to-bui-groups@workspace:codemods/misc/migrate-mui-radio-checkbox-groups-to-bui-groups"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/migrate-mui-select-family-to-bui-select@workspace:codemods/misc/migrate-mui-select-family-to-bui-select":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-mui-select-family-to-bui-select@workspace:codemods/misc/migrate-mui-select-family-to-bui-select"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/migrate-mui-slider-to-bui-slider@workspace:codemods/misc/migrate-mui-slider-to-bui-slider":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-mui-slider-to-bui-slider@workspace:codemods/misc/migrate-mui-slider-to-bui-slider"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/migrate-mui-textfield-to-bui-textfield@workspace:codemods/misc/migrate-mui-textfield-to-bui-textfield":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-mui-textfield-to-bui-textfield@workspace:codemods/misc/migrate-mui-textfield-to-bui-textfield"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/migrate-nav-item-to-page@workspace:codemods/v1.51.0/migrate-nav-item-to-page":
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-nav-item-to-page@workspace:codemods/v1.51.0/migrate-nav-item-to-page"
