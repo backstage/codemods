@@ -1,5 +1,8 @@
-import { Menu, MenuItem, MenuTrigger } from '@backstage/ui';
+import { Menu, MenuItem } from '@material-ui/core';
 
 const MyComponent = () => (
-  <MenuTrigger isOpen={isOpen}><Menu><MenuItem onAction={doStuff}>Do stuff</MenuItem></Menu></MenuTrigger>
+  <>{/* TODO(backstage-codemod): finish menu host migration manually (no-trigger-element) */}
+<Menu open={isOpen}>
+    <MenuItem onClick={doStuff}>Do stuff</MenuItem>
+  </Menu></>
 );

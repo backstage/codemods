@@ -1,8 +1,12 @@
-
-
+import Popover from '@material-ui/core/Popover';
+import MenuList from '@material-ui/core/MenuList';
 import MenuItem from '@material-ui/core/MenuItem';
-import { Menu, MenuItem, MenuTrigger } from '@backstage/ui';
 
 const MyComponent = ({ open, onClose }: { open: boolean; onClose: () => void }) => (
-  <MenuTrigger isOpen={open} onOpenChange={isOpen => !isOpen && onClose()}><Menu><MenuItem onAction={handleAction}>Action</MenuItem></Menu></MenuTrigger>
+  <>{/* TODO(backstage-codemod): finish menu host migration manually (no-trigger-element) */}
+<Popover open={open} onClose={onClose}>
+    <MenuList>
+      <MenuItem onClick={handleAction}>Action</MenuItem>
+    </MenuList>
+  </Popover></>
 );

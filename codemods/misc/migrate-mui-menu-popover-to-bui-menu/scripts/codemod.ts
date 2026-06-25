@@ -159,10 +159,12 @@ function addBuiImport(
       migrationMetric.increment({ action: 'import-added' })
       return true
     }
-  } else if (allImports.length > 0) {
-    const lastImport = allImports.at(-1)
-    if (lastImport) {
-      edits.push(lastImport.replace(`${lastImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
+  } else if (importNodesToRemove.length > 0) {
+    const [importNode] = importNodesToRemove
+    if (importNode) {
+      edits.push(importNode.replace(`import { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
+      migrationMetric.increment({ action: 'import-added' })
+      return true
     }
   }
 
@@ -266,9 +268,52 @@ function getNonWhitespaceChildren(element: SgNode<TSX>): SgNode<TSX>[] {
   return children
 }
 
-/**
- * Transform MenuItem children: map onClick → onAction, preserve text content.
- */
+function isTriggerElement(node: SgNode<TSX>): boolean {
+  const kind = node.kind()
+  if (kind !== 'jsx_element' && kind !== 'jsx_self_closing_element') {
+    return false
+  }
+
+  const opening = kind === 'jsx_self_closing_element' ? node : node.child(0)
+  if (!opening) {
+    return false
+  }
+
+  const name = getElementName(opening)
+  if (!name) {
+    return false
+  }
+
+  if (/Button$/i.test(name) || name === 'button') {
+    return true
+  }
+
+  return hasProp(opening, 'onClick')
+}
+
+function findTriggerSibling(menuEl: SgNode<TSX>): SgNode<TSX> | null {
+  const parent = menuEl.parent()
+  if (!parent) {
+    return null
+  }
+
+  const parentKind = parent.kind()
+  if (parentKind !== 'jsx_element' && parentKind !== 'jsx_fragment') {
+    return null
+  }
+
+  for (const sibling of getNonWhitespaceChildren(parent)) {
+    if (sibling.id() === menuEl.id()) {
+      continue
+    }
+    if (isTriggerElement(sibling)) {
+      return sibling
+    }
+  }
+
+  return null
+}
+
 function transformMenuItemChildren(element: SgNode<TSX>, menuItemLocalName: string): string {
   const children = getJsxChildren(element)
   const parts: string[] = []
@@ -459,12 +504,38 @@ function transformMenuElements(
       continue
     }
 
+    const hasControlledState = hasProp(opening, 'open') || hasProp(opening, 'onClose')
+    let triggerSibling: SgNode<TSX> | null = null
+    if (hasControlledState) {
+      triggerSibling = findTriggerSibling(el)
+      if (!triggerSibling) {
+        preserveImport = true
+        edits.push(
+          el.replace(
+            `<>{/* TODO(backstage-codemod): finish menu host migration manually (no-trigger-element) */}\n${el.text()}</>`,
+          ),
+        )
+        migrationMetric.increment({ action: 'todo-inserted', reason: 'no-trigger-element' })
+        continue
+      }
+
+      if (hasProp(opening, 'onClose') && !getSimpleOnCloseHandler(opening)) {
+        preserveImport = true
+        edits.push(
+          el.replace(
+            `<>{/* TODO(backstage-codemod): finish menu host migration manually (complex-onClose) */}\n${el.text()}</>`,
+          ),
+        )
+        migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-onClose' })
+        continue
+      }
+    }
+
     // Transform children: unwrap MenuList, convert MenuItems
     const innerContent = unwrapMenuList(el, menuListLocalName, menuItemLocalName)
     let menuOutput = `<Menu>${innerContent}</Menu>`
 
-    const hasControlledState = hasProp(opening, 'open') || hasProp(opening, 'onClose')
-    if (hasControlledState) {
+    if (hasControlledState && triggerSibling) {
       const triggerProps: string[] = []
       const openValue = getPropRawValue(opening, 'open')
       if (openValue) {
@@ -472,24 +543,14 @@ function transformMenuElements(
       }
 
       const simpleHandler = getSimpleOnCloseHandler(opening)
-      if (hasProp(opening, 'onClose')) {
-        if (simpleHandler) {
-          triggerProps.push(`onOpenChange={isOpen => !isOpen && ${simpleHandler}()}`)
-          migrationMetric.increment({ action: 'onClose-rewritten' })
-        } else {
-          preserveImport = true
-          edits.push(
-            el.replace(
-              `<>{/* TODO(backstage-codemod): finish menu host migration manually (complex-onClose) */}\n${el.text()}</>`,
-            ),
-          )
-          migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-onClose' })
-          continue
-        }
+      if (simpleHandler) {
+        triggerProps.push(`onOpenChange={isOpen => !isOpen && ${simpleHandler}()}`)
+        migrationMetric.increment({ action: 'onClose-rewritten' })
       }
 
       const triggerPropsStr = triggerProps.length > 0 ? ` ${triggerProps.join(' ')}` : ''
-      menuOutput = `<MenuTrigger${triggerPropsStr}>${menuOutput}</MenuTrigger>`
+      menuOutput = `<MenuTrigger${triggerPropsStr}>${triggerSibling.text()}${menuOutput}</MenuTrigger>`
+      edits.push(triggerSibling.replace(''))
       buiNames.add('MenuTrigger')
       migrationMetric.increment({ action: 'menu-trigger-wrapped' })
     }

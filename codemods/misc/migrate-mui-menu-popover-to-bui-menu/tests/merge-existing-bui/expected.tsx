@@ -4,7 +4,7 @@ import { Button, Menu, MenuItem, MenuTrigger } from '@backstage/ui';
 
 const MyComponent = () => (
   <>
-    <Button>Trigger</Button>
-    <MenuTrigger isOpen={open}><Menu><MenuItem onAction={handleAction}>Action</MenuItem></Menu></MenuTrigger>
+    
+    <MenuTrigger isOpen={open}><Button>Trigger</Button><Menu><MenuItem onAction={handleAction}>Action</MenuItem></Menu></MenuTrigger>
   </>
 );
