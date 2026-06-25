@@ -1,0 +1,17 @@
+{
+  "migrate-mui-styles-to-bui-css-modules": [
+    {
+      "cardinality": {
+        "action": "import-removed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "todo-inserted",
+        "reason": "dynamic-rules"
+      },
+      "count": 1
+    }
+  ]
+}

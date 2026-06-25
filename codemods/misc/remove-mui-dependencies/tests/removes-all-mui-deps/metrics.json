@@ -1,0 +1,25 @@
+{
+  "remove-mui-dependencies": [
+    {
+      "cardinality": {
+        "action": "mui-dependency-removed",
+        "package": "@material-ui/core"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "mui-dependency-removed",
+        "package": "@material-ui/icons"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "mui-dependency-removed",
+        "package": "@material-ui/lab"
+      },
+      "count": 1
+    }
+  ]
+}

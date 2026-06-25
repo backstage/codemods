@@ -172,6 +172,42 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/migrate-mui-bootstrap-to-bui@workspace:codemods/misc/migrate-mui-bootstrap-to-bui":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-mui-bootstrap-to-bui@workspace:codemods/misc/migrate-mui-bootstrap-to-bui"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/migrate-mui-icons-to-remix-icons@workspace:codemods/misc/migrate-mui-icons-to-remix-icons":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-mui-icons-to-remix-icons@workspace:codemods/misc/migrate-mui-icons-to-remix-icons"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/migrate-mui-layout-to-bui-layout@workspace:codemods/misc/migrate-mui-layout-to-bui-layout":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-mui-layout-to-bui-layout@workspace:codemods/misc/migrate-mui-layout-to-bui-layout"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/migrate-mui-styles-to-bui-css-modules@workspace:codemods/misc/migrate-mui-styles-to-bui-css-modules":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-mui-styles-to-bui-css-modules@workspace:codemods/misc/migrate-mui-styles-to-bui-css-modules"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/migrate-nav-item-to-page@workspace:codemods/v1.51.0/migrate-nav-item-to-page":
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-nav-item-to-page@workspace:codemods/v1.51.0/migrate-nav-item-to-page"
@@ -319,6 +355,15 @@ __metadata:
 "@backstage/remove-immediate-stitching-mode@workspace:codemods/v1.51.0/remove-immediate-stitching-mode":
   version: 0.0.0-use.local
   resolution: "@backstage/remove-immediate-stitching-mode@workspace:codemods/v1.51.0/remove-immediate-stitching-mode"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/remove-mui-dependencies@workspace:codemods/misc/remove-mui-dependencies":
+  version: 0.0.0-use.local
+  resolution: "@backstage/remove-mui-dependencies@workspace:codemods/misc/remove-mui-dependencies"
   dependencies:
     "@codemod.com/jssg-types": "npm:1.6.2"
     codemod: "npm:1.12.3"

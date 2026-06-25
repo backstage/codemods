@@ -1,0 +1,11 @@
+{
+  "remove-mui-dependencies": [
+    {
+      "cardinality": {
+        "action": "mui-dependency-removed",
+        "package": "@material-ui/styles"
+      },
+      "count": 1
+    }
+  ]
+}

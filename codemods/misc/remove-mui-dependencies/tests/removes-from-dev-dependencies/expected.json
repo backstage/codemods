@@ -1,0 +1,6 @@
+{
+  "name": "my-plugin",
+  "devDependencies": {
+    "@types/react": "^18.0.0"
+  }
+}

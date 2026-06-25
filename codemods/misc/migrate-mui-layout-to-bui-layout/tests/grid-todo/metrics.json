@@ -1,0 +1,18 @@
+{
+  "migrate-mui-layout-to-bui-layout": [
+    {
+      "cardinality": {
+        "action": "todo-inserted",
+        "reason": "grid-dynamic-spacing"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "todo-inserted",
+        "reason": "grid-item-colspan"
+      },
+      "count": 1
+    }
+  ]
+}
