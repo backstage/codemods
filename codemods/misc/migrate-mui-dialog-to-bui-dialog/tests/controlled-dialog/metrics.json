@@ -1,0 +1,58 @@
+{
+  "migrate-mui-dialog-to-bui-dialog": [
+    {
+      "cardinality": {
+        "action": "child-renamed",
+        "from": "DialogActions",
+        "to": "DialogFooter"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "child-renamed",
+        "from": "DialogContent",
+        "to": "DialogBody"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "child-renamed",
+        "from": "DialogTitle",
+        "to": "DialogHeader"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "dialog-migrated"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "footer-close-button-migrated"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-added"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-removed"
+      },
+      "count": 4
+    },
+    {
+      "cardinality": {
+        "action": "onClose-rewritten"
+      },
+      "count": 1
+    }
+  ]
+}

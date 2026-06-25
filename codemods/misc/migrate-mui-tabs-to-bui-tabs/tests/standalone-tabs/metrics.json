@@ -1,0 +1,34 @@
+{
+  "migrate-mui-tabs-to-bui-tabs": [
+    {
+      "cardinality": {
+        "action": "import-added"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-removed"
+      },
+      "count": 2
+    },
+    {
+      "cardinality": {
+        "action": "onChange-rewritten"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "tab-migrated"
+      },
+      "count": 2
+    },
+    {
+      "cardinality": {
+        "action": "tabs-migrated"
+      },
+      "count": 1
+    }
+  ]
+}
