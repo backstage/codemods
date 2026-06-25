@@ -1,0 +1,13 @@
+{
+  "name": "@backstage/migrate-mui-tooltip-to-bui-tooltip",
+  "version": "0.1.0",
+  "description": "MUI 4 to BUI: Replace Tooltip with TooltipTrigger",
+  "type": "module",
+  "scripts": {
+    "test": "yarn exec codemod jssg test -l tsx ./scripts/codemod.ts ./tests && yarn exec codemod workflow validate -w workflow.yaml"
+  },
+  "devDependencies": {
+    "@codemod.com/jssg-types": "1.6.2",
+    "codemod": "1.12.3"
+  }
+}
