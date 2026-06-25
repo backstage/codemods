@@ -212,8 +212,10 @@ function tryRewriteOnChangeHandler(attr: SgNode<TSX>): string | null {
     return null
   }
 
-  const eventParam = paramChildren[0]!
-  const valueParam = paramChildren[1]!
+  const [eventParam, valueParam] = paramChildren
+  if (!eventParam || !valueParam) {
+    return null
+  }
 
   // Event param must start with _ to indicate unused
   const eventName = eventParam.text()
@@ -381,14 +383,14 @@ function transformSliderElements(rootNode: SgNode<TSX>, sliderLocalName: string,
   }
 }
 
-const transform: Codemod<TSX> = async (root) => {
+const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
   const { sliderLocalName, importNodesToRemove } = collectSliderImports(rootNode)
 
   if (!sliderLocalName) {
-    return null
+    return Promise.resolve(null)
   }
 
   // Remove MUI imports
@@ -403,7 +405,7 @@ const transform: Codemod<TSX> = async (root) => {
   // Transform JSX elements
   transformSliderElements(rootNode, sliderLocalName, edits)
 
-  return edits.length > 0 ? rootNode.commitEdits(edits) : null
+  return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }
 
 export default transform

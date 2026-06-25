@@ -36,8 +36,8 @@ const PROP_RENAMES: Record<string, string> = {
   disabled: 'isDisabled',
 }
 
-/** Props that pass through unchanged. */
-const PASSTHROUGH_PROPS = new Set([
+/** Props that pass through unchanged (documented for manual review). */
+const _PASSTHROUGH_PROPS = new Set([
   'label',
   'value',
   'defaultValue',
@@ -156,9 +156,12 @@ function addTextFieldToBuiImport(rootNode: SgNode<TSX>, importNodesToRemove: SgN
   if (anchorImport) {
     edits.push(anchorImport.replace(`${anchorImport.text()}\nimport { TextField } from '${BUI_SOURCE}';`))
   } else if (importNodesToRemove.length === 1) {
-    edits.push(importNodesToRemove[0]!.replace(`import { TextField } from '${BUI_SOURCE}';`))
-    migrationMetric.increment({ action: 'import-added' })
-    return true
+    const [importNode] = importNodesToRemove
+    if (importNode) {
+      edits.push(importNode.replace(`import { TextField } from '${BUI_SOURCE}';`))
+      migrationMetric.increment({ action: 'import-added' })
+      return true
+    }
   } else if (allImports.length > 0) {
     const lastImport = allImports.at(-1)
     if (lastImport) {
@@ -230,7 +233,12 @@ function getArrowSingleParamName(arrow: SgNode<TSX>): string | null {
     return null
   }
 
-  return getParamName(paramChildren[0]!)
+  const [param] = paramChildren
+  if (!param) {
+    return null
+  }
+
+  return getParamName(param)
 }
 
 function targetValuePattern(eventName: string): RegExp {
@@ -404,14 +412,14 @@ function transformTextFieldElements(
   return { preserveImport, migrated }
 }
 
-const transform: Codemod<TSX> = async (root) => {
+const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
   const { textFieldLocalName, importNodesToRemove } = collectTextFieldImports(rootNode)
 
   if (!textFieldLocalName) {
-    return null
+    return Promise.resolve(null)
   }
 
   const { preserveImport, migrated } = transformTextFieldElements(rootNode, textFieldLocalName, edits)
@@ -432,7 +440,7 @@ const transform: Codemod<TSX> = async (root) => {
     }
   }
 
-  return edits.length > 0 ? rootNode.commitEdits(edits) : null
+  return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }
 
 export default transform

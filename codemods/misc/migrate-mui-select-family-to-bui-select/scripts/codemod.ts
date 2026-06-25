@@ -578,7 +578,7 @@ function transformSelectPatterns(rootNode: SgNode<TSX>, localNames: Map<string, 
   }
 }
 
-const transform: Codemod<TSX> = async (root) => {
+const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
@@ -586,7 +586,7 @@ const transform: Codemod<TSX> = async (root) => {
 
   const hasSelect = [...localNames.values()].includes('Select')
   if (!hasSelect) {
-    return null
+    return Promise.resolve(null)
   }
 
   for (const imp of importNodesToRemove) {
@@ -597,7 +597,7 @@ const transform: Codemod<TSX> = async (root) => {
   addBuiImport(rootNode, ['Select'], edits)
   transformSelectPatterns(rootNode, localNames, edits)
 
-  return edits.length > 0 ? rootNode.commitEdits(edits) : null
+  return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }
 
 export default transform
