@@ -132,9 +132,15 @@ function collectTabImports(rootNode: SgNode<TSX>): TabImports {
   return { localNames, importNodesToRemove }
 }
 
-function addBuiImport(rootNode: SgNode<TSX>, names: string[], edits: Edit[]): void {
+function addBuiImport(
+  rootNode: SgNode<TSX>,
+  names: string[],
+  importNodesToRemove: SgNode<TSX>[],
+  edits: Edit[],
+): boolean {
   const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
   const existingImport = existingImports[0] ?? null
+  const sortedNames = [...names].sort()
 
   if (existingImport) {
     const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
@@ -154,19 +160,33 @@ function addBuiImport(rootNode: SgNode<TSX>, names: string[], edits: Edit[]): vo
       edits.push(namedImports.replace(`{ ${existing.join(', ')} }`))
       migrationMetric.increment({ action: 'import-merged' })
     }
-  } else {
-    const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
-    const sortedNames = [...names].sort()
-    if (allImports.length > 0) {
-      const lastImport = allImports.at(-1)
-      if (lastImport) {
-        edits.push(
-          lastImport.replace(`${lastImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`),
-        )
-      }
-    }
-    migrationMetric.increment({ action: 'import-added' })
+    return false
   }
+
+  const removableIds = new Set(importNodesToRemove.map((imp) => imp.id()))
+  const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
+  const anchorImport = [...allImports].reverse().find((imp) => !removableIds.has(imp.id())) ?? null
+
+  if (anchorImport) {
+    edits.push(
+      anchorImport.replace(`${anchorImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`),
+    )
+  } else if (importNodesToRemove.length === 1) {
+    const [importNode] = importNodesToRemove
+    if (importNode) {
+      edits.push(importNode.replace(`import { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
+      migrationMetric.increment({ action: 'import-added' })
+      return true
+    }
+  } else if (allImports.length > 0) {
+    const lastImport = allImports.at(-1)
+    if (lastImport) {
+      edits.push(lastImport.replace(`${lastImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
+    }
+  }
+
+  migrationMetric.increment({ action: 'import-added' })
+  return false
 }
 
 function getElementName(opening: SgNode<TSX>): string | null {
@@ -494,8 +514,14 @@ function transformChildren(element: SgNode<TSX>, localNames: Map<string, string>
   return parts.join('')
 }
 
-function transformTabElements(rootNode: SgNode<TSX>, localNames: Map<string, string>, edits: Edit[]): Set<string> {
+function transformTabElements(
+  rootNode: SgNode<TSX>,
+  localNames: Map<string, string>,
+  edits: Edit[],
+): { usedBuiNames: Set<string>; preserveImport: boolean; migrated: boolean } {
   const usedBuiNames = new Set<string>()
+  let preserveImport = false
+  let migrated = false
 
   const tabContextLocalName = [...localNames.entries()].find(([, v]) => v === 'TabContext')?.[0]
   const tabListLocalName = [...localNames.entries()].find(([, v]) => v === 'TabList')?.[0]
@@ -526,9 +552,10 @@ function transformTabElements(rootNode: SgNode<TSX>, localNames: Map<string, str
       }
 
       if (needsTodo) {
+        preserveImport = true
         edits.push(
           el.replace(
-            `{/* TODO(backstage-codemod): verify custom tab orientation or selection logic manually */}\n${el.text()}`,
+            `<>{/* TODO(backstage-codemod): verify custom tab orientation or selection logic manually */}\n${el.text()}</>`,
           ),
         )
         migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-props' })
@@ -559,6 +586,7 @@ function transformTabElements(rootNode: SgNode<TSX>, localNames: Map<string, str
       const propsStr = newProps.length > 0 ? ` ${newProps.join(' ')}` : ''
 
       usedBuiNames.add('Tabs')
+      migrated = true
 
       if (isSelfClosing) {
         edits.push(el.replace(`<Tabs${propsStr} />`))
@@ -592,9 +620,10 @@ function transformTabElements(rootNode: SgNode<TSX>, localNames: Map<string, str
       }
 
       if (needsTodo) {
+        preserveImport = true
         edits.push(
           el.replace(
-            `{/* TODO(backstage-codemod): verify custom tab orientation or selection logic manually */}\n${el.text()}`,
+            `<>{/* TODO(backstage-codemod): verify custom tab orientation or selection logic manually */}\n${el.text()}</>`,
           ),
         )
         migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-props' })
@@ -625,6 +654,7 @@ function transformTabElements(rootNode: SgNode<TSX>, localNames: Map<string, str
       const tabsPropsStr = newTabsProps.length > 0 ? ` ${newTabsProps.join(' ')}` : ''
 
       usedBuiNames.add('Tabs')
+      migrated = true
 
       if (isSelfClosing) {
         edits.push(el.replace(`<Tabs${tabsPropsStr} />`))
@@ -640,21 +670,23 @@ function transformTabElements(rootNode: SgNode<TSX>, localNames: Map<string, str
   }
 
   for (const [, muiName] of localNames) {
-    if (muiName === 'TabContext' || muiName === 'Tabs') {
-      usedBuiNames.add('Tabs')
-    }
-    if (muiName === 'TabList' || muiName === 'Tabs') {
-      usedBuiNames.add('TabList')
-    }
-    if (muiName === 'Tab') {
-      usedBuiNames.add('Tab')
-    }
-    if (muiName === 'TabPanel') {
-      usedBuiNames.add('TabPanel')
+    if (migrated) {
+      if (muiName === 'TabContext' || muiName === 'Tabs') {
+        usedBuiNames.add('Tabs')
+      }
+      if (muiName === 'TabList' || muiName === 'Tabs') {
+        usedBuiNames.add('TabList')
+      }
+      if (muiName === 'Tab') {
+        usedBuiNames.add('Tab')
+      }
+      if (muiName === 'TabPanel') {
+        usedBuiNames.add('TabPanel')
+      }
     }
   }
 
-  return usedBuiNames
+  return { usedBuiNames, preserveImport, migrated }
 }
 
 const transform: Codemod<TSX> = (root) => {
@@ -667,14 +699,23 @@ const transform: Codemod<TSX> = (root) => {
     return Promise.resolve(null)
   }
 
-  for (const imp of importNodesToRemove) {
-    edits.push(imp.replace(''))
-    migrationMetric.increment({ action: 'import-removed' })
+  const { usedBuiNames, preserveImport, migrated } = transformTabElements(rootNode, localNames, edits)
+
+  let replacedImport = false
+  if (migrated) {
+    replacedImport = addBuiImport(rootNode, [...usedBuiNames], importNodesToRemove, edits)
   }
 
-  const usedBuiNames = transformTabElements(rootNode, localNames, edits)
-
-  addBuiImport(rootNode, [...usedBuiNames], edits)
+  if (!preserveImport) {
+    for (const imp of importNodesToRemove) {
+      if (replacedImport && imp.id() === importNodesToRemove[0]?.id()) {
+        migrationMetric.increment({ action: 'import-removed' })
+        continue
+      }
+      edits.push(imp.replace(''))
+      migrationMetric.increment({ action: 'import-removed' })
+    }
+  }
 
   return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }

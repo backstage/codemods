@@ -117,9 +117,15 @@ function collectDialogImports(rootNode: SgNode<TSX>): DialogImports {
   return { localNames, importNodesToRemove }
 }
 
-function addBuiImport(rootNode: SgNode<TSX>, names: string[], edits: Edit[]): void {
+function addBuiImport(
+  rootNode: SgNode<TSX>,
+  names: string[],
+  importNodesToRemove: SgNode<TSX>[],
+  edits: Edit[],
+): boolean {
   const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
   const existingImport = existingImports[0] ?? null
+  const sortedNames = [...names].sort()
 
   if (existingImport) {
     const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
@@ -139,19 +145,33 @@ function addBuiImport(rootNode: SgNode<TSX>, names: string[], edits: Edit[]): vo
       edits.push(namedImports.replace(`{ ${existing.join(', ')} }`))
       migrationMetric.increment({ action: 'import-merged' })
     }
-  } else {
-    const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
-    const sortedNames = [...names].sort()
-    if (allImports.length > 0) {
-      const lastImport = allImports.at(-1)
-      if (lastImport) {
-        edits.push(
-          lastImport.replace(`${lastImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`),
-        )
-      }
-    }
-    migrationMetric.increment({ action: 'import-added' })
+    return false
   }
+
+  const removableIds = new Set(importNodesToRemove.map((imp) => imp.id()))
+  const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
+  const anchorImport = [...allImports].reverse().find((imp) => !removableIds.has(imp.id())) ?? null
+
+  if (anchorImport) {
+    edits.push(
+      anchorImport.replace(`${anchorImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`),
+    )
+  } else if (importNodesToRemove.length === 1) {
+    const [importNode] = importNodesToRemove
+    if (importNode) {
+      edits.push(importNode.replace(`import { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
+      migrationMetric.increment({ action: 'import-added' })
+      return true
+    }
+  } else if (allImports.length > 0) {
+    const lastImport = allImports.at(-1)
+    if (lastImport) {
+      edits.push(lastImport.replace(`${lastImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
+    }
+  }
+
+  migrationMetric.increment({ action: 'import-added' })
+  return false
 }
 
 function getElementName(opening: SgNode<TSX>): string | null {
@@ -303,10 +323,12 @@ function transformDialogElements(
   localNames: Map<string, string>,
   edits: Edit[],
   buiNames: Set<string>,
-): void {
+): { preserveImport: boolean; migrated: boolean } {
+  let preserveImport = false
+  let migrated = false
   const dialogLocalName = [...localNames.entries()].find(([, v]) => v === 'Dialog')?.[0]
   if (!dialogLocalName) {
-    return
+    return { preserveImport, migrated }
   }
 
   const jsxElements = rootNode.findAll({
@@ -337,9 +359,10 @@ function transformDialogElements(
     }
 
     if (needsTodo) {
+      preserveImport = true
       edits.push(
         el.replace(
-          `{/* TODO(backstage-codemod): verify dialog width, dismiss behavior, or custom close logic manually (${todoReasons.join(', ')}) */}\n${el.text()}`,
+          `<>{/* TODO(backstage-codemod): verify dialog width, dismiss behavior, or custom close logic manually (${todoReasons.join(', ')}) */}\n${el.text()}</>`,
         ),
       )
       migrationMetric.increment({ action: 'todo-inserted', reason: todoReasons.join(', ') })
@@ -359,9 +382,10 @@ function transformDialogElements(
       newProps.push(`onOpenChange={isOpen => !isOpen && ${simpleHandler}()}`)
       migrationMetric.increment({ action: 'onClose-rewritten' })
     } else if (hasProp(opening, 'onClose')) {
+      preserveImport = true
       edits.push(
         el.replace(
-          `{/* TODO(backstage-codemod): verify dialog width, dismiss behavior, or custom close logic manually (complex-onClose) */}\n${el.text()}`,
+          `<>{/* TODO(backstage-codemod): verify dialog width, dismiss behavior, or custom close logic manually (complex-onClose) */}\n${el.text()}</>`,
         ),
       )
       migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-onClose' })
@@ -426,7 +450,10 @@ function transformDialogElements(
     }
 
     migrationMetric.increment({ action: 'dialog-migrated' })
+    migrated = true
   }
+
+  return { preserveImport, migrated }
 }
 
 const transform: Codemod<TSX> = (root) => {
@@ -439,11 +466,6 @@ const transform: Codemod<TSX> = (root) => {
     return Promise.resolve(null)
   }
 
-  for (const imp of importNodesToRemove) {
-    edits.push(imp.replace(''))
-    migrationMetric.increment({ action: 'import-removed' })
-  }
-
   const buiNames = new Set<string>()
   buiNames.add('Dialog')
   for (const [, muiName] of localNames) {
@@ -453,8 +475,23 @@ const transform: Codemod<TSX> = (root) => {
     }
   }
 
-  transformDialogElements(rootNode, localNames, edits, buiNames)
-  addBuiImport(rootNode, [...buiNames], edits)
+  const { preserveImport, migrated } = transformDialogElements(rootNode, localNames, edits, buiNames)
+
+  let replacedImport = false
+  if (migrated) {
+    replacedImport = addBuiImport(rootNode, [...buiNames], importNodesToRemove, edits)
+  }
+
+  if (!preserveImport) {
+    for (const imp of importNodesToRemove) {
+      if (replacedImport && imp.id() === importNodesToRemove[0]?.id()) {
+        migrationMetric.increment({ action: 'import-removed' })
+        continue
+      }
+      edits.push(imp.replace(''))
+      migrationMetric.increment({ action: 'import-removed' })
+    }
+  }
 
   return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }
