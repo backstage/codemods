@@ -286,12 +286,64 @@ function getElementName(opening: SgNode<TSX>): string | null {
   return null
 }
 
-function transformTypographyElements(
-  rootNode: SgNode<TSX>,
-  localNames: Map<string, string>,
-  edits: Edit[],
-  preservedLocalNames: Set<string>,
-): boolean {
+function buildPartialTextProps(
+  opening: SgNode<TSX>,
+  buiVariant: string | null,
+  buiColor: string | null,
+  componentValue: string | null,
+  componentDynamic: boolean,
+): string[] {
+  const newProps: string[] = []
+  if (buiVariant) {
+    newProps.push(`variant="${buiVariant}"`)
+  }
+  if (buiColor) {
+    newProps.push(`color="${buiColor}"`)
+  }
+  if (componentValue && !componentDynamic) {
+    newProps.push(`as="${componentValue}"`)
+  } else if (componentDynamic && componentValue) {
+    newProps.push(`as={${componentValue.slice(1, -1)}}`)
+  }
+
+  const handledProps = new Set(['variant', 'color', 'component', 'gutterBottom'])
+  const allAttrs = opening.findAll({ rule: { kind: 'jsx_attribute' } })
+  for (const attr of allAttrs) {
+    const propIdent = attr.find({ rule: { kind: 'property_identifier' } })
+    if (!propIdent) {
+      continue
+    }
+    const propName = propIdent.text()
+    if (handledProps.has(propName)) {
+      continue
+    }
+    newProps.push(attr.text())
+  }
+
+  const spreadAttrs = opening.findAll({ rule: { kind: 'jsx_expression' } })
+  for (const spread of spreadAttrs) {
+    if (spread.text().startsWith('{...')) {
+      newProps.push(spread.text())
+    }
+  }
+
+  return newProps
+}
+
+function buildTextElement(el: SgNode<TSX>, isSelfClosing: boolean, newProps: string[]): string {
+  const propsStr = newProps.length > 0 ? ` ${newProps.join(' ')}` : ''
+  if (isSelfClosing) {
+    return `<Text${propsStr} />`
+  }
+  const children = el
+    .children()
+    .filter((c) => c.kind() !== 'jsx_opening_element' && c.kind() !== 'jsx_closing_element')
+    .map((c) => c.text())
+    .join('')
+  return `<Text${propsStr}>${children}</Text>`
+}
+
+function transformTypographyElements(rootNode: SgNode<TSX>, localNames: Map<string, string>, edits: Edit[]): boolean {
   let migrated = false
   const jsxElements = rootNode.findAll({
     rule: {
@@ -317,13 +369,18 @@ function transformTypographyElements(
     const { value: componentValue, isDynamic: componentDynamic } = getAttrStringValue(opening, 'component')
     const { attrNode: gutterBottomAttr } = getAttrStringValue(opening, 'gutterBottom')
 
-    // Check for unmappable dynamic values
     if (variantDynamic || colorDynamic) {
-      preservedLocalNames.add(componentLocalName)
+      const partialProps = buildPartialTextProps(opening, null, null, componentValue, componentDynamic)
+      const textElement = buildTextElement(el, isSelfClosing, partialProps)
       edits.push(
-        el.replace(withTodoComment('{/* TODO(backstage-codemod): verify Text variant manually */}', el.text())),
+        el.replace(withTodoComment('{/* TODO(backstage-codemod): verify Text variant manually */}', textElement)),
       )
       migrationMetric.increment({ action: 'todo-inserted', reason: 'dynamic-props' })
+      migrationMetric.increment({
+        action: 'typography-migrated',
+        component: localNames.get(componentLocalName) ?? componentLocalName,
+      })
+      migrated = true
       continue
     }
 
@@ -347,53 +404,22 @@ function transformTypographyElements(
     }
 
     if (needsTodo) {
-      preservedLocalNames.add(componentLocalName)
+      const partialProps = buildPartialTextProps(opening, buiVariant, buiColor, componentValue, componentDynamic)
+      const textElement = buildTextElement(el, isSelfClosing, partialProps)
       edits.push(
-        el.replace(withTodoComment('{/* TODO(backstage-codemod): verify Text variant manually */}', el.text())),
+        el.replace(withTodoComment('{/* TODO(backstage-codemod): verify Text variant manually */}', textElement)),
       )
       migrationMetric.increment({ action: 'todo-inserted', reason: 'unmapped-variant-or-color' })
+      migrationMetric.increment({
+        action: 'typography-migrated',
+        component: localNames.get(componentLocalName) ?? componentLocalName,
+      })
+      migrated = true
       continue
     }
 
     // Build new props
-    const newProps: string[] = []
-    if (buiVariant) {
-      newProps.push(`variant="${buiVariant}"`)
-    }
-    if (buiColor) {
-      newProps.push(`color="${buiColor}"`)
-    }
-    // Convert component → as
-    if (componentValue && !componentDynamic) {
-      newProps.push(`as="${componentValue}"`)
-    } else if (componentDynamic && componentValue) {
-      newProps.push(`as={${componentValue.slice(1, -1)}}`)
-    }
-
-    // Collect remaining props we haven't handled
-    const handledProps = new Set(['variant', 'color', 'component', 'gutterBottom'])
-    const allAttrs = opening.findAll({ rule: { kind: 'jsx_attribute' } })
-    for (const attr of allAttrs) {
-      const propIdent = attr.find({ rule: { kind: 'property_identifier' } })
-      if (!propIdent) {
-        continue
-      }
-      const propName = propIdent.text()
-      if (handledProps.has(propName)) {
-        continue
-      }
-      // Preserve any unhandled prop as-is
-      newProps.push(attr.text())
-    }
-
-    // Also preserve spread attributes
-    const spreadAttrs = opening.findAll({ rule: { kind: 'jsx_expression' } })
-    for (const spread of spreadAttrs) {
-      if (spread.text().startsWith('{...')) {
-        newProps.push(spread.text())
-      }
-    }
-
+    const newProps = buildPartialTextProps(opening, buiVariant, buiColor, componentValue, componentDynamic)
     const propsStr = newProps.length > 0 ? ` ${newProps.join(' ')}` : ''
     const gutterBottomTodo = gutterBottomAttr
       ? '{/* TODO(backstage-codemod): verify Text variant manually (gutterBottom) */}'
@@ -442,14 +468,9 @@ const transform: Codemod<TSX> = (root) => {
     return Promise.resolve(null)
   }
 
-  const preservedLocalNames = new Set<string>()
-  const migrated = transformTypographyElements(rootNode, localNames, edits, preservedLocalNames)
+  const migrated = transformTypographyElements(rootNode, localNames, edits)
 
   for (const imp of importNodesToRemove) {
-    const defaultName = getDefaultImportName(imp)
-    if (defaultName && preservedLocalNames.has(defaultName)) {
-      continue
-    }
     if (
       migrated &&
       importNodesToRemove.length === 1 &&
@@ -465,18 +486,11 @@ const transform: Codemod<TSX> = (root) => {
   let addedTextViaBarrelPrune = false
 
   for (const [imp, namesToRemove] of importSpecifiersToRemove) {
-    const removableNames = namesToRemove.filter((componentName) => {
-      const localName = getNamedImportLocalName(imp, componentName)
-      return localName === null || !preservedLocalNames.has(localName)
-    })
-    if (removableNames.length === 0) {
-      continue
-    }
     const appendTextImport = migrated && findImportStatementsFrom(rootNode, BUI_SOURCE).length === 0
     if (appendTextImport) {
       addedTextViaBarrelPrune = true
     }
-    pruneBarrelImportSpecifiers(imp, removableNames, edits, appendTextImport)
+    pruneBarrelImportSpecifiers(imp, namesToRemove, edits, appendTextImport)
   }
 
   if (migrated && !addedTextViaBarrelPrune) {

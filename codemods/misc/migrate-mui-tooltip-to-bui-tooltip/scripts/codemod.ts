@@ -64,12 +64,21 @@ function getNamedImportLocalName(imp: SgNode<TSX>, targetName: string): string |
   return null
 }
 
+function getImportedName(spec: SgNode<TSX>): string | null {
+  const identifiers = spec.findAll({
+    rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
+  })
+  return identifiers[0]?.text() ?? null
+}
+
 function collectTooltipImports(rootNode: SgNode<TSX>): {
   tooltipLocalName: string | null
   importNodesToRemove: SgNode<TSX>[]
+  importSpecifiersToRemove: Map<SgNode<TSX>, string[]>
 } {
   let tooltipLocalName: string | null = null
   const importNodesToRemove: SgNode<TSX>[] = []
+  const importSpecifiersToRemove = new Map<SgNode<TSX>, string[]>()
 
   for (const imp of findImportStatementsFrom(rootNode, '@material-ui/core/Tooltip')) {
     tooltipLocalName = getDefaultImportName(imp)
@@ -83,14 +92,36 @@ function collectTooltipImports(rootNode: SgNode<TSX>): {
       const allSpecifiers = imp.findAll({ rule: { kind: 'import_specifier' } })
       if (allSpecifiers.length <= 1) {
         importNodesToRemove.push(imp)
+      } else {
+        importSpecifiersToRemove.set(imp, ['Tooltip'])
       }
     }
   }
 
-  return { tooltipLocalName, importNodesToRemove }
+  return { tooltipLocalName, importNodesToRemove, importSpecifiersToRemove }
 }
 
-function addBuiImport(rootNode: SgNode<TSX>, names: string[], edits: Edit[]): void {
+function pruneBarrelImportSpecifiers(imp: SgNode<TSX>, namesToRemove: string[], edits: Edit[]): void {
+  const remainingSpecs = imp.findAll({ rule: { kind: 'import_specifier' } }).filter((spec) => {
+    const importedName = getImportedName(spec)
+    return importedName !== null && !namesToRemove.includes(importedName)
+  })
+
+  if (remainingSpecs.length === 0) {
+    edits.push(imp.replace(''))
+  } else {
+    const specTexts = remainingSpecs.map((spec) => spec.text()).join(', ')
+    edits.push(imp.replace(`import { ${specTexts} } from '@material-ui/core';`))
+  }
+  migrationMetric.increment({ action: 'import-removed' })
+}
+
+function addBuiImport(
+  rootNode: SgNode<TSX>,
+  names: string[],
+  importNodesToRemove: SgNode<TSX>[],
+  edits: Edit[],
+): boolean {
   const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
   const existingImport = existingImports[0] ?? null
 
@@ -112,19 +143,33 @@ function addBuiImport(rootNode: SgNode<TSX>, names: string[], edits: Edit[]): vo
       edits.push(namedImports.replace(`{ ${existing.join(', ')} }`))
       migrationMetric.increment({ action: 'import-merged' })
     }
-  } else {
-    const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
-    const sortedNames = [...names].sort()
-    if (allImports.length > 0) {
-      const lastImport = allImports.at(-1)
-      if (lastImport) {
-        edits.push(
-          lastImport.replace(`${lastImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`),
-        )
-      }
-    }
-    migrationMetric.increment({ action: 'import-added' })
+    return false
   }
+
+  const removableIds = new Set(importNodesToRemove.map((imp) => imp.id()))
+  const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
+  const anchorImport = [...allImports].reverse().find((imp) => !removableIds.has(imp.id())) ?? null
+  const sortedNames = [...names].sort()
+  const buiImport = `import { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`
+
+  if (anchorImport) {
+    edits.push(anchorImport.replace(`${anchorImport.text()}\n${buiImport}`))
+  } else if (importNodesToRemove.length > 0) {
+    const [importNode] = importNodesToRemove
+    if (importNode) {
+      edits.push(importNode.replace(buiImport))
+      migrationMetric.increment({ action: 'import-added' })
+      return true
+    }
+  } else if (allImports.length > 0) {
+    const lastImport = allImports.at(-1)
+    if (lastImport) {
+      edits.push(lastImport.replace(`${lastImport.text()}\n${buiImport}`))
+    }
+  }
+
+  migrationMetric.increment({ action: 'import-added' })
+  return false
 }
 
 function getElementName(opening: SgNode<TSX>): string | null {
@@ -372,7 +417,7 @@ const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
-  const { tooltipLocalName, importNodesToRemove } = collectTooltipImports(rootNode)
+  const { tooltipLocalName, importNodesToRemove, importSpecifiersToRemove } = collectTooltipImports(rootNode)
 
   if (!tooltipLocalName) {
     return Promise.resolve(null)
@@ -385,21 +430,18 @@ const transform: Codemod<TSX> = (root) => {
   }
 
   const buiNames = ['Tooltip', 'TooltipTrigger']
-  const existingBui = findImportStatementsFrom(rootNode, BUI_SOURCE)
+  const replacedImport = addBuiImport(rootNode, buiNames, importNodesToRemove, edits)
 
-  if (existingBui.length === 0 && importNodesToRemove.length === 1) {
-    const [importToReplace] = importNodesToRemove
-    if (importToReplace) {
-      edits.push(importToReplace.replace(`import { ${buiNames.join(', ')} } from '${BUI_SOURCE}';`))
-      migrationMetric.increment({ action: 'import-added' })
+  for (const imp of importNodesToRemove) {
+    if (replacedImport && imp.id() === importNodesToRemove[0]?.id()) {
       migrationMetric.increment({ action: 'import-removed' })
+      continue
     }
-  } else {
-    addBuiImport(rootNode, buiNames, edits)
-    for (const imp of importNodesToRemove) {
-      edits.push(imp.replace(''))
-      migrationMetric.increment({ action: 'import-removed' })
-    }
+    edits.push(imp.replace(''))
+    migrationMetric.increment({ action: 'import-removed' })
+  }
+  for (const [imp, namesToRemove] of importSpecifiersToRemove) {
+    pruneBarrelImportSpecifiers(imp, namesToRemove, edits)
   }
 
   return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)

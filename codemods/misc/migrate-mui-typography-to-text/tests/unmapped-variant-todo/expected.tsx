@@ -1,8 +1,8 @@
-import Typography from '@material-ui/core/Typography';
+import { Text } from '@backstage/ui';
 
 const MyComponent = () => (
   <>
   {/* TODO(backstage-codemod): verify Text variant manually */}
-  <Typography variant="srOnly">Hidden text</Typography>
+  <Text>Hidden text</Text>
 </>
 );

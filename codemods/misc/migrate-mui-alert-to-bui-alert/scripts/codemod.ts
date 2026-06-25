@@ -59,14 +59,23 @@ function getNamedImportLocalName(imp: SgNode<TSX>, targetName: string): string |
   return null
 }
 
+function getImportedName(spec: SgNode<TSX>): string | null {
+  const identifiers = spec.findAll({
+    rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
+  })
+  return identifiers[0]?.text() ?? null
+}
+
 function collectAlertImports(rootNode: SgNode<TSX>): {
   alertLocalName: string | null
   alertTitleLocalName: string | null
   importNodesToRemove: SgNode<TSX>[]
+  importSpecifiersToRemove: Map<SgNode<TSX>, { source: string; names: string[] }>
 } {
   let alertLocalName: string | null = null
   let alertTitleLocalName: string | null = null
   const importNodesToRemove: SgNode<TSX>[] = []
+  const importSpecifiersToRemove = new Map<SgNode<TSX>, { source: string; names: string[] }>()
 
   for (const imp of findImportStatementsFrom(rootNode, '@material-ui/lab/Alert')) {
     alertLocalName = getDefaultImportName(imp)
@@ -90,6 +99,8 @@ function collectAlertImports(rootNode: SgNode<TSX>): {
       const allSpecifiers = imp.findAll({ rule: { kind: 'import_specifier' } })
       if (allSpecifiers.length <= 1) {
         importNodesToRemove.push(imp)
+      } else {
+        importSpecifiersToRemove.set(imp, { source: '@material-ui/core', names: ['Alert'] })
       }
     }
   }
@@ -105,16 +116,40 @@ function collectAlertImports(rootNode: SgNode<TSX>): {
       alertTitleLocalName = alertTitleName
     }
 
-    if (alertName || alertTitleName) {
+    const namesToRemove: string[] = []
+    if (alertName) {
+      namesToRemove.push('Alert')
+    }
+    if (alertTitleName) {
+      namesToRemove.push('AlertTitle')
+    }
+
+    if (namesToRemove.length > 0) {
       const allSpecifiers = imp.findAll({ rule: { kind: 'import_specifier' } })
-      const alertSpecCount = (alertName ? 1 : 0) + (alertTitleName ? 1 : 0)
-      if (alertSpecCount >= allSpecifiers.length) {
+      if (namesToRemove.length >= allSpecifiers.length) {
         importNodesToRemove.push(imp)
+      } else {
+        importSpecifiersToRemove.set(imp, { source: '@material-ui/lab', names: namesToRemove })
       }
     }
   }
 
-  return { alertLocalName, alertTitleLocalName, importNodesToRemove }
+  return { alertLocalName, alertTitleLocalName, importNodesToRemove, importSpecifiersToRemove }
+}
+
+function pruneBarrelImportSpecifiers(imp: SgNode<TSX>, source: string, namesToRemove: string[], edits: Edit[]): void {
+  const remainingSpecs = imp.findAll({ rule: { kind: 'import_specifier' } }).filter((spec) => {
+    const importedName = getImportedName(spec)
+    return importedName !== null && !namesToRemove.includes(importedName)
+  })
+
+  if (remainingSpecs.length === 0) {
+    edits.push(imp.replace(''))
+  } else {
+    const specTexts = remainingSpecs.map((spec) => spec.text()).join(', ')
+    edits.push(imp.replace(`import { ${specTexts} } from '${source}';`))
+  }
+  migrationMetric.increment({ action: 'import-removed' })
 }
 
 function buildBuiImportEdit(rootNode: SgNode<TSX>, importNodesToRemove: SgNode<TSX>[], edits: Edit[]): boolean {
@@ -156,7 +191,7 @@ function buildBuiImportEdit(rootNode: SgNode<TSX>, importNodesToRemove: SgNode<T
 
   if (anchorImport) {
     edits.push(anchorImport.replace(`${anchorImport.text()}\nimport { Alert } from '${BUI_SOURCE}';`))
-  } else if (importNodesToRemove.length === 1) {
+  } else if (importNodesToRemove.length > 0) {
     const [importNode] = importNodesToRemove
     if (importNode) {
       edits.push(importNode.replace(`import { Alert } from '${BUI_SOURCE}';`))
@@ -380,7 +415,8 @@ const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
-  const { alertLocalName, alertTitleLocalName, importNodesToRemove } = collectAlertImports(rootNode)
+  const { alertLocalName, alertTitleLocalName, importNodesToRemove, importSpecifiersToRemove } =
+    collectAlertImports(rootNode)
 
   if (!alertLocalName) {
     return Promise.resolve(null)
@@ -389,18 +425,29 @@ const transform: Codemod<TSX> = (root) => {
   const { preserveImport, migrated } = transformAlertElements(rootNode, alertLocalName, alertTitleLocalName, edits)
 
   let replacedImport = false
+  if (migrated && !preserveImport && importNodesToRemove.length > 1) {
+    for (const imp of importNodesToRemove.slice(1)) {
+      edits.push(imp.replace(''))
+      migrationMetric.increment({ action: 'import-removed' })
+    }
+  }
+
   if (migrated) {
     replacedImport = buildBuiImportEdit(rootNode, importNodesToRemove, edits)
   }
 
   if (!preserveImport) {
-    for (const imp of importNodesToRemove) {
-      if (replacedImport && imp.id() === importNodesToRemove[0]?.id()) {
+    const [firstImport] = importNodesToRemove
+    if (firstImport) {
+      if (replacedImport) {
         migrationMetric.increment({ action: 'import-removed' })
-        continue
+      } else {
+        edits.push(firstImport.replace(''))
+        migrationMetric.increment({ action: 'import-removed' })
       }
-      edits.push(imp.replace(''))
-      migrationMetric.increment({ action: 'import-removed' })
+    }
+    for (const [imp, { source, names }] of importSpecifiersToRemove) {
+      pruneBarrelImportSpecifiers(imp, source, names, edits)
     }
   }
 

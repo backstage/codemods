@@ -52,12 +52,21 @@ function getNamedImportLocalName(imp: SgNode<TSX>, targetName: string): string |
   return null
 }
 
+function getImportedName(spec: SgNode<TSX>): string | null {
+  const identifiers = spec.findAll({
+    rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
+  })
+  return identifiers[0]?.text() ?? null
+}
+
 function collectIconButtonImports(rootNode: SgNode<TSX>): {
   iconButtonLocalName: string | null
   importNodesToRemove: SgNode<TSX>[]
+  importSpecifiersToRemove: Map<SgNode<TSX>, string[]>
 } {
   let iconButtonLocalName: string | null = null
   const importNodesToRemove: SgNode<TSX>[] = []
+  const importSpecifiersToRemove = new Map<SgNode<TSX>, string[]>()
 
   // Default import: import IconButton from '@material-ui/core/IconButton'
   for (const imp of findImportStatementsFrom(rootNode, '@material-ui/core/IconButton')) {
@@ -73,11 +82,28 @@ function collectIconButtonImports(rootNode: SgNode<TSX>): {
       const allSpecifiers = imp.findAll({ rule: { kind: 'import_specifier' } })
       if (allSpecifiers.length <= 1) {
         importNodesToRemove.push(imp)
+      } else {
+        importSpecifiersToRemove.set(imp, ['IconButton'])
       }
     }
   }
 
-  return { iconButtonLocalName, importNodesToRemove }
+  return { iconButtonLocalName, importNodesToRemove, importSpecifiersToRemove }
+}
+
+function pruneBarrelImportSpecifiers(imp: SgNode<TSX>, namesToRemove: string[], edits: Edit[]): void {
+  const remainingSpecs = imp.findAll({ rule: { kind: 'import_specifier' } }).filter((spec) => {
+    const importedName = getImportedName(spec)
+    return importedName !== null && !namesToRemove.includes(importedName)
+  })
+
+  if (remainingSpecs.length === 0) {
+    edits.push(imp.replace(''))
+  } else {
+    const specTexts = remainingSpecs.map((spec) => spec.text()).join(', ')
+    edits.push(imp.replace(`import { ${specTexts} } from '@material-ui/core';`))
+  }
+  migrationMetric.increment({ action: 'import-removed' })
 }
 
 function addButtonIconToBuiImport(rootNode: SgNode<TSX>, importNodesToRemove: SgNode<TSX>[], edits: Edit[]): boolean {
@@ -119,7 +145,7 @@ function addButtonIconToBuiImport(rootNode: SgNode<TSX>, importNodesToRemove: Sg
 
   if (anchorImport) {
     edits.push(anchorImport.replace(`${anchorImport.text()}\nimport { ButtonIcon } from '${BUI_SOURCE}';`))
-  } else if (importNodesToRemove.length === 1) {
+  } else if (importNodesToRemove.length > 0) {
     const [importNode] = importNodesToRemove
     if (importNode) {
       edits.push(importNode.replace(`import { ButtonIcon } from '${BUI_SOURCE}';`))
@@ -186,6 +212,14 @@ function getJsxChildren(element: SgNode<TSX>): SgNode<TSX>[] {
   return children
 }
 
+function formatIconProp(iconChild: SgNode<TSX>): string {
+  const iconText = iconChild.text()
+  if (iconChild.kind() === 'jsx_expression') {
+    return `icon={${iconText.slice(1, -1)}}`
+  }
+  return `icon={${iconText}}`
+}
+
 function isSingleIconChild(child: SgNode<TSX>): boolean {
   const kind = child.kind()
   return kind === 'jsx_self_closing_element' || kind === 'jsx_element' || kind === 'jsx_expression'
@@ -241,8 +275,6 @@ function transformIconButtonElements(
       continue
     }
 
-    const iconText = iconChild.text()
-
     const hasAriaLabel = hasProp(opening, 'aria-label')
     if (!hasAriaLabel) {
       insertTodo('missing-aria-label')
@@ -253,7 +285,7 @@ function transformIconButtonElements(
     const newProps: string[] = []
 
     // icon prop from child
-    newProps.push(`icon={${iconText}}`)
+    newProps.push(formatIconProp(iconChild))
 
     // Map props from opening element
     const allAttrs = opening.findAll({ rule: { kind: 'jsx_attribute' } })
@@ -314,7 +346,7 @@ const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
-  const { iconButtonLocalName, importNodesToRemove } = collectIconButtonImports(rootNode)
+  const { iconButtonLocalName, importNodesToRemove, importSpecifiersToRemove } = collectIconButtonImports(rootNode)
 
   if (!iconButtonLocalName) {
     return Promise.resolve(null)
@@ -335,6 +367,9 @@ const transform: Codemod<TSX> = (root) => {
       }
       edits.push(imp.replace(''))
       migrationMetric.increment({ action: 'import-removed' })
+    }
+    for (const [imp, namesToRemove] of importSpecifiersToRemove) {
+      pruneBarrelImportSpecifiers(imp, namesToRemove, edits)
     }
   }
 
