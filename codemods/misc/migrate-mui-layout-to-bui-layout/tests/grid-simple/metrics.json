@@ -1,0 +1,22 @@
+{
+  "migrate-mui-layout-to-bui-layout": [
+    {
+      "cardinality": {
+        "action": "grid-container-to-root"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "grid-item-migrated"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-added"
+      },
+      "count": 1
+    }
+  ]
+}

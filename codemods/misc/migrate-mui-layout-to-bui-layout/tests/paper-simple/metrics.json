@@ -1,0 +1,16 @@
+{
+  "migrate-mui-layout-to-bui-layout": [
+    {
+      "cardinality": {
+        "action": "import-added"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "paper-to-surface"
+      },
+      "count": 1
+    }
+  ]
+}

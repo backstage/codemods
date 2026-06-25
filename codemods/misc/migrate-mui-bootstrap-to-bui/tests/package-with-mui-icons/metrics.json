@@ -1,0 +1,16 @@
+{
+  "migrate-mui-bootstrap-to-bui": [
+    {
+      "cardinality": {
+        "action": "bui-dependency-added"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "remix-dependency-added"
+      },
+      "count": 1
+    }
+  ]
+}

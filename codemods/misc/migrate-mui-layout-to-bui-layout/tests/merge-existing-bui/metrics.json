@@ -1,0 +1,16 @@
+{
+  "migrate-mui-layout-to-bui-layout": [
+    {
+      "cardinality": {
+        "action": "box-to-flex"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-merged"
+      },
+      "count": 1
+    }
+  ]
+}

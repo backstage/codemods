@@ -1,0 +1,67 @@
+import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
+import type TSX from 'codemod:ast-grep/langs/tsx'
+import { useMetricAtom } from 'codemod:metrics'
+
+const migrationMetric = useMetricAtom('migrate-mui-bootstrap-to-bui')
+
+const BUI_CSS_IMPORT = '@backstage/ui/css/styles.css'
+
+function findImportStatementsMatching(rootNode: SgNode<TSX>, pattern: string): SgNode<TSX>[] {
+  return rootNode.findAll({
+    rule: {
+      kind: 'import_statement',
+      has: {
+        kind: 'string',
+        has: {
+          kind: 'string_fragment',
+          regex: pattern,
+        },
+      },
+    },
+  })
+}
+
+function hasMuiImports(rootNode: SgNode<TSX>): boolean {
+  const muiImports = findImportStatementsMatching(rootNode, '^@material-ui/')
+  return muiImports.length > 0
+}
+
+function hasBuiCssImport(rootNode: SgNode<TSX>): boolean {
+  const cssImports = findImportStatementsMatching(rootNode, '^@backstage/ui/css/styles\\.css$')
+  return cssImports.length > 0
+}
+
+const transform: Codemod<TSX> = async (root) => {
+  const rootNode = root.root()
+  const edits: Edit[] = []
+
+  // Only process files that contain @material-ui imports
+  if (!hasMuiImports(rootNode)) {
+    return null
+  }
+
+  // Skip if the BUI CSS import is already present
+  if (hasBuiCssImport(rootNode)) {
+    migrationMetric.increment({ action: 'already-bootstrapped' })
+    return null
+  }
+
+  // Find the first import statement to insert before it
+  const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
+  if (allImports.length === 0) {
+    return null
+  }
+
+  const firstImport = allImports[0]
+  if (!firstImport) {
+    return null
+  }
+
+  // Insert the BUI CSS import before the first import
+  edits.push(firstImport.replace(`import '${BUI_CSS_IMPORT}';\n${firstImport.text()}`))
+  migrationMetric.increment({ action: 'css-import-added' })
+
+  return edits.length > 0 ? rootNode.commitEdits(edits) : null
+}
+
+export default transform

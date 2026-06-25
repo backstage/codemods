@@ -1,0 +1,10 @@
+{
+  "migrate-mui-bootstrap-to-bui": [
+    {
+      "cardinality": {
+        "action": "bui-dependency-added"
+      },
+      "count": 1
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "migrate-mui-bootstrap-to-bui": [
+    {
+      "cardinality": {
+        "action": "css-import-added"
+      },
+      "count": 1
+    }
+  ]
+}
