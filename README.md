@@ -40,6 +40,16 @@ Run the [`migration-recipe`](./codemods/v1.51.0/migration-recipe) to apply every
 
 Older versions are available in the [`codemods/`](./codemods) directory.
 
+### misc
+
+| Codemod                                                                                      | Description                                                   |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| [migrate-mui-chip-to-tag](./codemods/misc/migrate-mui-chip-to-tag)                           | MUI 4 to BUI: Replace Chip with Tag                           |
+| [migrate-mui-dialog-to-bui-dialog](./codemods/misc/migrate-mui-dialog-to-bui-dialog)         | MUI 4 to BUI: Replace Dialog shell with BUI Dialog            |
+| [migrate-mui-list-family-to-bui-list](./codemods/misc/migrate-mui-list-family-to-bui-list)   | MUI 4 to BUI: Replace List family primitives with BUI List    |
+| [migrate-mui-menu-popover-to-bui-menu](./codemods/misc/migrate-mui-menu-popover-to-bui-menu) | MUI 4 to BUI: Replace Menu and Popover patterns with BUI Menu |
+| [migrate-mui-tabs-to-bui-tabs](./codemods/misc/migrate-mui-tabs-to-bui-tabs)                 | MUI 4 to BUI: Replace MUI Tabs with BUI Tabs                  |
+
 <!-- CODEMODS_END -->
 
 ## Usage

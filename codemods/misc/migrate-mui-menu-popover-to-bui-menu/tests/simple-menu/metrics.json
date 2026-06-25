@@ -1,0 +1,11 @@
+{
+  "migrate-mui-menu-popover-to-bui-menu": [
+    {
+      "cardinality": {
+        "action": "todo-inserted",
+        "reason": "no-trigger-element"
+      },
+      "count": 1
+    }
+  ]
+}
