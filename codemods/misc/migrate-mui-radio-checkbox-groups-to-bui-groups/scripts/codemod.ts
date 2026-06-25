@@ -5,11 +5,45 @@ import { useMetricAtom } from 'codemod:metrics'
 const migrationMetric = useMetricAtom('migrate-mui-radio-checkbox-to-bui')
 
 const BUI_SOURCE = '@backstage/ui'
+const MUI_BARREL_SOURCE = '@material-ui/core'
 
 const MUI_COMPONENTS = ['RadioGroup', 'Radio', 'Checkbox', 'FormControlLabel', 'FormGroup', 'FormControl', 'FormLabel']
 
 function escapeRegex(str: string): string {
   return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function wrapWithTodo(todoComment: string, elementText: string): string {
+  return `<>
+${todoComment}
+${elementText}
+</>`
+}
+
+function rebuildImportWithout(importStmt: SgNode<TSX>, specifiersToRemove: Set<string>): string {
+  const specifiers = importStmt.findAll({ rule: { kind: 'import_specifier' } })
+  const remaining: string[] = []
+  for (const spec of specifiers) {
+    const identifiers = spec.findAll({
+      rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
+    })
+    const importedName = identifiers[0]?.text()
+    if (importedName && !specifiersToRemove.has(importedName)) {
+      remaining.push(spec.text())
+    }
+  }
+
+  if (remaining.length === 0) {
+    return ''
+  }
+
+  const sourceNode = importStmt.find({ rule: { kind: 'string' } })
+  const sourceText = sourceNode?.text() ?? `'${MUI_BARREL_SOURCE}'`
+
+  if (remaining.length <= 2) {
+    return `import { ${remaining.join(', ')} } from ${sourceText};`
+  }
+  return `import {\n  ${remaining.join(',\n  ')},\n} from ${sourceText};`
 }
 
 function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode<TSX>[] {
@@ -57,11 +91,13 @@ function getNamedImportLocalName(imp: SgNode<TSX>, targetName: string): string |
 interface GroupImports {
   localNames: Map<string, string>
   importNodesToRemove: SgNode<TSX>[]
+  barrelImportsToPrune: { imp: SgNode<TSX>; namesToRemove: Set<string> }[]
 }
 
 function collectGroupImports(rootNode: SgNode<TSX>): GroupImports {
   const localNames = new Map<string, string>()
   const importNodesToRemove: SgNode<TSX>[] = []
+  const barrelImportsToPrune: { imp: SgNode<TSX>; namesToRemove: Set<string> }[] = []
 
   for (const componentName of MUI_COMPONENTS) {
     for (const imp of findImportStatementsFrom(rootNode, `@material-ui/core/${componentName}`)) {
@@ -73,27 +109,34 @@ function collectGroupImports(rootNode: SgNode<TSX>): GroupImports {
     }
   }
 
-  for (const imp of findImportStatementsFrom(rootNode, '@material-ui/core')) {
-    let foundCount = 0
+  for (const imp of findImportStatementsFrom(rootNode, MUI_BARREL_SOURCE)) {
+    const foundNames = new Set<string>()
     for (const componentName of MUI_COMPONENTS) {
       const localName = getNamedImportLocalName(imp, componentName)
       if (localName) {
         localNames.set(localName, componentName)
-        foundCount++
+        foundNames.add(componentName)
       }
     }
-    if (foundCount > 0) {
+    if (foundNames.size > 0) {
       const allSpecifiers = imp.findAll({ rule: { kind: 'import_specifier' } })
-      if (foundCount >= allSpecifiers.length) {
+      if (foundNames.size >= allSpecifiers.length) {
         importNodesToRemove.push(imp)
+      } else {
+        barrelImportsToPrune.push({ imp, namesToRemove: foundNames })
       }
     }
   }
 
-  return { localNames, importNodesToRemove }
+  return { localNames, importNodesToRemove, barrelImportsToPrune }
 }
 
-function addBuiImport(rootNode: SgNode<TSX>, names: string[], edits: Edit[]): void {
+function addBuiImport(
+  rootNode: SgNode<TSX>,
+  importNodesToRemove: SgNode<TSX>[],
+  names: string[],
+  edits: Edit[],
+): boolean {
   const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
   const existingImport = existingImports[0] ?? null
 
@@ -115,19 +158,33 @@ function addBuiImport(rootNode: SgNode<TSX>, names: string[], edits: Edit[]): vo
       edits.push(namedImports.replace(`{ ${existing.join(', ')} }`))
       migrationMetric.increment({ action: 'import-merged' })
     }
-  } else {
-    const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
-    const sortedNames = [...names].sort()
-    if (allImports.length > 0) {
-      const lastImport = allImports.at(-1)
-      if (lastImport) {
-        edits.push(
-          lastImport.replace(`${lastImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`),
-        )
-      }
-    }
-    migrationMetric.increment({ action: 'import-added' })
+    return false
   }
+
+  const sortedNames = [...names].sort()
+  const removableIds = new Set(importNodesToRemove.map((imp) => imp.id()))
+  const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
+  const anchorImport = [...allImports].reverse().find((imp) => !removableIds.has(imp.id())) ?? null
+
+  if (anchorImport) {
+    edits.push(
+      anchorImport.replace(`${anchorImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`),
+    )
+  } else if (importNodesToRemove.length === 1) {
+    const [importNode] = importNodesToRemove
+    if (importNode) {
+      edits.push(importNode.replace(`import { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
+      migrationMetric.increment({ action: 'import-added' })
+      return true
+    }
+  } else if (allImports.length > 0) {
+    const lastImport = allImports.at(-1)
+    if (lastImport) {
+      edits.push(lastImport.replace(`${lastImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
+    }
+  }
+  migrationMetric.increment({ action: 'import-added' })
+  return false
 }
 
 function getElementName(opening: SgNode<TSX>): string | null {
@@ -374,8 +431,13 @@ function isCheckboxFormGroup(element: SgNode<TSX>, localNames: Map<string, strin
   return hasCheckbox
 }
 
-function transformGroupElements(rootNode: SgNode<TSX>, localNames: Map<string, string>, edits: Edit[]): Set<string> {
+function transformGroupElements(
+  rootNode: SgNode<TSX>,
+  localNames: Map<string, string>,
+  edits: Edit[],
+): { usedBuiNames: Set<string>; preserveImport: boolean } {
   const usedBuiNames = new Set<string>()
+  let preserveImport = false
   const radioGroupLocal = [...localNames.entries()].find(([, v]) => v === 'RadioGroup')?.[0] ?? null
   const formGroupLocal = [...localNames.entries()].find(([, v]) => v === 'FormGroup')?.[0] ?? null
 
@@ -399,7 +461,12 @@ function transformGroupElements(rootNode: SgNode<TSX>, localNames: Map<string, s
     if (name === radioGroupLocal && !isSelfClosing) {
       const transformedChildren = transformRadioGroupChildren(el, localNames)
       if (transformedChildren === null) {
-        edits.push(el.replace(`{/* TODO(backstage-codemod): finish choice-group migration manually */}\n${el.text()}`))
+        preserveImport = true
+        edits.push(
+          el.replace(
+            wrapWithTodo(`{/* TODO(backstage-codemod): finish choice-group migration manually */}`, el.text()),
+          ),
+        )
         migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-radio-group' })
         continue
       }
@@ -426,13 +493,23 @@ function transformGroupElements(rootNode: SgNode<TSX>, localNames: Map<string, s
 
     if (name === formGroupLocal && !isSelfClosing) {
       if (!isCheckboxFormGroup(el, localNames)) {
-        edits.push(el.replace(`{/* TODO(backstage-codemod): finish choice-group migration manually */}\n${el.text()}`))
+        preserveImport = true
+        edits.push(
+          el.replace(
+            wrapWithTodo(`{/* TODO(backstage-codemod): finish choice-group migration manually */}`, el.text()),
+          ),
+        )
         migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-form-group' })
         continue
       }
       const transformedChildren = transformCheckboxGroupChildren(el, localNames)
       if (transformedChildren === null) {
-        edits.push(el.replace(`{/* TODO(backstage-codemod): finish choice-group migration manually */}\n${el.text()}`))
+        preserveImport = true
+        edits.push(
+          el.replace(
+            wrapWithTodo(`{/* TODO(backstage-codemod): finish choice-group migration manually */}`, el.text()),
+          ),
+        )
         migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-checkbox-group' })
         continue
       }
@@ -444,14 +521,14 @@ function transformGroupElements(rootNode: SgNode<TSX>, localNames: Map<string, s
     }
   }
 
-  return usedBuiNames
+  return { usedBuiNames, preserveImport }
 }
 
 const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
-  const { localNames, importNodesToRemove } = collectGroupImports(rootNode)
+  const { localNames, importNodesToRemove, barrelImportsToPrune } = collectGroupImports(rootNode)
 
   const hasTarget = [...localNames.values()].some(
     (v) => v === 'RadioGroup' || v === 'FormGroup' || v === 'FormControlLabel',
@@ -460,15 +537,26 @@ const transform: Codemod<TSX> = (root) => {
     return Promise.resolve(null)
   }
 
-  for (const imp of importNodesToRemove) {
-    edits.push(imp.replace(''))
-    migrationMetric.increment({ action: 'import-removed' })
+  const { usedBuiNames, preserveImport } = transformGroupElements(rootNode, localNames, edits)
+
+  let replacedImport = false
+  if (usedBuiNames.size > 0) {
+    replacedImport = addBuiImport(rootNode, importNodesToRemove, [...usedBuiNames], edits)
   }
 
-  const usedBuiNames = transformGroupElements(rootNode, localNames, edits)
-
-  if (usedBuiNames.size > 0) {
-    addBuiImport(rootNode, [...usedBuiNames], edits)
+  if (!preserveImport) {
+    for (const { imp, namesToRemove } of barrelImportsToPrune) {
+      edits.push(imp.replace(rebuildImportWithout(imp, namesToRemove)))
+      migrationMetric.increment({ action: 'import-pruned' })
+    }
+    for (const imp of importNodesToRemove) {
+      if (replacedImport && imp.id() === importNodesToRemove[0]?.id()) {
+        migrationMetric.increment({ action: 'import-removed' })
+        continue
+      }
+      edits.push(imp.replace(''))
+      migrationMetric.increment({ action: 'import-removed' })
+    }
   }
 
   return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)

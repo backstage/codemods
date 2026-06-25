@@ -58,6 +58,13 @@ function escapeRegex(str: string): string {
   return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+function wrapWithTodo(todoComment: string, elementText: string): string {
+  return `<>
+${todoComment}
+${elementText}
+</>`
+}
+
 function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode<TSX>[] {
   return rootNode.findAll({
     rule: {
@@ -273,6 +280,10 @@ function tryRewriteOnChangeHandler(attr: SgNode<TSX>): string | null {
   }
 
   const rewrittenBody = bodyText.replace(targetValuePattern(eventName), 'newValue')
+  const eventRefPattern = new RegExp(`\\b${escapeRegex(eventName)}\\b`)
+  if (eventRefPattern.test(rewrittenBody)) {
+    return null
+  }
   return `{newValue => ${rewrittenBody}}`
 }
 
@@ -314,7 +325,10 @@ function transformTextFieldElements(
       preserveImport = true
       edits.push(
         el.replace(
-          `{/* TODO(backstage-codemod): finish TextField migration manually (${todoReasons.join(', ')}) */}\n${el.text()}`,
+          wrapWithTodo(
+            `{/* TODO(backstage-codemod): finish TextField migration manually (${todoReasons.join(', ')}) */}`,
+            el.text(),
+          ),
         ),
       )
       migrationMetric.increment({ action: 'todo-inserted', reason: todoReasons.join(', ') })
@@ -325,84 +339,98 @@ function transformTextFieldElements(
     let handlerTodo = false
     let droppedFullWidth = false
 
-    const allAttrs = opening.findAll({ rule: { kind: 'jsx_attribute' } })
-    for (const attr of allAttrs) {
-      const propIdent = attr.find({ rule: { kind: 'property_identifier' } })
-      if (!propIdent) {
-        continue
-      }
-      const propName = propIdent.text()
-
-      const renamed = PROP_RENAMES[propName]
-      if (renamed) {
-        const exprNode = attr.find({ rule: { kind: 'jsx_expression' } })
-        const strNode = attr.find({ rule: { kind: 'string' } })
-        if (exprNode) {
-          newProps.push(`${renamed}=${exprNode.text()}`)
-        } else if (strNode) {
-          newProps.push(`${renamed}=${strNode.text()}`)
-        } else {
-          newProps.push(renamed)
+    for (const child of opening.children()) {
+      const kind = child.kind()
+      if (kind === 'jsx_attribute') {
+        const propIdent = child.find({ rule: { kind: 'property_identifier' } })
+        if (!propIdent) {
+          continue
         }
-        migrationMetric.increment({ action: 'prop-renamed', from: propName, to: renamed })
-        continue
-      }
-
-      if (propName === 'onChange') {
-        const rewritten = tryRewriteOnChangeHandler(attr)
-        if (rewritten !== null) {
-          newProps.push(`onChange=${rewritten}`)
-          migrationMetric.increment({ action: 'onChange-rewritten' })
-        } else {
-          preserveImport = true
-          edits.push(
-            el.replace(
-              `{/* TODO(backstage-codemod): finish TextField migration manually (complex-onChange) */}\n${el.text()}`,
-            ),
-          )
-          migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-onChange' })
-          handlerTodo = true
-          break
+        const propName = propIdent.text()
+        const renamed = PROP_RENAMES[propName]
+        if (renamed) {
+          const exprNode = child.find({ rule: { kind: 'jsx_expression' } })
+          const strNode = child.find({ rule: { kind: 'string' } })
+          if (exprNode) {
+            newProps.push(`${renamed}=${exprNode.text()}`)
+          } else if (strNode) {
+            newProps.push(`${renamed}=${strNode.text()}`)
+          } else {
+            newProps.push(renamed)
+          }
+          migrationMetric.increment({ action: 'prop-renamed', from: propName, to: renamed })
+          continue
         }
-        continue
+        if (propName === 'onChange') {
+          const rewritten = tryRewriteOnChangeHandler(child)
+          if (rewritten !== null) {
+            newProps.push(`onChange=${rewritten}`)
+            migrationMetric.increment({ action: 'onChange-rewritten' })
+          } else {
+            preserveImport = true
+            edits.push(
+              el.replace(
+                wrapWithTodo(
+                  `{/* TODO(backstage-codemod): finish TextField migration manually (complex-onChange) */}`,
+                  el.text(),
+                ),
+              ),
+            )
+            migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-onChange' })
+            handlerTodo = true
+            break
+          }
+          continue
+        }
+        if (propName === 'fullWidth') {
+          droppedFullWidth = true
+          migrationMetric.increment({ action: 'prop-dropped', prop: 'fullWidth' })
+          migrationMetric.increment({ action: 'todo-inserted', reason: 'fullWidth' })
+          continue
+        }
+        newProps.push(child.text())
+      } else if (kind === 'jsx_expression' && child.text().startsWith('{...')) {
+        newProps.push(child.text())
       }
-
-      if (propName === 'fullWidth') {
-        droppedFullWidth = true
-        migrationMetric.increment({ action: 'prop-dropped', prop: 'fullWidth' })
-        migrationMetric.increment({ action: 'todo-inserted', reason: 'fullWidth' })
-        continue
-      }
-
-      newProps.push(attr.text())
     }
 
     if (handlerTodo) {
       continue
     }
 
-    const spreadAttrs = opening.findAll({ rule: { kind: 'jsx_expression' } })
-    for (const spread of spreadAttrs) {
-      if (spread.text().startsWith('{...')) {
-        newProps.push(spread.text())
-      }
-    }
-
     const propsStr = newProps.length > 0 ? ` ${newProps.join(' ')}` : ''
-    const fullWidthTodo = droppedFullWidth
-      ? '{/* TODO(backstage-codemod): finish TextField migration manually (fullWidth) */}\n'
-      : ''
 
     if (isSelfClosing) {
-      edits.push(el.replace(`${fullWidthTodo}<TextField${propsStr} />`))
+      if (droppedFullWidth) {
+        edits.push(
+          el.replace(
+            wrapWithTodo(
+              '{/* TODO(backstage-codemod): finish TextField migration manually (fullWidth) */}',
+              `<TextField${propsStr} />`,
+            ),
+          ),
+        )
+      } else {
+        edits.push(el.replace(`<TextField${propsStr} />`))
+      }
     } else {
-      // Preserve children via AST traversal
       const children = el
         .children()
         .filter((c) => c.kind() !== 'jsx_opening_element' && c.kind() !== 'jsx_closing_element')
         .map((c) => c.text())
         .join('')
-      edits.push(el.replace(`${fullWidthTodo}<TextField${propsStr}>${children}</TextField>`))
+      if (droppedFullWidth) {
+        edits.push(
+          el.replace(
+            wrapWithTodo(
+              '{/* TODO(backstage-codemod): finish TextField migration manually (fullWidth) */}',
+              `<TextField${propsStr}>${children}</TextField>`,
+            ),
+          ),
+        )
+      } else {
+        edits.push(el.replace(`<TextField${propsStr}>${children}</TextField>`))
+      }
     }
 
     migrated = true
