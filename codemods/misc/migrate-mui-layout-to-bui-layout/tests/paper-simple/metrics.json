@@ -8,6 +8,12 @@
     },
     {
       "cardinality": {
+        "action": "import-removed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
         "action": "paper-to-surface"
       },
       "count": 1

@@ -106,7 +106,11 @@ function collectLayoutImports(rootNode: SgNode<TSX>): LayoutImports {
   return { localNames, importNodes }
 }
 
-function isMuiComponentStillUsed(rootNode: SgNode<TSX>, localName: string): boolean {
+function isMuiComponentStillUsed(rootNode: SgNode<TSX>, localName: string, migratedLocalNames: Set<string>): boolean {
+  if (migratedLocalNames.has(localName)) {
+    return false
+  }
+
   const jsxElements = rootNode.findAll({
     rule: {
       any: [{ kind: 'jsx_element' }, { kind: 'jsx_self_closing_element' }],
@@ -134,9 +138,11 @@ function removeUnusedLayoutImports(
   rootNode: SgNode<TSX>,
   localNames: Map<string, string>,
   importNodes: SgNode<TSX>[],
+  migratedLocalNames: Set<string>,
   edits: Edit[],
-): void {
+): Set<number> {
   const seenImportIds = new Set<number>()
+  const removedImportIds = new Set<number>()
 
   for (const imp of importNodes) {
     if (seenImportIds.has(imp.id())) {
@@ -148,14 +154,19 @@ function removeUnusedLayoutImports(
     const allSpecifiers = imp.findAll({ rule: { kind: 'import_specifier' } })
 
     if (defaultName && allSpecifiers.length === 0) {
-      if (localNames.has(defaultName) && !isMuiComponentStillUsed(rootNode, defaultName)) {
+      if (localNames.has(defaultName) && !isMuiComponentStillUsed(rootNode, defaultName, migratedLocalNames)) {
         edits.push(imp.replace(''))
+        removedImportIds.add(imp.id())
         migrationMetric.increment({ action: 'import-removed' })
       }
       continue
     }
 
-    if (defaultName && localNames.has(defaultName) && !isMuiComponentStillUsed(rootNode, defaultName)) {
+    if (
+      defaultName &&
+      localNames.has(defaultName) &&
+      !isMuiComponentStillUsed(rootNode, defaultName, migratedLocalNames)
+    ) {
       // Default + named imports: drop the default binding when unused; trim named below.
     }
 
@@ -172,11 +183,12 @@ function removeUnusedLayoutImports(
       if (!localNames.has(localName)) {
         return true
       }
-      return isMuiComponentStillUsed(rootNode, localName)
+      return isMuiComponentStillUsed(rootNode, localName, migratedLocalNames)
     })
 
     if (remainingSpecifiers.length === 0) {
       edits.push(imp.replace(''))
+      removedImportIds.add(imp.id())
       migrationMetric.increment({ action: 'import-removed' })
     } else if (remainingSpecifiers.length < allSpecifiers.length) {
       const namedImports = imp.find({ rule: { kind: 'named_imports' } })
@@ -186,9 +198,11 @@ function removeUnusedLayoutImports(
       }
     }
   }
+
+  return removedImportIds
 }
 
-function addBuiImport(rootNode: SgNode<TSX>, names: string[], edits: Edit[]): void {
+function addBuiImport(rootNode: SgNode<TSX>, names: string[], excludedImportIds: Set<number>, edits: Edit[]): void {
   const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
   const existingImport = existingImports[0] ?? null
 
@@ -213,13 +227,16 @@ function addBuiImport(rootNode: SgNode<TSX>, names: string[], edits: Edit[]): vo
   } else {
     const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
     const sortedNames = [...names].sort()
-    if (allImports.length > 0) {
-      const lastImport = allImports.at(-1)
-      if (lastImport) {
-        edits.push(
-          lastImport.replace(`${lastImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`),
-        )
-      }
+    const anchorImport =
+      [...allImports].reverse().find((imp) => !excludedImportIds.has(imp.id())) ?? allImports.at(-1) ?? null
+
+    if (anchorImport) {
+      const insertAt = anchorImport.range().end.index
+      edits.push({
+        startPos: insertAt,
+        endPos: insertAt,
+        insertedText: `\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`,
+      })
     }
     migrationMetric.increment({ action: 'import-added' })
   }
@@ -618,8 +635,13 @@ function transformGridElement(el: SgNode<TSX>, opening: SgNode<TSX>, edits: Edit
   return 'Grid'
 }
 
-function transformLayoutElements(rootNode: SgNode<TSX>, localNames: Map<string, string>, edits: Edit[]): Set<string> {
+function transformLayoutElements(
+  rootNode: SgNode<TSX>,
+  localNames: Map<string, string>,
+  edits: Edit[],
+): { usedBuiNames: Set<string>; migratedLocalNames: Set<string> } {
   const usedBuiNames = new Set<string>()
+  const migratedLocalNames = new Set<string>()
 
   const jsxElements = rootNode.findAll({
     rule: {
@@ -648,6 +670,7 @@ function transformLayoutElements(rootNode: SgNode<TSX>, localNames: Map<string, 
       const buiName = transformBoxElement(el, opening, edits)
       if (buiName) {
         usedBuiNames.add(buiName)
+        migratedLocalNames.add(name)
       }
       continue
     }
@@ -656,6 +679,7 @@ function transformLayoutElements(rootNode: SgNode<TSX>, localNames: Map<string, 
       const buiName = transformPaperElement(el, opening, edits)
       if (buiName) {
         usedBuiNames.add(buiName)
+        migratedLocalNames.add(name)
       }
       continue
     }
@@ -664,12 +688,13 @@ function transformLayoutElements(rootNode: SgNode<TSX>, localNames: Map<string, 
       const buiName = transformGridElement(el, opening, edits)
       if (buiName) {
         usedBuiNames.add(buiName)
+        migratedLocalNames.add(name)
       }
       continue
     }
   }
 
-  return usedBuiNames
+  return { usedBuiNames, migratedLocalNames }
 }
 
 const transform: Codemod<TSX> = (root) => {
@@ -683,12 +708,12 @@ const transform: Codemod<TSX> = (root) => {
   }
 
   // Transform elements before removing imports so TODO paths keep MUI imports.
-  const usedBuiNames = transformLayoutElements(rootNode, localNames, edits)
+  const { usedBuiNames, migratedLocalNames } = transformLayoutElements(rootNode, localNames, edits)
 
-  removeUnusedLayoutImports(rootNode, localNames, importNodes, edits)
+  const removedImportIds = removeUnusedLayoutImports(rootNode, localNames, importNodes, migratedLocalNames, edits)
 
   if (usedBuiNames.size > 0) {
-    addBuiImport(rootNode, [...usedBuiNames], edits)
+    addBuiImport(rootNode, [...usedBuiNames], removedImportIds, edits)
   }
 
   return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)

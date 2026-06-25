@@ -21,6 +21,46 @@ function findImportStatementsMatching(rootNode: SgNode<TSX>, pattern: string): S
   })
 }
 
+function normalizeFilePath(filename: string): string {
+  return filename.replace(/^\\\\\?\\/, '').replaceAll('\\', '/')
+}
+
+/**
+ * Match Backstage app/plugin entry files where the global BUI stylesheet belongs.
+ */
+function isAppEntryFile(filename: string, rootNode: SgNode<TSX>): boolean {
+  const normalized = normalizeFilePath(filename)
+
+  if (/(?:^|\/)App\.tsx?$/.test(normalized)) {
+    return true
+  }
+  if (/(?:^|\/)src\/index\.tsx?$/.test(normalized)) {
+    return true
+  }
+  if (/(?:^|\/)src\/plugin\.tsx?$/.test(normalized)) {
+    return true
+  }
+
+  // Typical app bootstrap entry when the filename is index.tsx content (e.g. jssg fixtures).
+  const createRootImports = findImportStatementsMatching(rootNode, '^react-dom/client$')
+  for (const imp of createRootImports) {
+    const createRootSpecifier = imp.find({
+      rule: {
+        kind: 'import_specifier',
+        has: {
+          kind: 'identifier',
+          regex: '^createRoot$',
+        },
+      },
+    })
+    if (createRootSpecifier) {
+      return true
+    }
+  }
+
+  return false
+}
+
 function hasMuiImports(rootNode: SgNode<TSX>): boolean {
   const muiImports = findImportStatementsMatching(rootNode, '^@material-ui/')
   return muiImports.length > 0
@@ -35,7 +75,11 @@ const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
-  // Only process files that contain @material-ui imports
+  if (!isAppEntryFile(root.filename(), rootNode)) {
+    return Promise.resolve(null)
+  }
+
+  // Only process entry files that contain @material-ui imports
   if (!hasMuiImports(rootNode)) {
     return Promise.resolve(null)
   }

@@ -297,8 +297,89 @@ function deriveCssModuleFilePath(filename: string): string {
   return normalized.replace(/\.[^.]+$/, '.module.css')
 }
 
+function hasCssModuleImport(rootNode: SgNode<TSX>, cssModuleImportPath: string): boolean {
+  const imports = rootNode.findAll({ rule: { kind: 'import_statement' } })
+  for (const imp of imports) {
+    const stringFrag = imp.find({ rule: { kind: 'string_fragment' } })
+    if (stringFrag?.text() === cssModuleImportPath) {
+      return true
+    }
+  }
+  return false
+}
+
+async function readCssModuleFile(cssFilePath: string): Promise<string | null> {
+  try {
+    let existing = ''
+    const readCss: Codemod<CSS> = (root) => {
+      existing = root.root().text()
+      return Promise.resolve(null)
+    }
+    await jssgTransform(readCss, cssFilePath, 'css')
+    return existing.trim() ? existing : null
+  } catch {
+    return null
+  }
+}
+
+function extractClassNamesFromCss(cssContent: string): Set<string> {
+  const classNames = new Set<string>()
+  for (const match of cssContent.matchAll(/\.([A-Za-z0-9_-]+)\s*\{/g)) {
+    const [, className] = match
+    if (className) {
+      classNames.add(className)
+    }
+  }
+  return classNames
+}
+
+function extractCssModuleRuleBlocks(cssContent: string): { className: string; block: string }[] {
+  const rules: { className: string; block: string }[] = []
+  for (const match of cssContent.matchAll(/\.([A-Za-z0-9_-]+)\s*\{([^}]*)\}/g)) {
+    const [, className, ruleBody] = match
+    if (!className) {
+      continue
+    }
+    rules.push({
+      className,
+      block: `.${className} {${ruleBody}}`,
+    })
+  }
+  return rules
+}
+
+function mergeCssModuleContent(existing: string, generated: string): string {
+  const trimmedExisting = existing.trimEnd()
+  if (!trimmedExisting) {
+    return `${generated}\n`
+  }
+
+  const existingClassNames = extractClassNamesFromCss(trimmedExisting)
+  const newRules = extractCssModuleRuleBlocks(generated).filter((rule) => !existingClassNames.has(rule.className))
+  if (newRules.length === 0) {
+    return `${trimmedExisting}\n`
+  }
+
+  const formattedNewRules = newRules.map((rule) =>
+    rule.block
+      .split('\n')
+      .map((line) => (line ? `  ${line}` : line))
+      .join('\n'),
+  )
+
+  const layerMatch = trimmedExisting.match(/^([\s\S]*@layer\s+components\s*\{)([\s\S]*?)(\}\s*)$/)
+  if (layerMatch) {
+    const [, layerOpen, layerInner, layerClose] = layerMatch
+    return `${layerOpen}${layerInner}\n${formattedNewRules.join('\n')}\n${layerClose}\n`
+  }
+
+  return `${trimmedExisting}\n\n@layer components {\n${formattedNewRules.join('\n')}\n}\n`
+}
+
 async function writeCssModuleFile(cssFilePath: string, content: string): Promise<void> {
-  const writeCss: Codemod<CSS> = () => Promise.resolve(content)
+  const existing = await readCssModuleFile(cssFilePath)
+  const mergedContent = existing ? mergeCssModuleContent(existing, content) : content
+  const writeCss: Codemod<CSS> = () => Promise.resolve(mergedContent)
   await jssgTransform(writeCss, cssFilePath, 'css')
 }
 
@@ -463,27 +544,29 @@ const transform: Codemod<TSX> = async (root) => {
       .filter((imp) => !importsToRemoveIds.has(imp.id()))
     const cssImportLine = `import styles from '${cssModuleImportPath}';\n`
 
-    if (survivingImports.length > 0) {
-      const lastSurvivingImport = survivingImports.at(-1)
-      if (lastSurvivingImport) {
-        const insertAt = lastSurvivingImport.range().end.index
-        edits.push({
-          startPos: insertAt,
-          endPos: insertAt,
-          insertedText: `\n${cssImportLine}`,
-        })
+    if (!hasCssModuleImport(rootNode, cssModuleImportPath)) {
+      if (survivingImports.length > 0) {
+        const lastSurvivingImport = survivingImports.at(-1)
+        if (lastSurvivingImport) {
+          const insertAt = lastSurvivingImport.range().end.index
+          edits.push({
+            startPos: insertAt,
+            endPos: insertAt,
+            insertedText: `\n${cssImportLine}`,
+          })
+        }
+      } else {
+        const [firstNode] = rootNode.children()
+        if (firstNode) {
+          edits.push({
+            startPos: firstNode.range().start.index,
+            endPos: firstNode.range().start.index,
+            insertedText: cssImportLine,
+          })
+        }
       }
-    } else {
-      const [firstNode] = rootNode.children()
-      if (firstNode) {
-        edits.push({
-          startPos: firstNode.range().start.index,
-          endPos: firstNode.range().start.index,
-          insertedText: cssImportLine,
-        })
-      }
+      migrationMetric.increment({ action: 'css-module-import-added' })
     }
-    migrationMetric.increment({ action: 'css-module-import-added' })
     migrationMetric.increment({ action: 'css-module-file-written' })
 
     // Find and remove the useStyles() hook call

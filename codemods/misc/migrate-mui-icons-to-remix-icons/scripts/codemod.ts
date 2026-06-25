@@ -214,7 +214,12 @@ function collectIconImports(rootNode: SgNode<TSX>): {
   return { icons, namespaceImports }
 }
 
-function addRemixImports(rootNode: SgNode<TSX>, remixImports: Map<string, string>, edits: Edit[]): void {
+function addRemixImports(
+  rootNode: SgNode<TSX>,
+  remixImports: Map<string, string>,
+  excludedImportIds: Set<number>,
+  edits: Edit[],
+): void {
   if (remixImports.size === 0) {
     return
   }
@@ -251,13 +256,16 @@ function addRemixImports(rootNode: SgNode<TSX>, remixImports: Map<string, string
     }
   } else {
     const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
-    if (allImports.length > 0) {
-      const lastImport = allImports.at(-1)
-      if (lastImport) {
-        edits.push(
-          lastImport.replace(`${lastImport.text()}\nimport { ${specifiers.join(', ')} } from '${REMIX_SOURCE}';`),
-        )
-      }
+    const anchorImport =
+      [...allImports].reverse().find((imp) => !excludedImportIds.has(imp.id())) ?? allImports.at(-1) ?? null
+
+    if (anchorImport) {
+      const insertAt = anchorImport.range().end.index
+      edits.push({
+        startPos: insertAt,
+        endPos: insertAt,
+        insertedText: `\nimport { ${specifiers.join(', ')} } from '${REMIX_SOURCE}';`,
+      })
     }
   }
 
@@ -394,6 +402,7 @@ const transform: Codemod<TSX> = (root) => {
   const remixImports = new Map<string, string>()
   const iconLocalNames = new Set<string>()
   const processedImportIds = new Set<number>()
+  const excludedImportIds = new Set<number>()
 
   for (const icon of icons) {
     if (icon.remixName) {
@@ -401,6 +410,7 @@ const transform: Codemod<TSX> = (root) => {
       iconLocalNames.add(icon.localName)
 
       if (!processedImportIds.has(icon.importNode.id())) {
+        excludedImportIds.add(icon.importNode.id())
         edits.push(icon.importNode.replace(''))
         processedImportIds.add(icon.importNode.id())
       }
@@ -415,7 +425,7 @@ const transform: Codemod<TSX> = (root) => {
     }
   }
 
-  addRemixImports(rootNode, remixImports, edits)
+  addRemixImports(rootNode, remixImports, excludedImportIds, edits)
   transformIconJsx(rootNode, iconLocalNames, edits)
   transformExtensionIconSlots(rootNode, iconLocalNames, edits)
 

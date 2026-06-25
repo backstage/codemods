@@ -14,12 +14,6 @@
     },
     {
       "cardinality": {
-        "action": "css-module-import-added"
-      },
-      "count": 1
-    },
-    {
-      "cardinality": {
         "action": "hook-call-removed"
       },
       "count": 1
