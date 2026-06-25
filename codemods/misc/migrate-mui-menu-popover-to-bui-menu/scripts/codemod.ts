@@ -302,12 +302,13 @@ function findTriggerSibling(menuEl: SgNode<TSX>): SgNode<TSX> | null {
     return null
   }
 
+  let previousTrigger: SgNode<TSX> | null = null
   for (const sibling of getNonWhitespaceChildren(parent)) {
     if (sibling.id() === menuEl.id()) {
-      continue
+      return previousTrigger
     }
     if (isTriggerElement(sibling)) {
-      return sibling
+      previousTrigger = sibling
     }
   }
 

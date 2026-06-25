@@ -262,14 +262,15 @@ function transformFooterCloseButtons(content: string, closeHandler: string | nul
     return content
   }
 
-  const buttonPattern = new RegExp(
-    `<button\\s+onClick=\\{${escapeRegex(closeHandler)}\\}([^>]*)>([\\s\\S]*?)</button>`,
-    'g',
-  )
+  const buttonPattern = /<button\s+([^>]*)>([\s\S]*?)<\/button>/g
+  const onClickPattern = new RegExp(`onClick=\\{${escapeRegex(closeHandler)}\\}`)
 
-  return content.replace(buttonPattern, (_match: string, attrs: string, label: string) => {
+  return content.replace(buttonPattern, (match: string, attrs: string, label: string) => {
+    if (!onClickPattern.test(attrs)) {
+      return match
+    }
     migrationMetric.increment({ action: 'footer-close-button-migrated' })
-    const extraAttrs = attrs.trim()
+    const extraAttrs = attrs.replace(onClickPattern, '').trim()
     const attrStr = extraAttrs.length > 0 ? ` ${extraAttrs}` : ''
     return `<Button slot="close" onPress={${closeHandler}}${attrStr}>${label}</Button>`
   })
