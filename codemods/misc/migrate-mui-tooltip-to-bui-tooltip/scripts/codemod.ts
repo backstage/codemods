@@ -142,6 +142,12 @@ function addBuiImport(
       existing.sort()
       edits.push(namedImports.replace(`{ ${existing.join(', ')} }`))
       migrationMetric.increment({ action: 'import-merged' })
+    } else {
+      const sortedNames = [...names].sort()
+      edits.push(
+        existingImport.replace(`${existingImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`),
+      )
+      migrationMetric.increment({ action: 'import-added' })
     }
     return false
   }

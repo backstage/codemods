@@ -202,6 +202,9 @@ function addTextToBuiImport(rootNode: SgNode<TSX>, importNodesToRemove: SgNode<T
         names.sort()
         edits.push(namedImports.replace(`{ ${names.join(', ')} }`))
         migrationMetric.increment({ action: 'import-merged' })
+      } else {
+        edits.push(existingImport.replace(`${existingImport.text()}\nimport { Text } from '${BUI_SOURCE}';`))
+        migrationMetric.increment({ action: 'import-added' })
       }
     }
     return

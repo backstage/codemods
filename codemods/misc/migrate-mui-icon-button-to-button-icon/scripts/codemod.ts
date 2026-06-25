@@ -134,6 +134,9 @@ function addButtonIconToBuiImport(rootNode: SgNode<TSX>, importNodesToRemove: Sg
         names.sort()
         edits.push(namedImports.replace(`{ ${names.join(', ')} }`))
         migrationMetric.increment({ action: 'import-merged' })
+      } else {
+        edits.push(existingImport.replace(`${existingImport.text()}\nimport { ButtonIcon } from '${BUI_SOURCE}';`))
+        migrationMetric.increment({ action: 'import-added' })
       }
     }
     return false
