@@ -1,0 +1,29 @@
+{
+  "migrate-mui-tooltip-to-bui-tooltip": [
+    {
+      "cardinality": {
+        "action": "import-added"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-removed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "placement-dropped",
+        "value": "top"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "tooltip-migrated"
+      },
+      "count": 1
+    }
+  ]
+}

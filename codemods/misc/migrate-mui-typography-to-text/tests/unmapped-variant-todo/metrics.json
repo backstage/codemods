@@ -1,0 +1,11 @@
+{
+  "migrate-mui-typography-to-text": [
+    {
+      "cardinality": {
+        "action": "todo-inserted",
+        "reason": "unmapped-variant-or-color"
+      },
+      "count": 1
+    }
+  ]
+}

@@ -172,6 +172,51 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/migrate-mui-alert-to-bui-alert@workspace:codemods/misc/migrate-mui-alert-to-bui-alert":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-mui-alert-to-bui-alert@workspace:codemods/misc/migrate-mui-alert-to-bui-alert"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/migrate-mui-button-to-bui-button@workspace:codemods/misc/migrate-mui-button-to-bui-button":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-mui-button-to-bui-button@workspace:codemods/misc/migrate-mui-button-to-bui-button"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/migrate-mui-icon-button-to-button-icon@workspace:codemods/misc/migrate-mui-icon-button-to-button-icon":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-mui-icon-button-to-button-icon@workspace:codemods/misc/migrate-mui-icon-button-to-button-icon"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/migrate-mui-tooltip-to-bui-tooltip@workspace:codemods/misc/migrate-mui-tooltip-to-bui-tooltip":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-mui-tooltip-to-bui-tooltip@workspace:codemods/misc/migrate-mui-tooltip-to-bui-tooltip"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/migrate-mui-typography-to-text@workspace:codemods/misc/migrate-mui-typography-to-text":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-mui-typography-to-text@workspace:codemods/misc/migrate-mui-typography-to-text"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.3"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/migrate-nav-item-to-page@workspace:codemods/v1.51.0/migrate-nav-item-to-page":
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-nav-item-to-page@workspace:codemods/v1.51.0/migrate-nav-item-to-page"
