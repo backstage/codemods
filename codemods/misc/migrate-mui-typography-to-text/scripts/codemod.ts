@@ -212,10 +212,13 @@ function addTextToBuiImport(rootNode: SgNode<TSX>, importNodesToRemove: SgNode<T
   const anchorImport = [...allImports].reverse().find((imp) => !removeIds.has(imp.id())) ?? null
 
   if (importNodesToRemove.length === 1 && !anchorImport) {
-    edits.push(importNodesToRemove[0]!.replace(`import { Text } from '${BUI_SOURCE}';`))
-    migrationMetric.increment({ action: 'import-removed' })
+    const [importNode] = importNodesToRemove
+    if (importNode) {
+      edits.push(importNode.replace(`import { Text } from '${BUI_SOURCE}';`))
+      migrationMetric.increment({ action: 'import-removed' })
+    }
   } else {
-    const firstImport = allImports[0]
+    const [firstImport] = allImports
     if (firstImport) {
       edits.push(firstImport.replace(`import { Text } from '${BUI_SOURCE}';\n${firstImport.text()}`))
     } else if (anchorImport) {
@@ -408,14 +411,14 @@ function transformTypographyElements(
   return migrated
 }
 
-const transform: Codemod<TSX> = async (root) => {
+const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
   const { localNames, importNodesToRemove, importSpecifiersToRemove } = collectTypographyImports(rootNode)
 
   if (localNames.size === 0) {
-    return null
+    return Promise.resolve(null)
   }
 
   const preservedLocalNames = new Set<string>()
@@ -459,7 +462,7 @@ const transform: Codemod<TSX> = async (root) => {
     addTextToBuiImport(rootNode, importNodesToRemove, edits)
   }
 
-  return edits.length > 0 ? rootNode.commitEdits(edits) : null
+  return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }
 
 export default transform

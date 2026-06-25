@@ -200,13 +200,13 @@ function transformIconButtonElements(rootNode: SgNode<TSX>, iconButtonLocalName:
 
     // Need exactly one icon child
     const children = getJsxChildren(el)
-    if (children.length !== 1 || !isSingleIconChild(children[0]!)) {
+    const [iconChild] = children
+    if (children.length !== 1 || !iconChild || !isSingleIconChild(iconChild)) {
       edits.push(el.replace(`{/* TODO(backstage-codemod): verify ButtonIcon accessibility manually */}\n${el.text()}`))
       migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-children' })
       continue
     }
 
-    const iconChild = children[0]!
     const iconText = iconChild.text()
 
     // Check for aria-label — required for accessibility
@@ -275,14 +275,14 @@ function transformIconButtonElements(rootNode: SgNode<TSX>, iconButtonLocalName:
   }
 }
 
-const transform: Codemod<TSX> = async (root) => {
+const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
   const { iconButtonLocalName, importNodesToRemove } = collectIconButtonImports(rootNode)
 
   if (!iconButtonLocalName) {
-    return null
+    return Promise.resolve(null)
   }
 
   // Remove MUI imports
@@ -297,7 +297,7 @@ const transform: Codemod<TSX> = async (root) => {
   // Transform JSX elements
   transformIconButtonElements(rootNode, iconButtonLocalName, edits)
 
-  return edits.length > 0 ? rootNode.commitEdits(edits) : null
+  return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }
 
 export default transform
