@@ -30,9 +30,20 @@ yarn test
 
 ## Pre-commit hook
 
-A pre-commit hook runs automatically after `yarn install`. It uses lint-staged to run oxfmt and oxlint on staged files before each commit. If a file fails formatting or linting, the commit is blocked until the issues are fixed.
+A pre-commit hook runs automatically after `yarn install` (via the `prepare` script, which runs `husky`). That sets `core.hooksPath` to `.husky/_` and runs the repo's `.husky/pre-commit` script (`yarn lint-staged`) on commit.
 
-The hook only inspects **staged** files. Format-only changes elsewhere can still fail CI — run `yarn format:check` before pushing.
+lint-staged is configured in [`.lintstagedrc.json`](./.lintstagedrc.json) to mirror the CI gates that apply to staged files:
+
+- **Format** — `yarn format` on staged `ts`/`tsx`/`js`/`json`/`yaml`/`md`/`css` (and related) files
+- **Lint** — `yarn lint` on staged JS/TS (same flags as CI, including `require-await`)
+- **Package tests** — when `codemods/**/scripts/*.{ts,tsx}` is staged, run that package's `yarn test`
+- **README freshness** — when any `codemods/**/codemod.yaml` is staged, run `yarn readme` and stage `README.md`
+
+If formatting or linting fails, the commit is blocked until the issues are fixed.
+
+**Worktrees / fresh clones:** run `yarn install` in that worktree before committing. If `git config core.hooksPath` is unset, husky is not active and commits will skip these checks (CI will still fail).
+
+The hook only inspects **staged** files. Unstaged edits can still fail CI — run `yarn format:check`, `yarn lint`, and `yarn readme` before pushing when in doubt.
 
 ## Making changes
 
@@ -91,3 +102,4 @@ Conventions to follow:
 - Use single-quoted scalars in `codemod.yaml` and `workflow.yaml` to match the oxfmt convention.
 
 Use an existing codemod like `catalog-node-alpha-to-stable` as a reference when creating a new one.
+test

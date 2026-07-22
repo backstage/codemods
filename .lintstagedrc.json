@@ -1,5 +1,6 @@
 {
-  "*.{ts,js,mts,mjs}": ["yarn format", "yarn lint:fix"],
-  "*.{json,yaml,yml,md}": ["yarn format"],
-  "codemods/**/scripts/*.ts": "bash scripts/test-staged.sh"
+  "*.{ts,tsx,js,jsx,mts,mjs}": ["yarn format", "yarn lint"],
+  "*.{json,yaml,yml,md,css}": ["yarn format"],
+  "codemods/**/scripts/*.{ts,tsx}": "bash scripts/test-staged.sh",
+  "codemods/**/codemod.yaml": "bash scripts/readme-staged.sh"
 }
