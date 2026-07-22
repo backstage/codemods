@@ -37,7 +37,8 @@ Run the [`migration-recipe`](./codemods/v1.51.0/migration-recipe) to apply every
 | [remove-immediate-stitching-mode](./codemods/v1.51.0/remove-immediate-stitching-mode)               | Migrate catalog.stitchingStrategy.mode from immediate to deferred                                      |
 | [rename-header-main-class](./codemods/v1.51.0/rename-header-main-class)                             | Rename removed .bui-Header to .bui-HeaderContent and classNames.root to classNames.content             |
 | [render-test-app-nav-migration](./codemods/v1.51.0/render-test-app-nav-migration)                   | Migrate renderInTestApp nav-item tests to renderTestApp for Backstage 1.51.0                           |
-| Older versions are available in the [`codemods/`](./codemods) directory.                            |
+
+Older versions are available in the [`codemods/`](./codemods) directory.
 
 ### misc
 

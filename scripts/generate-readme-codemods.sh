@@ -70,7 +70,10 @@ if [ "$total" -lt "$show" ]; then
   show=$total
 fi
 
-# Build the section
+# Build the section.
+# Note: $(...) strips trailing newlines from render_group, so always append
+# an explicit blank line afterwards — otherwise oxfmt may pull the following
+# prose into the markdown table.
 section=""
 i=0
 for version in "${version_dirs[@]}"; do
@@ -78,7 +81,7 @@ for version in "${version_dirs[@]}"; do
     break
   fi
   section+=$(render_group "$version")
-  section+=$'\n'
+  section+=$'\n\n'
   i=$((i + 1))
 done
 
@@ -93,7 +96,7 @@ for group in "${other_dirs[@]}"; do
   codemod_count=$(find "$local_dir" -mindepth 2 -maxdepth 2 -name 'codemod.yaml' 2>/dev/null | head -1 || true)
   if [ -n "$codemod_count" ]; then
     section+=$(render_group "$group")
-    section+=$'\n'
+    section+=$'\n\n'
   fi
 done
 
