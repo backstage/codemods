@@ -19,13 +19,17 @@
     "check:changed": "bash scripts/check-changed.sh"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.31.0",
+    "@changesets/cli": "^2.31.1",
     "husky": "^9.1.7",
-    "lint-staged": "^17.0.7",
-    "oxfmt": "^0.55.0",
-    "oxlint": "^1.70.0",
-    "oxlint-tsgolint": "^0.23.0",
-    "typescript": "^6.0.3"
+    "lint-staged": "^17.1.1",
+    "oxfmt": "^0.60.0",
+    "oxlint": "^1.75.0",
+    "oxlint-tsgolint": "^7.0.2001",
+    "typescript": "^7.0.2"
   },
-  "packageManager": "yarn@4.14.1"
+  "resolutions": {
+    "js-yaml@npm:^3.6.1": "npm:3.15.0",
+    "js-yaml@npm:^4.1.1": "npm:4.3.0"
+  },
+  "packageManager": "yarn@4.17.1"
 }
