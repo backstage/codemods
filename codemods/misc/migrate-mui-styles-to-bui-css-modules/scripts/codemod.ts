@@ -429,12 +429,7 @@ function shouldPersistCssModule(sourceFilename: string): boolean {
   return !(normalized.includes('/tests/') && /\/input\.[^.]+$/.test(normalized))
 }
 
-function writeCssModuleFile(
-  cssFilePath: string,
-  content: string,
-  sourceFilename: string,
-  dryRun: boolean,
-): void {
+function writeCssModuleFile(cssFilePath: string, content: string, sourceFilename: string, dryRun: boolean): void {
   const existing = readCssModuleFile(cssFilePath)
   const mergedContent = existing ? mergeCssModuleContent(existing, content) : content
   const output = mergedContent.endsWith('\n') ? mergedContent : `${mergedContent}\n`
