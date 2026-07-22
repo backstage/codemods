@@ -9,53 +9,56 @@ See the [Codemod docs](https://docs.codemod.com) for more on building and runnin
 ## Codemods
 
 <!-- CODEMODS_START -->
-
 ### v1.52.0
 
 Run the [`migration-recipe`](./codemods/v1.52.0/migration-recipe) to apply every codemod below in one pass, or run any individual codemod on its own.
 
-| Codemod                                                                                   | Description                                                                                    |
-| ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| [migrate-bui-props-to-intersection](./codemods/v1.52.0/migrate-bui-props-to-intersection) | Migrate ComboboxProps/SelectProps interface extends to type intersection                       |
-| [migrate-select-combobox-props](./codemods/v1.52.0/migrate-select-combobox-props)         | Migrate deprecated Select/Combobox search props and option value to id                         |
-| [migration-recipe](./codemods/v1.52.0/migration-recipe)                                   | Migration recipe that runs every @backstage v1.52.0 codemod from the registry in a safe order. |
-| [remove-stitching-strategy-mode](./codemods/v1.52.0/remove-stitching-strategy-mode)       | Remove deprecated catalog.stitchingStrategy.mode from app-config                               |
-| [rename-bui-css-tokens-v1-52](./codemods/v1.52.0/rename-bui-css-tokens-v1-52)             | Rename deprecated BUI semantic color tokens                                                    |
+| Codemod | Description |
+| ------- | ----------- |
+| [migrate-bui-props-to-intersection](./codemods/v1.52.0/migrate-bui-props-to-intersection) | Migrate ComboboxProps/SelectProps interface extends to type intersection |
+| [migrate-select-combobox-props](./codemods/v1.52.0/migrate-select-combobox-props) | Migrate deprecated Select/Combobox search props and option value to id |
+| [migration-recipe](./codemods/v1.52.0/migration-recipe) | Migration recipe that runs every @backstage v1.52.0 codemod from the registry in a safe order. |
+| [remove-stitching-strategy-mode](./codemods/v1.52.0/remove-stitching-strategy-mode) | Remove deprecated catalog.stitchingStrategy.mode from app-config |
+| [rename-bui-css-tokens-v1-52](./codemods/v1.52.0/rename-bui-css-tokens-v1-52) | Rename deprecated BUI semantic color tokens |
 
 ### v1.51.0
 
 Run the [`migration-recipe`](./codemods/v1.51.0/migration-recipe) to apply every codemod below in one pass, or run any individual codemod on its own.
 
-| Codemod                                                                                             | Description                                                                                            |
-| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| [experimental-form-decorators-to-stable](./codemods/v1.51.0/experimental-form-decorators-to-stable) | Rename EXPERIMENTAL_formDecorators to formDecorators in Backstage template specs for 1.51.0            |
-| [loading-to-is-pending](./codemods/v1.51.0/loading-to-is-pending)                                   | Rename deprecated loading prop to isPending in @backstage/ui and data-loading to data-ispending in CSS |
-| [migrate-nav-item-to-page](./codemods/v1.51.0/migrate-nav-item-to-page)                             | Migrate NavItemBlueprint to PageBlueprint title/icon params for Backstage 1.51.0                       |
-| [migrate-policy-query-user](./codemods/v1.51.0/migrate-policy-query-user)                           | Migrate PolicyQueryUser off removed token, expiresInSeconds, and identity fields                       |
-| [migration-recipe](./codemods/v1.51.0/migration-recipe)                                             | Migration recipe that runs every @backstage v1.51.0 codemod from the registry in a safe order.         |
-| [portable-schema-method-call](./codemods/v1.51.0/portable-schema-method-call)                       | Call PortableSchema.schema() as a method instead of property access                                    |
-| [remove-immediate-stitching-mode](./codemods/v1.51.0/remove-immediate-stitching-mode)               | Migrate catalog.stitchingStrategy.mode from immediate to deferred                                      |
-| [rename-header-main-class](./codemods/v1.51.0/rename-header-main-class)                             | Rename removed .bui-Header to .bui-HeaderContent and classNames.root to classNames.content             |
-| [render-test-app-nav-migration](./codemods/v1.51.0/render-test-app-nav-migration)                   | Migrate renderInTestApp nav-item tests to renderTestApp for Backstage 1.51.0                           |
+| Codemod | Description |
+| ------- | ----------- |
+| [experimental-form-decorators-to-stable](./codemods/v1.51.0/experimental-form-decorators-to-stable) | Rename EXPERIMENTAL_formDecorators to formDecorators in Backstage template specs for 1.51.0 |
+| [loading-to-is-pending](./codemods/v1.51.0/loading-to-is-pending) | Rename deprecated loading prop to isPending in @backstage/ui and data-loading to data-ispending in CSS |
+| [migrate-nav-item-to-page](./codemods/v1.51.0/migrate-nav-item-to-page) | Migrate NavItemBlueprint to PageBlueprint title/icon params for Backstage 1.51.0 |
+| [migrate-policy-query-user](./codemods/v1.51.0/migrate-policy-query-user) | Migrate PolicyQueryUser off removed token, expiresInSeconds, and identity fields |
+| [migration-recipe](./codemods/v1.51.0/migration-recipe) | Migration recipe that runs every @backstage v1.51.0 codemod from the registry in a safe order. |
+| [portable-schema-method-call](./codemods/v1.51.0/portable-schema-method-call) | Call PortableSchema.schema() as a method instead of property access |
+| [remove-immediate-stitching-mode](./codemods/v1.51.0/remove-immediate-stitching-mode) | Migrate catalog.stitchingStrategy.mode from immediate to deferred |
+| [rename-header-main-class](./codemods/v1.51.0/rename-header-main-class) | Rename removed .bui-Header to .bui-HeaderContent and classNames.root to classNames.content |
+| [render-test-app-nav-migration](./codemods/v1.51.0/render-test-app-nav-migration) | Migrate renderInTestApp nav-item tests to renderTestApp for Backstage 1.51.0 |
 
 Older versions are available in the [`codemods/`](./codemods) directory.
 
 ### misc
 
-| Codemod                                                                                          | Description                                                                                                           |
-| ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| [migrate-mui-alert-to-bui-alert](./codemods/misc/migrate-mui-alert-to-bui-alert)                 | MUI 4 to BUI: Replace MUI Alert with BUI Alert                                                                        |
-| [migrate-mui-bootstrap-to-bui](./codemods/misc/migrate-mui-bootstrap-to-bui)                     | MUI 4 to BUI: Bootstrap app dependencies and root CSS                                                                 |
-| [migrate-mui-button-to-bui-button](./codemods/misc/migrate-mui-button-to-bui-button)             | MUI 4 to BUI: Replace MUI Button with BUI Button                                                                      |
+| Codemod | Description |
+| ------- | ----------- |
+| [migrate-mui-alert-to-bui-alert](./codemods/misc/migrate-mui-alert-to-bui-alert) | MUI 4 to BUI: Replace MUI Alert with BUI Alert |
+| [migrate-mui-bootstrap-to-bui](./codemods/misc/migrate-mui-bootstrap-to-bui) | MUI 4 to BUI: Bootstrap app dependencies and root CSS |
+| [migrate-mui-button-to-bui-button](./codemods/misc/migrate-mui-button-to-bui-button) | MUI 4 to BUI: Replace MUI Button with BUI Button |
+| [migrate-mui-chip-to-tag](./codemods/misc/migrate-mui-chip-to-tag) | MUI 4 to BUI: Replace Chip with Tag (omits -bui-; BUI export is Tag) |
+| [migrate-mui-dialog-to-bui-dialog](./codemods/misc/migrate-mui-dialog-to-bui-dialog) | MUI 4 to BUI: Replace Dialog shell with BUI Dialog |
 | [migrate-mui-icon-button-to-button-icon](./codemods/misc/migrate-mui-icon-button-to-button-icon) | MUI 4 to BUI: Replace IconButton with ButtonIcon. Package name omits -bui- because ButtonIcon is the BUI export name. |
-| [migrate-mui-icons-to-remix-icons](./codemods/misc/migrate-mui-icons-to-remix-icons)             | MUI 4 to BUI: Replace MUI icons with Remix icons                                                                      |
-| [migrate-mui-layout-to-bui-layout](./codemods/misc/migrate-mui-layout-to-bui-layout)             | MUI 4 to BUI: Convert common MUI layout primitives to BUI layout                                                      |
-| [migrate-mui-styles-to-bui-css-modules](./codemods/misc/migrate-mui-styles-to-bui-css-modules)   | MUI 4 to BUI: Migrate makeStyles usage to BUI CSS modules                                                             |
-| [migrate-mui-tooltip-to-bui-tooltip](./codemods/misc/migrate-mui-tooltip-to-bui-tooltip)         | MUI 4 to BUI: Replace Tooltip with TooltipTrigger                                                                     |
-| [migrate-mui-typography-to-text](./codemods/misc/migrate-mui-typography-to-text)                 | MUI 4 to BUI: Replace Typography with Text. Package name omits -bui- because Text is the BUI export name.             |
-| [mui4-to-bui-migration-recipe](./codemods/misc/mui4-to-bui-migration-recipe)                     | MUI 4 to BUI: Migration recipe that runs every MUI→BUI codemod from the registry in a safe order.                     |
-| [remove-mui-dependencies](./codemods/misc/remove-mui-dependencies)                               | MUI 4 to BUI: Remove unused @material-ui/\* dependencies from package.json                                            |
-
+| [migrate-mui-icons-to-remix-icons](./codemods/misc/migrate-mui-icons-to-remix-icons) | MUI 4 to BUI: Replace MUI icons with Remix icons |
+| [migrate-mui-layout-to-bui-layout](./codemods/misc/migrate-mui-layout-to-bui-layout) | MUI 4 to BUI: Convert common MUI layout primitives to BUI layout |
+| [migrate-mui-list-family-to-bui-list](./codemods/misc/migrate-mui-list-family-to-bui-list) | MUI 4 to BUI: Replace List family primitives with BUI List |
+| [migrate-mui-menu-popover-to-bui-menu](./codemods/misc/migrate-mui-menu-popover-to-bui-menu) | MUI 4 to BUI: Replace Menu and Popover patterns with BUI Menu |
+| [migrate-mui-styles-to-bui-css-modules](./codemods/misc/migrate-mui-styles-to-bui-css-modules) | MUI 4 to BUI: Migrate makeStyles usage to BUI CSS modules |
+| [migrate-mui-tabs-to-bui-tabs](./codemods/misc/migrate-mui-tabs-to-bui-tabs) | MUI 4 to BUI: Replace MUI Tabs with BUI Tabs |
+| [migrate-mui-tooltip-to-bui-tooltip](./codemods/misc/migrate-mui-tooltip-to-bui-tooltip) | MUI 4 to BUI: Replace Tooltip with TooltipTrigger |
+| [migrate-mui-typography-to-text](./codemods/misc/migrate-mui-typography-to-text) | MUI 4 to BUI: Replace Typography with Text. Package name omits -bui- because Text is the BUI export name. |
+| [mui4-to-bui-migration-recipe](./codemods/misc/mui4-to-bui-migration-recipe) | MUI 4 to BUI: Migration recipe that runs every MUI→BUI codemod from the registry in a safe order. |
+| [remove-mui-dependencies](./codemods/misc/remove-mui-dependencies) | MUI 4 to BUI: Remove unused @material-ui/* dependencies from package.json |
 <!-- CODEMODS_END -->
 
 ## Usage
