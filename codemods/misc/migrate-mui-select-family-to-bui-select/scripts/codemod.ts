@@ -28,10 +28,10 @@ function escapeRegex(str: string): string {
   return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-function wrapWithTodo(todoComment: string, elementText: string): string {
+function withTodoComment(comment: string, elementText: string): string {
   return `<>
-${todoComment}
-${elementText}
+  ${comment}
+  ${elementText}
 </>`
 }
 
@@ -151,44 +151,63 @@ function addBuiImport(
   importNodesToRemove: SgNode<TSX>[],
   names: string[],
   edits: Edit[],
+  barrelImportsToPrune: { imp: SgNode<TSX>; namesToRemove: Set<string> }[],
+  handledBarrelIds: Set<number>,
 ): boolean {
   const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
   const existingImport = existingImports[0] ?? null
 
   if (existingImport) {
-    const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
-    if (namedImports) {
-      const text = namedImports.text()
-      const inner = text.slice(1, -1).trim()
-      const existing = inner
-        .split(',')
-        .map((n) => n.trim())
-        .filter(Boolean)
-      for (const name of names) {
-        if (!existing.includes(name)) {
+    const namesToAdd = names.filter((name) => getNamedImportLocalName(existingImport, name) === null)
+    if (namesToAdd.length > 0) {
+      const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
+      if (namedImports) {
+        const text = namedImports.text()
+        const inner = text.slice(1, -1).trim()
+        const existing = inner
+          .split(',')
+          .map((n) => n.trim())
+          .filter(Boolean)
+        for (const name of namesToAdd) {
           existing.push(name)
         }
+        existing.sort()
+        edits.push(namedImports.replace(`{ ${existing.join(', ')} }`))
+        migrationMetric.increment({ action: 'import-merged' })
       }
-      existing.sort()
-      edits.push(namedImports.replace(`{ ${existing.join(', ')} }`))
-      migrationMetric.increment({ action: 'import-merged' })
     }
     return false
   }
 
   const sortedNames = [...names].sort()
-  const removableIds = new Set(importNodesToRemove.map((imp) => imp.id()))
+  const buiImport = `import { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`
+  const skipIds = new Set([
+    ...importNodesToRemove.map((imp) => imp.id()),
+    ...barrelImportsToPrune.map(({ imp }) => imp.id()),
+  ])
   const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
-  const anchorImport = [...allImports].reverse().find((imp) => !removableIds.has(imp.id())) ?? null
+  const anchorImport = [...allImports].reverse().find((imp) => !skipIds.has(imp.id())) ?? null
 
   if (anchorImport) {
-    edits.push(
-      anchorImport.replace(`${anchorImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`),
-    )
-  } else if (importNodesToRemove.length >= 1) {
+    edits.push(anchorImport.replace(`${anchorImport.text()}\n${buiImport}`))
+    migrationMetric.increment({ action: 'import-added' })
+    return false
+  }
+
+  const [barrelToFold] = barrelImportsToPrune
+  if (barrelToFold) {
+    const pruned = rebuildImportWithout(barrelToFold.imp, barrelToFold.namesToRemove)
+    edits.push(barrelToFold.imp.replace(pruned.length > 0 ? `${pruned}\n${buiImport}` : buiImport))
+    handledBarrelIds.add(barrelToFold.imp.id())
+    migrationMetric.increment({ action: 'import-added' })
+    migrationMetric.increment({ action: 'import-pruned' })
+    return false
+  }
+
+  if (importNodesToRemove.length >= 1) {
     const [importNode] = importNodesToRemove
     if (importNode) {
-      edits.push(importNode.replace(`import { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
+      edits.push(importNode.replace(buiImport))
       migrationMetric.increment({ action: 'import-added' })
       return true
     }
@@ -522,7 +541,7 @@ function transformSelectPatterns(
       if (hasHelperText) {
         preserveImport = true
         edits.push(
-          el.replace(wrapWithTodo(`{/* TODO(backstage-codemod): finish Select migration manually */}`, el.text())),
+          el.replace(withTodoComment(`{/* TODO(backstage-codemod): finish Select migration manually */}`, el.text())),
         )
         migrationMetric.increment({ action: 'todo-inserted', reason: 'helper-text' })
         continue
@@ -539,7 +558,7 @@ function transformSelectPatterns(
       if (needsTodo) {
         preserveImport = true
         edits.push(
-          el.replace(wrapWithTodo(`{/* TODO(backstage-codemod): finish Select migration manually */}`, el.text())),
+          el.replace(withTodoComment(`{/* TODO(backstage-codemod): finish Select migration manually */}`, el.text())),
         )
         migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-select-props' })
         continue
@@ -553,7 +572,7 @@ function transformSelectPatterns(
       if (!options) {
         preserveImport = true
         edits.push(
-          el.replace(wrapWithTodo(`{/* TODO(backstage-codemod): finish Select migration manually */}`, el.text())),
+          el.replace(withTodoComment(`{/* TODO(backstage-codemod): finish Select migration manually */}`, el.text())),
         )
         migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-options' })
         continue
@@ -579,7 +598,7 @@ function transformSelectPatterns(
         } else {
           preserveImport = true
           edits.push(
-            el.replace(wrapWithTodo(`{/* TODO(backstage-codemod): finish Select migration manually */}`, el.text())),
+            el.replace(withTodoComment(`{/* TODO(backstage-codemod): finish Select migration manually */}`, el.text())),
           )
           migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-onChange' })
           continue
@@ -608,7 +627,7 @@ function transformSelectPatterns(
       if (needsTodo) {
         preserveImport = true
         edits.push(
-          el.replace(wrapWithTodo(`{/* TODO(backstage-codemod): finish Select migration manually */}`, el.text())),
+          el.replace(withTodoComment(`{/* TODO(backstage-codemod): finish Select migration manually */}`, el.text())),
         )
         migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-select-props' })
         continue
@@ -622,7 +641,7 @@ function transformSelectPatterns(
       if (!options) {
         preserveImport = true
         edits.push(
-          el.replace(wrapWithTodo(`{/* TODO(backstage-codemod): finish Select migration manually */}`, el.text())),
+          el.replace(withTodoComment(`{/* TODO(backstage-codemod): finish Select migration manually */}`, el.text())),
         )
         migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-options' })
         continue
@@ -644,7 +663,7 @@ function transformSelectPatterns(
         } else {
           preserveImport = true
           edits.push(
-            el.replace(wrapWithTodo(`{/* TODO(backstage-codemod): finish Select migration manually */}`, el.text())),
+            el.replace(withTodoComment(`{/* TODO(backstage-codemod): finish Select migration manually */}`, el.text())),
           )
           migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-onChange' })
           continue
@@ -679,12 +698,23 @@ const transform: Codemod<TSX> = (root) => {
   const { preserveImport, migrated } = transformSelectPatterns(rootNode, localNames, edits)
 
   let replacedImport = false
+  const handledBarrelIds = new Set<number>()
   if (migrated) {
-    replacedImport = addBuiImport(rootNode, importNodesToRemove, ['Select'], edits)
+    replacedImport = addBuiImport(
+      rootNode,
+      importNodesToRemove,
+      ['Select'],
+      edits,
+      barrelImportsToPrune,
+      handledBarrelIds,
+    )
   }
 
   if (!preserveImport) {
     for (const { imp, namesToRemove } of barrelImportsToPrune) {
+      if (handledBarrelIds.has(imp.id())) {
+        continue
+      }
       edits.push(imp.replace(rebuildImportWithout(imp, namesToRemove)))
       migrationMetric.increment({ action: 'import-pruned' })
     }

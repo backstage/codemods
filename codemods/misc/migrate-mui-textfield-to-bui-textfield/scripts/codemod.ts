@@ -5,6 +5,7 @@ import { useMetricAtom } from 'codemod:metrics'
 const migrationMetric = useMetricAtom('migrate-mui-textfield-to-bui-textfield')
 
 const BUI_SOURCE = '@backstage/ui'
+const MUI_BARREL_SOURCE = '@material-ui/core'
 
 /** Props that trigger a TODO — not mechanically migratable. */
 const TODO_PROPS = new Set([
@@ -58,11 +59,37 @@ function escapeRegex(str: string): string {
   return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-function wrapWithTodo(todoComment: string, elementText: string): string {
+function withTodoComment(comment: string, elementText: string): string {
   return `<>
-${todoComment}
-${elementText}
+  ${comment}
+  ${elementText}
 </>`
+}
+
+function rebuildImportWithout(importStmt: SgNode<TSX>, specifiersToRemove: Set<string>): string {
+  const specifiers = importStmt.findAll({ rule: { kind: 'import_specifier' } })
+  const remaining: string[] = []
+  for (const spec of specifiers) {
+    const identifiers = spec.findAll({
+      rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
+    })
+    const importedName = identifiers[0]?.text()
+    if (importedName && !specifiersToRemove.has(importedName)) {
+      remaining.push(spec.text())
+    }
+  }
+
+  if (remaining.length === 0) {
+    return ''
+  }
+
+  const sourceNode = importStmt.find({ rule: { kind: 'string' } })
+  const sourceText = sourceNode?.text() ?? `'${MUI_BARREL_SOURCE}'`
+
+  if (remaining.length <= 2) {
+    return `import { ${remaining.join(', ')} } from ${sourceText};`
+  }
+  return `import {\n  ${remaining.join(',\n  ')},\n} from ${sourceText};`
 }
 
 function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode<TSX>[] {
@@ -110,62 +137,94 @@ function getNamedImportLocalName(imp: SgNode<TSX>, targetName: string): string |
 function collectTextFieldImports(rootNode: SgNode<TSX>): {
   textFieldLocalName: string | null
   importNodesToRemove: SgNode<TSX>[]
+  barrelImportsToPrune: { imp: SgNode<TSX>; namesToRemove: Set<string> }[]
 } {
   let textFieldLocalName: string | null = null
   const importNodesToRemove: SgNode<TSX>[] = []
+  const barrelImportsToPrune: { imp: SgNode<TSX>; namesToRemove: Set<string> }[] = []
 
   for (const imp of findImportStatementsFrom(rootNode, '@material-ui/core/TextField')) {
     textFieldLocalName = getDefaultImportName(imp)
     importNodesToRemove.push(imp)
   }
 
-  for (const imp of findImportStatementsFrom(rootNode, '@material-ui/core')) {
+  for (const imp of findImportStatementsFrom(rootNode, MUI_BARREL_SOURCE)) {
     const localName = getNamedImportLocalName(imp, 'TextField')
     if (localName) {
       textFieldLocalName = localName
       const allSpecifiers = imp.findAll({ rule: { kind: 'import_specifier' } })
       if (allSpecifiers.length <= 1) {
         importNodesToRemove.push(imp)
+      } else {
+        barrelImportsToPrune.push({ imp, namesToRemove: new Set(['TextField']) })
       }
     }
   }
 
-  return { textFieldLocalName, importNodesToRemove }
+  return { textFieldLocalName, importNodesToRemove, barrelImportsToPrune }
 }
 
-function addTextFieldToBuiImport(rootNode: SgNode<TSX>, importNodesToRemove: SgNode<TSX>[], edits: Edit[]): boolean {
+function addBuiImport(
+  rootNode: SgNode<TSX>,
+  importNodesToRemove: SgNode<TSX>[],
+  barrelImportsToPrune: { imp: SgNode<TSX>; namesToRemove: Set<string> }[],
+  edits: Edit[],
+  handledBarrelIds: Set<number>,
+): boolean {
   const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
   const existingImport = existingImports[0] ?? null
 
   if (existingImport) {
-    const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
-    if (namedImports) {
-      const text = namedImports.text()
-      const inner = text.slice(1, -1).trim()
-      const names = inner
-        .split(',')
-        .map((n) => n.trim())
-        .filter(Boolean)
-      if (!names.includes('TextField')) {
+    const alreadyImported = getNamedImportLocalName(existingImport, 'TextField') !== null
+    if (!alreadyImported) {
+      const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
+      if (namedImports) {
+        const text = namedImports.text()
+        const inner = text.slice(1, -1).trim()
+        const names = inner
+          .split(',')
+          .map((n) => n.trim())
+          .filter(Boolean)
         names.push('TextField')
+        names.sort()
+        edits.push(namedImports.replace(`{ ${names.join(', ')} }`))
+        migrationMetric.increment({ action: 'import-merged' })
+      } else {
+        edits.push(existingImport.replace(`${existingImport.text()}\nimport { TextField } from '${BUI_SOURCE}';`))
+        migrationMetric.increment({ action: 'import-added' })
       }
-      names.sort()
-      edits.push(namedImports.replace(`{ ${names.join(', ')} }`))
-      migrationMetric.increment({ action: 'import-merged' })
     }
     return false
   }
 
-  const removableIds = new Set(importNodesToRemove.map((imp) => imp.id()))
+  const skipIds = new Set([
+    ...importNodesToRemove.map((imp) => imp.id()),
+    ...barrelImportsToPrune.map(({ imp }) => imp.id()),
+  ])
   const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
-  const anchorImport = [...allImports].reverse().find((imp) => !removableIds.has(imp.id())) ?? null
+  const anchorImport = [...allImports].reverse().find((imp) => !skipIds.has(imp.id())) ?? null
+  const buiImport = `import { TextField } from '${BUI_SOURCE}';`
 
   if (anchorImport) {
-    edits.push(anchorImport.replace(`${anchorImport.text()}\nimport { TextField } from '${BUI_SOURCE}';`))
-  } else if (importNodesToRemove.length >= 1) {
+    edits.push(anchorImport.replace(`${anchorImport.text()}\n${buiImport}`))
+    migrationMetric.increment({ action: 'import-added' })
+    return false
+  }
+
+  const [barrelToFold] = barrelImportsToPrune
+  if (barrelToFold) {
+    const pruned = rebuildImportWithout(barrelToFold.imp, barrelToFold.namesToRemove)
+    edits.push(barrelToFold.imp.replace(pruned.length > 0 ? `${pruned}\n${buiImport}` : buiImport))
+    handledBarrelIds.add(barrelToFold.imp.id())
+    migrationMetric.increment({ action: 'import-added' })
+    migrationMetric.increment({ action: 'import-pruned' })
+    return false
+  }
+
+  if (importNodesToRemove.length >= 1) {
     const [importNode] = importNodesToRemove
     if (importNode) {
-      edits.push(importNode.replace(`import { TextField } from '${BUI_SOURCE}';`))
+      edits.push(importNode.replace(buiImport))
       migrationMetric.increment({ action: 'import-added' })
       return true
     }
@@ -320,7 +379,7 @@ function transformTextFieldElements(
       preserveImport = true
       edits.push(
         el.replace(
-          wrapWithTodo(
+          withTodoComment(
             `{/* TODO(backstage-codemod): finish TextField migration manually (${todoReasons.join(', ')}) */}`,
             el.text(),
           ),
@@ -365,7 +424,7 @@ function transformTextFieldElements(
             preserveImport = true
             edits.push(
               el.replace(
-                wrapWithTodo(
+                withTodoComment(
                   `{/* TODO(backstage-codemod): finish TextField migration manually (complex-onChange) */}`,
                   el.text(),
                 ),
@@ -399,7 +458,7 @@ function transformTextFieldElements(
       if (droppedFullWidth) {
         edits.push(
           el.replace(
-            wrapWithTodo(
+            withTodoComment(
               '{/* TODO(backstage-codemod): finish TextField migration manually (fullWidth) */}',
               `<TextField${propsStr} />`,
             ),
@@ -417,7 +476,7 @@ function transformTextFieldElements(
       if (droppedFullWidth) {
         edits.push(
           el.replace(
-            wrapWithTodo(
+            withTodoComment(
               '{/* TODO(backstage-codemod): finish TextField migration manually (fullWidth) */}',
               `<TextField${propsStr}>${children}</TextField>`,
             ),
@@ -439,7 +498,7 @@ const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
-  const { textFieldLocalName, importNodesToRemove } = collectTextFieldImports(rootNode)
+  const { textFieldLocalName, importNodesToRemove, barrelImportsToPrune } = collectTextFieldImports(rootNode)
 
   if (!textFieldLocalName) {
     return Promise.resolve(null)
@@ -448,11 +507,19 @@ const transform: Codemod<TSX> = (root) => {
   const { preserveImport, migrated } = transformTextFieldElements(rootNode, textFieldLocalName, edits)
 
   let replacedImport = false
+  const handledBarrelIds = new Set<number>()
   if (migrated) {
-    replacedImport = addTextFieldToBuiImport(rootNode, importNodesToRemove, edits)
+    replacedImport = addBuiImport(rootNode, importNodesToRemove, barrelImportsToPrune, edits, handledBarrelIds)
   }
 
   if (!preserveImport) {
+    for (const { imp, namesToRemove } of barrelImportsToPrune) {
+      if (handledBarrelIds.has(imp.id())) {
+        continue
+      }
+      edits.push(imp.replace(rebuildImportWithout(imp, namesToRemove)))
+      migrationMetric.increment({ action: 'import-pruned' })
+    }
     for (const imp of importNodesToRemove) {
       if (replacedImport && imp.id() === importNodesToRemove[0]?.id()) {
         migrationMetric.increment({ action: 'import-removed' })

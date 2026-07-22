@@ -4,8 +4,8 @@ import AccordionDetails from '@material-ui/core/AccordionDetails';
 
 const MyComponent = () => (
   <>
-{/* TODO(backstage-codemod): finish accordion migration manually (complex-summary) */}
-<Accordion>
+  {/* TODO(backstage-codemod): finish accordion migration manually (complex-summary) */}
+  <Accordion>
     <AccordionSummary>
       <span>Title</span>
       <span>Subtitle</span>

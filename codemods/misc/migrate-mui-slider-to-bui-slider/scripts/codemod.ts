@@ -48,10 +48,10 @@ function escapeRegex(str: string): string {
   return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-function wrapWithTodo(todoComment: string, elementText: string): string {
+function withTodoComment(comment: string, elementText: string): string {
   return `<>
-${todoComment}
-${elementText}
+  ${comment}
+  ${elementText}
 </>`
 }
 
@@ -155,39 +155,67 @@ function collectSliderImports(rootNode: SgNode<TSX>): {
   return { sliderLocalName, importNodesToRemove, barrelImportsToPrune }
 }
 
-function addSliderToBuiImport(rootNode: SgNode<TSX>, importNodesToRemove: SgNode<TSX>[], edits: Edit[]): boolean {
+function addBuiImport(
+  rootNode: SgNode<TSX>,
+  importNodesToRemove: SgNode<TSX>[],
+  barrelImportsToPrune: { imp: SgNode<TSX>; namesToRemove: Set<string> }[],
+  edits: Edit[],
+  handledBarrelIds: Set<number>,
+): boolean {
   const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
   const existingImport = existingImports[0] ?? null
 
   if (existingImport) {
-    const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
-    if (namedImports) {
-      const text = namedImports.text()
-      const inner = text.slice(1, -1).trim()
-      const names = inner
-        .split(',')
-        .map((n) => n.trim())
-        .filter(Boolean)
-      if (!names.includes('Slider')) {
+    const alreadyImported = getNamedImportLocalName(existingImport, 'Slider') !== null
+    if (!alreadyImported) {
+      const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
+      if (namedImports) {
+        const text = namedImports.text()
+        const inner = text.slice(1, -1).trim()
+        const names = inner
+          .split(',')
+          .map((n) => n.trim())
+          .filter(Boolean)
         names.push('Slider')
+        names.sort()
+        edits.push(namedImports.replace(`{ ${names.join(', ')} }`))
+        migrationMetric.increment({ action: 'import-merged' })
+      } else {
+        edits.push(existingImport.replace(`${existingImport.text()}\nimport { Slider } from '${BUI_SOURCE}';`))
+        migrationMetric.increment({ action: 'import-added' })
       }
-      names.sort()
-      edits.push(namedImports.replace(`{ ${names.join(', ')} }`))
-      migrationMetric.increment({ action: 'import-merged' })
     }
     return false
   }
 
-  const removableIds = new Set(importNodesToRemove.map((imp) => imp.id()))
+  const skipIds = new Set([
+    ...importNodesToRemove.map((imp) => imp.id()),
+    ...barrelImportsToPrune.map(({ imp }) => imp.id()),
+  ])
   const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
-  const anchorImport = [...allImports].reverse().find((imp) => !removableIds.has(imp.id())) ?? null
+  const anchorImport = [...allImports].reverse().find((imp) => !skipIds.has(imp.id())) ?? null
+  const buiImport = `import { Slider } from '${BUI_SOURCE}';`
 
   if (anchorImport) {
-    edits.push(anchorImport.replace(`${anchorImport.text()}\nimport { Slider } from '${BUI_SOURCE}';`))
-  } else if (importNodesToRemove.length >= 1) {
+    edits.push(anchorImport.replace(`${anchorImport.text()}\n${buiImport}`))
+    migrationMetric.increment({ action: 'import-added' })
+    return false
+  }
+
+  const [barrelToFold] = barrelImportsToPrune
+  if (barrelToFold) {
+    const pruned = rebuildImportWithout(barrelToFold.imp, barrelToFold.namesToRemove)
+    edits.push(barrelToFold.imp.replace(pruned.length > 0 ? `${pruned}\n${buiImport}` : buiImport))
+    handledBarrelIds.add(barrelToFold.imp.id())
+    migrationMetric.increment({ action: 'import-added' })
+    migrationMetric.increment({ action: 'import-pruned' })
+    return false
+  }
+
+  if (importNodesToRemove.length >= 1) {
     const [importNode] = importNodesToRemove
     if (importNode) {
-      edits.push(importNode.replace(`import { Slider } from '${BUI_SOURCE}';`))
+      edits.push(importNode.replace(buiImport))
       migrationMetric.increment({ action: 'import-added' })
       return true
     }
@@ -326,7 +354,7 @@ function transformSliderElements(
       preserveImport = true
       edits.push(
         el.replace(
-          wrapWithTodo(
+          withTodoComment(
             `{/* TODO(backstage-codemod): finish slider migration manually (${todoReasons.join(', ')}) */}`,
             el.text(),
           ),
@@ -370,7 +398,7 @@ function transformSliderElements(
             preserveImport = true
             edits.push(
               el.replace(
-                wrapWithTodo(
+                withTodoComment(
                   `{/* TODO(backstage-codemod): finish slider migration manually (complex-onChange) */}`,
                   el.text(),
                 ),
@@ -391,7 +419,7 @@ function transformSliderElements(
             preserveImport = true
             edits.push(
               el.replace(
-                wrapWithTodo(
+                withTodoComment(
                   `{/* TODO(backstage-codemod): finish slider migration manually (onChangeCommitted) */}`,
                   el.text(),
                 ),
@@ -450,12 +478,16 @@ const transform: Codemod<TSX> = (root) => {
   const { preserveImport, migrated } = transformSliderElements(rootNode, sliderLocalName, edits)
 
   let replacedImport = false
+  const handledBarrelIds = new Set<number>()
   if (migrated) {
-    replacedImport = addSliderToBuiImport(rootNode, importNodesToRemove, edits)
+    replacedImport = addBuiImport(rootNode, importNodesToRemove, barrelImportsToPrune, edits, handledBarrelIds)
   }
 
   if (!preserveImport) {
     for (const { imp, namesToRemove } of barrelImportsToPrune) {
+      if (handledBarrelIds.has(imp.id())) {
+        continue
+      }
       edits.push(imp.replace(rebuildImportWithout(imp, namesToRemove)))
       migrationMetric.increment({ action: 'import-pruned' })
     }
