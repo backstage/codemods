@@ -363,9 +363,7 @@ function transformTooltipElements(rootNode: SgNode<TSX>, tooltipLocalName: strin
 
     if (needsTodo) {
       edits.push(
-        el.replace(
-          withTodoComment('{/* TODO(backstage-codemod): finish tooltip migration manually */}', el.text()),
-        ),
+        el.replace(withTodoComment('{/* TODO(backstage-codemod): finish tooltip migration manually */}', el.text())),
       )
       migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-props' })
       continue
@@ -377,9 +375,7 @@ function transformTooltipElements(rootNode: SgNode<TSX>, tooltipLocalName: strin
 
     if (!titleStr && !titleDynamic) {
       edits.push(
-        el.replace(
-          withTodoComment('{/* TODO(backstage-codemod): finish tooltip migration manually */}', el.text()),
-        ),
+        el.replace(withTodoComment('{/* TODO(backstage-codemod): finish tooltip migration manually */}', el.text())),
       )
       migrationMetric.increment({ action: 'todo-inserted', reason: 'no-title' })
       continue
@@ -387,9 +383,7 @@ function transformTooltipElements(rootNode: SgNode<TSX>, tooltipLocalName: strin
 
     if (isSelfClosing) {
       edits.push(
-        el.replace(
-          withTodoComment('{/* TODO(backstage-codemod): finish tooltip migration manually */}', el.text()),
-        ),
+        el.replace(withTodoComment('{/* TODO(backstage-codemod): finish tooltip migration manually */}', el.text())),
       )
       migrationMetric.increment({ action: 'todo-inserted', reason: 'no-children' })
       continue
@@ -398,9 +392,7 @@ function transformTooltipElements(rootNode: SgNode<TSX>, tooltipLocalName: strin
     const children = getJsxChildren(el)
     if (children.length !== 1) {
       edits.push(
-        el.replace(
-          withTodoComment('{/* TODO(backstage-codemod): finish tooltip migration manually */}', el.text()),
-        ),
+        el.replace(withTodoComment('{/* TODO(backstage-codemod): finish tooltip migration manually */}', el.text())),
       )
       migrationMetric.increment({ action: 'todo-inserted', reason: 'multiple-children' })
       continue
