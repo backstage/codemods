@@ -126,28 +126,28 @@ function addBuiImport(
   const existingImport = existingImports[0] ?? null
 
   if (existingImport) {
-    const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
-    if (namedImports) {
-      const text = namedImports.text()
-      const inner = text.slice(1, -1).trim()
-      const existing = inner
-        .split(',')
-        .map((n) => n.trim())
-        .filter(Boolean)
-      for (const name of names) {
-        if (!existing.includes(name)) {
-          existing.push(name)
-        }
+    const specifiers = existingImport.findAll({ rule: { kind: 'import_specifier' } })
+    const existingImportedNames = new Set(
+      specifiers.map((spec) => getImportedName(spec)).filter((n): n is string => n !== null),
+    )
+    const namesToAdd = names.filter((name) => !existingImportedNames.has(name))
+    if (namesToAdd.length > 0) {
+      const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
+      if (namedImports) {
+        const existing = specifiers.map((spec) => spec.text())
+        existing.push(...namesToAdd)
+        existing.sort()
+        edits.push(namedImports.replace(`{ ${existing.join(', ')} }`))
+        migrationMetric.increment({ action: 'import-merged' })
+      } else {
+        const sortedNames = [...namesToAdd].sort()
+        edits.push(
+          existingImport.replace(
+            `${existingImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`,
+          ),
+        )
+        migrationMetric.increment({ action: 'import-added' })
       }
-      existing.sort()
-      edits.push(namedImports.replace(`{ ${existing.join(', ')} }`))
-      migrationMetric.increment({ action: 'import-merged' })
-    } else {
-      const sortedNames = [...names].sort()
-      edits.push(
-        existingImport.replace(`${existingImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`),
-      )
-      migrationMetric.increment({ action: 'import-added' })
     }
     return false
   }
@@ -176,6 +176,13 @@ function addBuiImport(
 
   migrationMetric.increment({ action: 'import-added' })
   return false
+}
+
+function withTodoComment(comment: string, elementText: string): string {
+  return `<>
+  ${comment}
+  ${elementText}
+</>`
 }
 
 function getElementName(opening: SgNode<TSX>): string | null {
@@ -355,7 +362,11 @@ function transformTooltipElements(rootNode: SgNode<TSX>, tooltipLocalName: strin
     }
 
     if (needsTodo) {
-      edits.push(el.replace(`{/* TODO(backstage-codemod): finish tooltip migration manually */}\n${el.text()}`))
+      edits.push(
+        el.replace(
+          withTodoComment('{/* TODO(backstage-codemod): finish tooltip migration manually */}', el.text()),
+        ),
+      )
       migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-props' })
       continue
     }
@@ -365,20 +376,32 @@ function transformTooltipElements(rootNode: SgNode<TSX>, tooltipLocalName: strin
     const titleRaw = getPropRawValue(opening, 'title')
 
     if (!titleStr && !titleDynamic) {
-      edits.push(el.replace(`{/* TODO(backstage-codemod): finish tooltip migration manually */}\n${el.text()}`))
+      edits.push(
+        el.replace(
+          withTodoComment('{/* TODO(backstage-codemod): finish tooltip migration manually */}', el.text()),
+        ),
+      )
       migrationMetric.increment({ action: 'todo-inserted', reason: 'no-title' })
       continue
     }
 
     if (isSelfClosing) {
-      edits.push(el.replace(`{/* TODO(backstage-codemod): finish tooltip migration manually */}\n${el.text()}`))
+      edits.push(
+        el.replace(
+          withTodoComment('{/* TODO(backstage-codemod): finish tooltip migration manually */}', el.text()),
+        ),
+      )
       migrationMetric.increment({ action: 'todo-inserted', reason: 'no-children' })
       continue
     }
 
     const children = getJsxChildren(el)
     if (children.length !== 1) {
-      edits.push(el.replace(`{/* TODO(backstage-codemod): finish tooltip migration manually */}\n${el.text()}`))
+      edits.push(
+        el.replace(
+          withTodoComment('{/* TODO(backstage-codemod): finish tooltip migration manually */}', el.text()),
+        ),
+      )
       migrationMetric.increment({ action: 'todo-inserted', reason: 'multiple-children' })
       continue
     }
@@ -400,17 +423,24 @@ function transformTooltipElements(rootNode: SgNode<TSX>, tooltipLocalName: strin
 
     const placementValue = getPropStringValue(opening, 'placement')
     const placementDynamic = isPropDynamic(opening, 'placement')
-    let placementTodo = ''
-    if (placementValue || placementDynamic) {
-      placementTodo = '{/* TODO(backstage-codemod): verify Tooltip placement mapping manually */}\n'
+    const needsPlacementTodo = Boolean(placementValue || placementDynamic)
+    if (needsPlacementTodo) {
       migrationMetric.increment({ action: 'placement-dropped', value: placementValue ?? 'dynamic' })
     }
 
     const tooltipEl = `<Tooltip>${tooltipContent}</Tooltip>`
     const triggerProps = controlledProps.length > 0 ? ` ${controlledProps.join(' ')}` : ''
+    const migratedElement = `<TooltipTrigger${triggerProps}>\n  ${childText}\n  ${tooltipEl}\n</TooltipTrigger>`
 
     edits.push(
-      el.replace(`${placementTodo}<TooltipTrigger${triggerProps}>\n  ${childText}\n  ${tooltipEl}\n</TooltipTrigger>`),
+      el.replace(
+        needsPlacementTodo
+          ? withTodoComment(
+              '{/* TODO(backstage-codemod): verify Tooltip placement mapping manually */}',
+              migratedElement,
+            )
+          : migratedElement,
+      ),
     )
     migrationMetric.increment({ action: 'tooltip-migrated' })
     migrated = true
@@ -419,20 +449,20 @@ function transformTooltipElements(rootNode: SgNode<TSX>, tooltipLocalName: strin
   return migrated
 }
 
-const transform: Codemod<TSX> = (root) => {
+const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
   const { tooltipLocalName, importNodesToRemove, importSpecifiersToRemove } = collectTooltipImports(rootNode)
 
   if (!tooltipLocalName) {
-    return Promise.resolve(null)
+    return null
   }
 
   const migrated = transformTooltipElements(rootNode, tooltipLocalName, edits)
 
   if (!migrated) {
-    return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
+    return edits.length > 0 ? rootNode.commitEdits(edits) : null
   }
 
   const buiNames = ['Tooltip', 'TooltipTrigger']
@@ -450,7 +480,7 @@ const transform: Codemod<TSX> = (root) => {
     pruneBarrelImportSpecifiers(imp, namesToRemove, edits)
   }
 
-  return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
+  return edits.length > 0 ? rootNode.commitEdits(edits) : null
 }
 
 export default transform

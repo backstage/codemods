@@ -137,7 +137,13 @@ function collectAlertImports(rootNode: SgNode<TSX>): {
   return { alertLocalName, alertTitleLocalName, importNodesToRemove, importSpecifiersToRemove }
 }
 
-function pruneBarrelImportSpecifiers(imp: SgNode<TSX>, source: string, namesToRemove: string[], edits: Edit[]): void {
+function pruneBarrelImportSpecifiers(
+  imp: SgNode<TSX>,
+  source: string,
+  namesToRemove: string[],
+  edits: Edit[],
+  appendAlertImport = false,
+): void {
   const remainingSpecs = imp.findAll({ rule: { kind: 'import_specifier' } }).filter((spec) => {
     const importedName = getImportedName(spec)
     return importedName !== null && !namesToRemove.includes(importedName)
@@ -147,35 +153,27 @@ function pruneBarrelImportSpecifiers(imp: SgNode<TSX>, source: string, namesToRe
     edits.push(imp.replace(''))
   } else {
     const specTexts = remainingSpecs.map((spec) => spec.text()).join(', ')
-    edits.push(imp.replace(`import { ${specTexts} } from '${source}';`))
+    let replacement = `import { ${specTexts} } from '${source}';`
+    if (appendAlertImport) {
+      replacement += `\nimport { Alert } from '${BUI_SOURCE}';`
+      migrationMetric.increment({ action: 'import-added' })
+    }
+    edits.push(imp.replace(replacement))
   }
   migrationMetric.increment({ action: 'import-removed' })
 }
 
-function buildBuiImportEdit(rootNode: SgNode<TSX>, importNodesToRemove: SgNode<TSX>[], edits: Edit[]): boolean {
+function addBuiImport(rootNode: SgNode<TSX>, importNodesToRemove: SgNode<TSX>[], edits: Edit[]): boolean {
   const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
   const existingImport = existingImports[0] ?? null
 
   if (existingImport) {
     const specifiers = existingImport.findAll({ rule: { kind: 'import_specifier' } })
-    let hasAlert = false
-    for (const spec of specifiers) {
-      const idents = spec.findAll({
-        rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
-      })
-      if (idents[0]?.text() === 'Alert') {
-        hasAlert = true
-      }
-    }
+    const hasAlert = specifiers.some((spec) => getImportedName(spec) === 'Alert')
     if (!hasAlert) {
       const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
       if (namedImports) {
-        const text = namedImports.text()
-        const inner = text.slice(1, -1).trim()
-        const names = inner
-          .split(',')
-          .map((n) => n.trim())
-          .filter(Boolean)
+        const names = specifiers.map((spec) => spec.text())
         names.push('Alert')
         names.sort()
         edits.push(namedImports.replace(`{ ${names.join(', ')} }`))
@@ -451,7 +449,7 @@ function transformAlertElements(
   return { preserveImport, migrated }
 }
 
-const transform: Codemod<TSX> = (root) => {
+const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
@@ -459,12 +457,14 @@ const transform: Codemod<TSX> = (root) => {
     collectAlertImports(rootNode)
 
   if (!alertLocalName) {
-    return Promise.resolve(null)
+    return null
   }
 
   const { preserveImport, migrated } = transformAlertElements(rootNode, alertLocalName, alertTitleLocalName, edits)
 
   let replacedImport = false
+  let addedViaBarrelPrune = false
+
   if (migrated && !preserveImport && importNodesToRemove.length > 1) {
     for (const imp of importNodesToRemove.slice(1)) {
       edits.push(imp.replace(''))
@@ -472,8 +472,18 @@ const transform: Codemod<TSX> = (root) => {
     }
   }
 
-  if (migrated) {
-    replacedImport = buildBuiImportEdit(rootNode, importNodesToRemove, edits)
+  if (!preserveImport) {
+    for (const [imp, { source, names }] of importSpecifiersToRemove) {
+      const appendAlertImport = migrated && findImportStatementsFrom(rootNode, BUI_SOURCE).length === 0
+      if (appendAlertImport) {
+        addedViaBarrelPrune = true
+      }
+      pruneBarrelImportSpecifiers(imp, source, names, edits, appendAlertImport)
+    }
+  }
+
+  if (migrated && !addedViaBarrelPrune) {
+    replacedImport = addBuiImport(rootNode, importNodesToRemove, edits)
   }
 
   if (!preserveImport) {
@@ -486,12 +496,9 @@ const transform: Codemod<TSX> = (root) => {
         migrationMetric.increment({ action: 'import-removed' })
       }
     }
-    for (const [imp, { source, names }] of importSpecifiersToRemove) {
-      pruneBarrelImportSpecifiers(imp, source, names, edits)
-    }
   }
 
-  return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
+  return edits.length > 0 ? rootNode.commitEdits(edits) : null
 }
 
 export default transform

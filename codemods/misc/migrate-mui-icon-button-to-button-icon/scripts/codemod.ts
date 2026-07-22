@@ -112,24 +112,11 @@ function addButtonIconToBuiImport(rootNode: SgNode<TSX>, importNodesToRemove: Sg
 
   if (existingImport) {
     const specifiers = existingImport.findAll({ rule: { kind: 'import_specifier' } })
-    let hasButtonIcon = false
-    for (const spec of specifiers) {
-      const idents = spec.findAll({
-        rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
-      })
-      if (idents[0]?.text() === 'ButtonIcon') {
-        hasButtonIcon = true
-      }
-    }
+    const hasButtonIcon = specifiers.some((spec) => getImportedName(spec) === 'ButtonIcon')
     if (!hasButtonIcon) {
       const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
       if (namedImports) {
-        const text = namedImports.text()
-        const inner = text.slice(1, -1).trim()
-        const names = inner
-          .split(',')
-          .map((n) => n.trim())
-          .filter(Boolean)
+        const names = specifiers.map((spec) => spec.text())
         names.push('ButtonIcon')
         names.sort()
         edits.push(namedImports.replace(`{ ${names.join(', ')} }`))
@@ -345,14 +332,14 @@ function transformIconButtonElements(
   return { preserveImport, migrated }
 }
 
-const transform: Codemod<TSX> = (root) => {
+const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
   const { iconButtonLocalName, importNodesToRemove, importSpecifiersToRemove } = collectIconButtonImports(rootNode)
 
   if (!iconButtonLocalName) {
-    return Promise.resolve(null)
+    return null
   }
 
   const { preserveImport, migrated } = transformIconButtonElements(rootNode, iconButtonLocalName, edits)
@@ -376,7 +363,7 @@ const transform: Codemod<TSX> = (root) => {
     }
   }
 
-  return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
+  return edits.length > 0 ? rootNode.commitEdits(edits) : null
 }
 
 export default transform

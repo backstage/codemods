@@ -130,24 +130,11 @@ function addButtonToBuiImport(rootNode: SgNode<TSX>, importNodesToRemove: SgNode
 
   if (existingImport) {
     const specifiers = existingImport.findAll({ rule: { kind: 'import_specifier' } })
-    let hasButton = false
-    for (const spec of specifiers) {
-      const idents = spec.findAll({
-        rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
-      })
-      if (idents[0]?.text() === 'Button') {
-        hasButton = true
-      }
-    }
+    const hasButton = specifiers.some((spec) => getImportedName(spec) === 'Button')
     if (!hasButton) {
       const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
       if (namedImports) {
-        const text = namedImports.text()
-        const inner = text.slice(1, -1).trim()
-        const names = inner
-          .split(',')
-          .map((n) => n.trim())
-          .filter(Boolean)
+        const names = specifiers.map((spec) => spec.text())
         names.push('Button')
         names.sort()
         edits.push(namedImports.replace(`{ ${names.join(', ')} }`))
@@ -396,14 +383,14 @@ function transformButtonElements(
   return { preserveImport, migrated }
 }
 
-const transform: Codemod<TSX> = (root) => {
+const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
   const { buttonLocalName, importNodesToRemove, importSpecifiersToRemove } = collectButtonImports(rootNode)
 
   if (!buttonLocalName) {
-    return Promise.resolve(null)
+    return null
   }
 
   const { preserveImport, migrated } = transformButtonElements(rootNode, buttonLocalName, edits)
@@ -427,7 +414,7 @@ const transform: Codemod<TSX> = (root) => {
     }
   }
 
-  return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
+  return edits.length > 0 ? rootNode.commitEdits(edits) : null
 }
 
 export default transform

@@ -180,24 +180,11 @@ function addTextToBuiImport(rootNode: SgNode<TSX>, importNodesToRemove: SgNode<T
 
   if (existingImport) {
     const specifiers = existingImport.findAll({ rule: { kind: 'import_specifier' } })
-    let hasText = false
-    for (const spec of specifiers) {
-      const idents = spec.findAll({
-        rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
-      })
-      if (idents[0]?.text() === 'Text') {
-        hasText = true
-      }
-    }
+    const hasText = specifiers.some((spec) => getImportedName(spec) === 'Text')
     if (!hasText) {
       const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
       if (namedImports) {
-        const text = namedImports.text()
-        const inner = text.slice(1, -1).trim()
-        const names = inner
-          .split(',')
-          .map((n) => n.trim())
-          .filter(Boolean)
+        const names = specifiers.map((spec) => spec.text())
         names.push('Text')
         names.sort()
         edits.push(namedImports.replace(`{ ${names.join(', ')} }`))
@@ -461,14 +448,14 @@ function transformTypographyElements(rootNode: SgNode<TSX>, localNames: Map<stri
   return migrated
 }
 
-const transform: Codemod<TSX> = (root) => {
+const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
   const { localNames, importNodesToRemove, importSpecifiersToRemove } = collectTypographyImports(rootNode)
 
   if (localNames.size === 0) {
-    return Promise.resolve(null)
+    return null
   }
 
   const migrated = transformTypographyElements(rootNode, localNames, edits)
@@ -500,7 +487,7 @@ const transform: Codemod<TSX> = (root) => {
     addTextToBuiImport(rootNode, importNodesToRemove, edits)
   }
 
-  return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
+  return edits.length > 0 ? rootNode.commitEdits(edits) : null
 }
 
 export default transform
