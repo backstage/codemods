@@ -1,0 +1,7 @@
+{
+  "name": "my-plugin",
+  "devDependencies": {
+    "@material-ui/styles": "^4.11.5",
+    "@types/react": "^18.0.0"
+  }
+}

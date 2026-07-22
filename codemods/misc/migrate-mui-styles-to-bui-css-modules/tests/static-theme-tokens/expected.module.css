@@ -1,0 +1,7 @@
+@layer components {
+  .container {
+    padding: var(--bui-space-4);
+    background-color: var(--bui-bg-neutral-1);
+    border-radius: var(--bui-radius-2);
+  }
+}

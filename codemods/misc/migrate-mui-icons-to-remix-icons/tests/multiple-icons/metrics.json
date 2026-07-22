@@ -1,0 +1,32 @@
+{
+  "migrate-mui-icons-to-remix-icons": [
+    {
+      "cardinality": {
+        "action": "import-replaced",
+        "from": "Close",
+        "to": "RiCloseLine"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-replaced",
+        "from": "Search",
+        "to": "RiSearchLine"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "jsx-migrated"
+      },
+      "count": 2
+    },
+    {
+      "cardinality": {
+        "action": "remix-import-added"
+      },
+      "count": 1
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "name": "my-plugin",
+  "dependencies": {
+    "@backstage/ui": "^0.16.0",
+    "react": "^18.0.0"
+  }
+}

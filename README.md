@@ -40,6 +40,17 @@ Run the [`migration-recipe`](./codemods/v1.51.0/migration-recipe) to apply every
 
 Older versions are available in the [`codemods/`](./codemods) directory.
 
+### misc
+
+| Codemod                                                                                        | Description                                                                                       |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| [migrate-mui-bootstrap-to-bui](./codemods/misc/migrate-mui-bootstrap-to-bui)                   | MUI 4 to BUI: Bootstrap app dependencies and root CSS                                             |
+| [migrate-mui-icons-to-remix-icons](./codemods/misc/migrate-mui-icons-to-remix-icons)           | MUI 4 to BUI: Replace MUI icons with Remix icons                                                  |
+| [migrate-mui-layout-to-bui-layout](./codemods/misc/migrate-mui-layout-to-bui-layout)           | MUI 4 to BUI: Convert common MUI layout primitives to BUI layout                                  |
+| [migrate-mui-styles-to-bui-css-modules](./codemods/misc/migrate-mui-styles-to-bui-css-modules) | MUI 4 to BUI: Migrate makeStyles usage to BUI CSS modules                                         |
+| [mui4-to-bui-migration-recipe](./codemods/misc/mui4-to-bui-migration-recipe)                   | MUI 4 to BUI: Migration recipe that runs every MUI→BUI codemod from the registry in a safe order. |
+| [remove-mui-dependencies](./codemods/misc/remove-mui-dependencies)                             | MUI 4 to BUI: Remove unused @material-ui/\* dependencies from package.json                        |
+
 <!-- CODEMODS_END -->
 
 ## Usage

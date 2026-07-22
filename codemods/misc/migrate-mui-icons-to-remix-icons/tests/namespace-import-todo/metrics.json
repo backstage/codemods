@@ -1,0 +1,11 @@
+{
+  "migrate-mui-icons-to-remix-icons": [
+    {
+      "cardinality": {
+        "action": "todo-inserted",
+        "reason": "namespace-import"
+      },
+      "count": 1
+    }
+  ]
+}

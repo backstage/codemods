@@ -1,0 +1,24 @@
+{
+  "migrate-mui-icons-to-remix-icons": [
+    {
+      "cardinality": {
+        "action": "extension-icon-wrapped"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-replaced",
+        "from": "Search",
+        "to": "RiSearchLine"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "remix-import-added"
+      },
+      "count": 1
+    }
+  ]
+}

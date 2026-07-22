@@ -1,0 +1,10 @@
+{
+  "migrate-mui-bootstrap-to-bui": [
+    {
+      "cardinality": {
+        "action": "already-bootstrapped"
+      },
+      "count": 1
+    }
+  ]
+}

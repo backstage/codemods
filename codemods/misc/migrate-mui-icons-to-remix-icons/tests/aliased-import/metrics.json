@@ -1,0 +1,24 @@
+{
+  "migrate-mui-icons-to-remix-icons": [
+    {
+      "cardinality": {
+        "action": "import-replaced",
+        "from": "Delete",
+        "to": "RiDeleteBinLine"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "jsx-migrated"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "remix-import-added"
+      },
+      "count": 1
+    }
+  ]
+}
