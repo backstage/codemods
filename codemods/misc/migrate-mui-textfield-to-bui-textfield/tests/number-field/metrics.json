@@ -27,6 +27,12 @@
     },
     {
       "cardinality": {
+        "action": "size-defaulted-to-medium"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
         "action": "textfield-migrated",
         "component": "NumberField"
       },

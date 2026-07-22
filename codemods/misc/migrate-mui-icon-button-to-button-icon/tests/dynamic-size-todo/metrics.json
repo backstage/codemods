@@ -1,0 +1,11 @@
+{
+  "migrate-mui-icon-button-to-button-icon": [
+    {
+      "cardinality": {
+        "action": "todo-inserted",
+        "reason": "dynamic-size"
+      },
+      "count": 1
+    }
+  ]
+}

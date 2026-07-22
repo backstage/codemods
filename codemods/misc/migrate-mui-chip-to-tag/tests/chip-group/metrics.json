@@ -14,6 +14,12 @@
     },
     {
       "cardinality": {
+        "action": "size-defaulted-to-medium"
+      },
+      "count": 2
+    },
+    {
+      "cardinality": {
         "action": "tag-group-created",
         "count": "2"
       },

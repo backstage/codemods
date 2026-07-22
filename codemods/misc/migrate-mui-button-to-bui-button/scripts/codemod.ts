@@ -335,6 +335,12 @@ function transformButtonElements(
       todoReasons.push('dynamic-variant')
     }
 
+    // Dynamic size — cannot map deterministically
+    if (isPropDynamic(opening, 'size')) {
+      needsTodo = true
+      todoReasons.push('dynamic-size')
+    }
+
     // Non-default color implies semantic intent
     const colorValue = getPropStringValue(opening, 'color')
     if (colorValue && colorValue !== 'primary' && colorValue !== 'default') {
@@ -412,7 +418,33 @@ function transformButtonElements(
       }
     }
 
-    const handledProps = new Set(['variant', 'disabled', 'color', 'onClick', 'startIcon', 'endIcon'])
+    const handledProps = new Set(['variant', 'disabled', 'color', 'onClick', 'startIcon', 'endIcon', 'size'])
+
+    // Map size — preserve MUI medium default when BUI defaults to small
+    const sizeValue = getPropStringValue(opening, 'size')
+    if (sizeValue === null) {
+      newProps.push('size="medium"')
+      migrationMetric.increment({ action: 'size-defaulted-to-medium' })
+    } else if (sizeValue === 'small') {
+      newProps.push('size="small"')
+      migrationMetric.increment({ action: 'size-mapped', size: 'small' })
+    } else if (sizeValue === 'medium') {
+      newProps.push('size="medium"')
+      migrationMetric.increment({ action: 'size-mapped', size: 'medium' })
+    } else if (sizeValue === 'large') {
+      newProps.push('size="medium"')
+      migrationMetric.increment({ action: 'size-large-to-medium' })
+    } else {
+      preserveImport = true
+      edits.push(
+        el.replace(
+          withTodoComment('{/* TODO(backstage-codemod): verify Button intent manually (unknown-size) */}', el.text()),
+        ),
+      )
+      migrationMetric.increment({ action: 'todo-inserted', reason: 'unknown-size' })
+      continue
+    }
+
     if (onClickAttr) {
       const raw = getPropRawValue(opening, 'onClick')
       if (raw) {

@@ -235,6 +235,42 @@ function getPropStringValue(opening: SgNode<TSX>, propName: string): string | nu
   return null
 }
 
+function getPropAttr(opening: SgNode<TSX>, propName: string): SgNode<TSX> | null {
+  return opening.find({
+    rule: {
+      kind: 'jsx_attribute',
+      has: {
+        kind: 'property_identifier',
+        regex: `^${escapeRegex(propName)}$`,
+      },
+    },
+  })
+}
+
+function isDynamicSizeProp(opening: SgNode<TSX>): boolean {
+  const attr = getPropAttr(opening, 'size')
+  if (!attr) {
+    return false
+  }
+  return attr.find({ rule: { kind: 'string' } }) === null
+}
+
+function recordSizeMetric(sizeValue: string | null): void {
+  if (sizeValue === 'small') {
+    migrationMetric.increment({ action: 'size-mapped', size: 'small' })
+    return
+  }
+  if (sizeValue === 'medium') {
+    migrationMetric.increment({ action: 'size-mapped', size: 'medium' })
+    return
+  }
+  if (sizeValue === 'large') {
+    migrationMetric.increment({ action: 'size-large-to-medium' })
+    return
+  }
+  migrationMetric.increment({ action: 'size-defaulted-to-medium' })
+}
+
 function getPropRawValue(opening: SgNode<TSX>, propName: string): string | null {
   const attr = opening.find({
     rule: {
@@ -310,6 +346,8 @@ function buildTagReplacement(info: ChipInfo): string {
   const props: string[] = []
   if (info.sizeValue === 'small') {
     props.push('size="small"')
+  } else {
+    props.push('size="medium"')
   }
   const propsStr = props.length > 0 ? ` ${props.join(' ')}` : ''
 
@@ -399,8 +437,15 @@ function transformChipElements(
     processedParents.add(parent.id())
 
     for (const group of findConsecutiveChipGroupsForParent(parent, chipLocalName)) {
+      if (group.some((c) => isDynamicSizeProp(c.opening))) {
+        continue
+      }
+
       needsTagGroup = true
-      const tags = group.map((c) => buildTagReplacement(c))
+      const tags = group.map((c) => {
+        recordSizeMetric(c.sizeValue)
+        return buildTagReplacement(c)
+      })
       const tagGroupContent = tags.join('\n  ')
       const [firstChip] = group
       if (!firstChip) {
@@ -442,7 +487,22 @@ function transformChipElements(
       continue
     }
 
+    if (isDynamicSizeProp(info.opening)) {
+      preserveImport = true
+      edits.push(
+        info.element.replace(
+          withTodoComment(
+            `{/* TODO(backstage-codemod): finish Chip migration manually (size) */}`,
+            info.element.text(),
+          ),
+        ),
+      )
+      migrationMetric.increment({ action: 'todo-inserted', reason: 'size' })
+      continue
+    }
+
     edits.push(info.element.replace(buildTagReplacement(info)))
+    recordSizeMetric(info.sizeValue)
     migrated = true
     migrationMetric.increment({ action: 'chip-migrated' })
   }

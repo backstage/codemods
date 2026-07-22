@@ -53,6 +53,10 @@ Also see the short ordering note in [`../README.md`](../README.md).
 
 `@backstage/migrate-mui-button-to-bui-button` maps `variant="outlined"` → `variant="secondary"` silently (BUI secondary is the outlined visual). The transform emits metric `outlined-to-secondary` so operators can quantify remaps in dry-run output.
 
+### Density (size defaults)
+
+BUI controls default to `size="small"` while MUI defaults to medium. Button, ButtonIcon, TextField family, and Tag emit `size="medium"` when MUI omitted size (or used `medium`/`large`), so migrations do not silently shrink. Explicit MUI `size="small"` is preserved.
+
 ## Package naming
 
 Most transforms use `migrate-mui-<source>-to-bui-<target>`. A few intentionally omit `-bui-` in the target segment when the BUI export name is the product surface (not a “BUI-prefixed” alias):

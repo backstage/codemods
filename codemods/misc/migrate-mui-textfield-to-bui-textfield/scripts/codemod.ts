@@ -21,7 +21,6 @@ const TODO_PROPS = new Set([
   'error',
   'variant',
   'margin',
-  'size',
   'color',
   'classes',
   'inputRef',
@@ -424,6 +423,35 @@ function tryRewriteOnChangeHandler(attr: SgNode<TSX>): string | null {
   return `{newValue => ${rewrittenBody}}`
 }
 
+function isDynamicSizeProp(opening: SgNode<TSX>): boolean {
+  const attr = getPropAttr(opening, 'size')
+  if (!attr) {
+    return false
+  }
+  return attr.find({ rule: { kind: 'string' } }) === null
+}
+
+function mapSizeProp(opening: SgNode<TSX>, newProps: string[]): void {
+  const sizeValue = getPropStringValue(opening, 'size')
+  if (sizeValue === 'small') {
+    newProps.push('size="small"')
+    migrationMetric.increment({ action: 'size-mapped', size: 'small' })
+    return
+  }
+  if (sizeValue === 'medium') {
+    newProps.push('size="medium"')
+    migrationMetric.increment({ action: 'size-mapped', size: 'medium' })
+    return
+  }
+  if (sizeValue === 'large') {
+    newProps.push('size="medium"')
+    migrationMetric.increment({ action: 'size-large-to-medium' })
+    return
+  }
+  newProps.push('size="medium"')
+  migrationMetric.increment({ action: 'size-defaulted-to-medium' })
+}
+
 function resolveTargetComponent(opening: SgNode<TSX>): string {
   if (hasProp(opening, 'multiline')) {
     return 'TextAreaField'
@@ -468,6 +496,11 @@ function transformTextFieldElements(
     let needsTodo = false
     const todoReasons: string[] = []
 
+    if (isDynamicSizeProp(opening)) {
+      needsTodo = true
+      todoReasons.push('size')
+    }
+
     for (const prop of TODO_PROPS) {
       if (hasProp(opening, prop)) {
         needsTodo = true
@@ -505,6 +538,7 @@ function transformTextFieldElements(
     const newProps: string[] = []
     let handlerTodo = false
     let droppedFullWidth = false
+    let sizeHandled = false
 
     for (const child of opening.children()) {
       const kind = child.kind()
@@ -584,6 +618,11 @@ function transformTextFieldElements(
           migrationMetric.increment({ action: 'todo-inserted', reason: 'fullWidth' })
           continue
         }
+        if (propName === 'size') {
+          sizeHandled = true
+          mapSizeProp(opening, newProps)
+          continue
+        }
         newProps.push(child.text())
       } else if (kind === 'jsx_expression' && child.text().startsWith('{...')) {
         newProps.push(child.text())
@@ -592,6 +631,10 @@ function transformTextFieldElements(
 
     if (handlerTodo) {
       continue
+    }
+
+    if (!sizeHandled) {
+      mapSizeProp(opening, newProps)
     }
 
     const propsStr = newProps.length > 0 ? ` ${newProps.join(' ')}` : ''

@@ -216,7 +216,7 @@ function isSingleIconChild(child: SgNode<TSX>): boolean {
 }
 
 /** Props that are dropped silently (MUI-specific, no BUI equivalent). */
-const DROPPED_PROPS = new Set(['size', 'edge', 'disableRipple', 'disableFocusRipple'])
+const DROPPED_PROPS = new Set(['edge', 'disableRipple', 'disableFocusRipple'])
 
 /** MUI IconButton color → BUI ButtonIcon variant. Absent/default/inherit → tertiary. */
 const COLOR_TO_VARIANT: Record<string, string> = {
@@ -319,12 +319,36 @@ function transformIconButtonElements(
       continue
     }
 
+    const { value: sizeValue, isDynamic: sizeDynamic } = getAttrStringValue(opening, 'size')
+    if (sizeDynamic) {
+      insertTodo('dynamic-size')
+      continue
+    }
+
     // Build new props
     const newProps: string[] = []
 
     // icon prop from child
     newProps.push(formatIconProp(iconChild))
     newProps.push(`variant="${buiVariant}"`)
+
+    // Map size — preserve MUI medium default when BUI defaults to small
+    if (sizeValue === null || sizeValue === '') {
+      newProps.push('size="medium"')
+      migrationMetric.increment({ action: 'size-defaulted-to-medium' })
+    } else if (sizeValue === 'small') {
+      newProps.push('size="small"')
+      migrationMetric.increment({ action: 'size-mapped', size: 'small' })
+    } else if (sizeValue === 'medium') {
+      newProps.push('size="medium"')
+      migrationMetric.increment({ action: 'size-mapped', size: 'medium' })
+    } else if (sizeValue === 'large') {
+      newProps.push('size="medium"')
+      migrationMetric.increment({ action: 'size-large-to-medium' })
+    } else {
+      insertTodo('unknown-size')
+      continue
+    }
 
     // Map props from opening element
     const allAttrs = opening.findAll({ rule: { kind: 'jsx_attribute' } })
@@ -335,8 +359,10 @@ function transformIconButtonElements(
       }
       const propName = propIdent.text()
 
-      if (propName === 'color') {
-        migrationMetric.increment({ action: 'prop-dropped', prop: 'color' })
+      if (propName === 'color' || propName === 'size') {
+        if (propName === 'color') {
+          migrationMetric.increment({ action: 'prop-dropped', prop: 'color' })
+        }
         continue
       }
 

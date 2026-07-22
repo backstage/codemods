@@ -11,11 +11,12 @@ Migrates MUI 4 `Button` to Backstage UI `Button` / `ButtonLink`.
 - `startIcon` / `endIcon` → `iconStart` / `iconEnd`
 - Simple `onClick` → `onPress`
 - `href` present → `ButtonLink` (same variant mapping)
+- Density: omitted / `medium` / `large` → `size="medium"` (BUI default is `small`; MUI default is medium); `small` preserved
 
 ## TODOs / won't-do
 
-- Dynamic / unknown `variant` values left with `TODO(backstage-codemod)`
-- Theme-level Button overrides, `classes`, size remaps that need design review
+- Dynamic / unknown `variant` or `size` values left with `TODO(backstage-codemod)`
+- Theme-level Button overrides, `classes`
 
 ## Test
 
