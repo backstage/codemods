@@ -111,12 +111,7 @@ function getPrunedBarrelImportText(imp: SgNode<TSX>, namesToRemove: string[], so
     : `import ${typeKw}{ ${specTexts.join(', ')} } from '${source}';`
 }
 
-function pruneBarrelImportSpecifiers(
-  imp: SgNode<TSX>,
-  source: string,
-  namesToRemove: string[],
-  edits: Edit[],
-): void {
+function pruneBarrelImportSpecifiers(imp: SgNode<TSX>, source: string, namesToRemove: string[], edits: Edit[]): void {
   edits.push(imp.replace(getPrunedBarrelImportText(imp, namesToRemove, source)))
   migrationMetric.increment({ action: 'import-removed' })
 }
