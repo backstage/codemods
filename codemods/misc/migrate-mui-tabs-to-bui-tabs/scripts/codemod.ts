@@ -77,7 +77,7 @@ function getImportedName(spec: SgNode<TSX>): string | null {
   return identifiers[0]?.text() ?? null
 }
 
-function pruneBarrelImport(imp: SgNode<TSX>, migratedNames: string[], source: string, edits: Edit[]): void {
+function getPrunedBarrelImportText(imp: SgNode<TSX>, migratedNames: string[], source: string): string {
   const specifiers = imp.findAll({ rule: { kind: 'import_specifier' } })
   const remainingSpecs = specifiers.filter((spec) => {
     const importedName = getImportedName(spec)
@@ -85,11 +85,14 @@ function pruneBarrelImport(imp: SgNode<TSX>, migratedNames: string[], source: st
   })
 
   if (remainingSpecs.length === 0) {
-    edits.push(imp.replace(''))
-  } else {
-    const specTexts = remainingSpecs.map((spec) => spec.text()).join(', ')
-    edits.push(imp.replace(`import { ${specTexts} } from '${source}';`))
+    return ''
   }
+  const specTexts = remainingSpecs.map((spec) => spec.text()).join(', ')
+  return `import { ${specTexts} } from '${source}';`
+}
+
+function pruneBarrelImport(imp: SgNode<TSX>, migratedNames: string[], source: string, edits: Edit[]): void {
+  edits.push(imp.replace(getPrunedBarrelImportText(imp, migratedNames, source)))
   migrationMetric.increment({ action: 'import-removed' })
 }
 
@@ -165,11 +168,14 @@ function addBuiImport(
   rootNode: SgNode<TSX>,
   names: string[],
   importNodesToRemove: SgNode<TSX>[],
+  barrelImportsToPrune: { imp: SgNode<TSX>; source: string; migratedNames: string[] }[],
   edits: Edit[],
+  handledBarrelIds: Set<number>,
 ): boolean {
   const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
   const existingImport = existingImports[0] ?? null
   const sortedNames = [...names].sort()
+  const buiImport = `import { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`
 
   if (existingImport) {
     const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
@@ -192,25 +198,34 @@ function addBuiImport(
     return false
   }
 
-  const removableIds = new Set(importNodesToRemove.map((imp) => imp.id()))
+  const skipIds = new Set([
+    ...importNodesToRemove.map((imp) => imp.id()),
+    ...barrelImportsToPrune.map(({ imp }) => imp.id()),
+  ])
   const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
-  const anchorImport = [...allImports].reverse().find((imp) => !removableIds.has(imp.id())) ?? null
+  const anchorImport = [...allImports].reverse().find((imp) => !skipIds.has(imp.id())) ?? null
 
   if (anchorImport) {
-    edits.push(
-      anchorImport.replace(`${anchorImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`),
-    )
-  } else if (importNodesToRemove.length === 1) {
+    edits.push(anchorImport.replace(`${anchorImport.text()}\n${buiImport}`))
+    return false
+  }
+
+  // No stable anchor — fold the BUI import into a partial barrel prune so we
+  // don't apply two conflicting replacements to the same import node.
+  const [barrelToFold] = barrelImportsToPrune
+  if (barrelToFold) {
+    const pruned = getPrunedBarrelImportText(barrelToFold.imp, barrelToFold.migratedNames, barrelToFold.source)
+    edits.push(barrelToFold.imp.replace(pruned.length > 0 ? `${pruned}\n${buiImport}` : buiImport))
+    handledBarrelIds.add(barrelToFold.imp.id())
+    migrationMetric.increment({ action: 'import-added' })
+    migrationMetric.increment({ action: 'import-removed' })
+    return false
+  }
+
+  if (importNodesToRemove.length > 0) {
     const [importNode] = importNodesToRemove
     if (importNode) {
-      edits.push(importNode.replace(`import { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
-      migrationMetric.increment({ action: 'import-added' })
-      return true
-    }
-  } else if (importNodesToRemove.length > 0) {
-    const [importNode] = importNodesToRemove
-    if (importNode) {
-      edits.push(importNode.replace(`import { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
+      edits.push(importNode.replace(buiImport))
       migrationMetric.increment({ action: 'import-added' })
       return true
     }
@@ -749,12 +764,23 @@ const transform: Codemod<TSX> = (root) => {
   const { usedBuiNames, preserveImport, migrated } = transformTabElements(rootNode, localNames, edits)
 
   let replacedImport = false
+  const handledBarrelIds = new Set<number>()
   if (migrated) {
-    replacedImport = addBuiImport(rootNode, [...usedBuiNames], importNodesToRemove, edits)
+    replacedImport = addBuiImport(
+      rootNode,
+      [...usedBuiNames],
+      importNodesToRemove,
+      barrelImportsToPrune,
+      edits,
+      handledBarrelIds,
+    )
   }
 
   if (!preserveImport) {
     for (const { imp, source, migratedNames } of barrelImportsToPrune) {
+      if (handledBarrelIds.has(imp.id())) {
+        continue
+      }
       pruneBarrelImport(imp, migratedNames, source, edits)
     }
     for (const imp of importNodesToRemove) {

@@ -291,6 +291,11 @@ function isTriggerElement(node: SgNode<TSX>): boolean {
   return hasProp(opening, 'onClick')
 }
 
+/**
+ * Prefer the immediately preceding sibling when it looks like a trigger.
+ * Avoid grabbing an earlier button elsewhere in the parent (common in
+ * multi-button fragments), which would wrap the wrong element.
+ */
 function findTriggerSibling(menuEl: SgNode<TSX>): SgNode<TSX> | null {
   const parent = menuEl.parent()
   if (!parent) {
@@ -302,14 +307,12 @@ function findTriggerSibling(menuEl: SgNode<TSX>): SgNode<TSX> | null {
     return null
   }
 
-  let previousTrigger: SgNode<TSX> | null = null
+  let previousSibling: SgNode<TSX> | null = null
   for (const sibling of getNonWhitespaceChildren(parent)) {
     if (sibling.id() === menuEl.id()) {
-      return previousTrigger
+      return previousSibling && isTriggerElement(previousSibling) ? previousSibling : null
     }
-    if (isTriggerElement(sibling)) {
-      previousTrigger = sibling
-    }
+    previousSibling = sibling
   }
 
   return null
