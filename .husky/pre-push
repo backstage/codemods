@@ -1,0 +1,12 @@
+#!/usr/bin/env sh
+set -e
+# Same gates as CI (.github/workflows/ci.yml → scripts/check-changed.sh).
+if [ ! -f scripts/check-changed.sh ]; then
+  echo "error: scripts/check-changed.sh missing." >&2
+  exit 1
+fi
+if [ ! -d node_modules ]; then
+  echo "error: node_modules missing. Run 'yarn install' in this worktree before pushing." >&2
+  exit 1
+fi
+bash scripts/check-changed.sh origin/main

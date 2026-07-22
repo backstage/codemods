@@ -28,22 +28,16 @@ yarn lint:fix
 yarn test
 ```
 
-## Pre-commit hook
+## Git hooks (husky)
 
-A pre-commit hook runs automatically after `yarn install` (via the `prepare` script, which runs `husky`). That sets `core.hooksPath` to `.husky/_` and runs the repo's `.husky/pre-commit` script (`yarn lint-staged`) on commit.
+After `yarn install`, the `prepare` script runs `husky` and sets `core.hooksPath` to `.husky/_`. Hooks fail loudly if `node_modules` is missing (so worktrees cannot silently skip checks).
 
-lint-staged is configured in [`.lintstagedrc.json`](./.lintstagedrc.json) to mirror the CI gates that apply to staged files:
+| Hook           | What runs                                                                                                                                                                                                          |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **pre-commit** | `yarn lint-staged` — format + lint staged files; package tests for staged `codemods/**/scripts/*`; regenerate `README.md` when `codemods/**/codemod.yaml` is staged ([`.lintstagedrc.json`](./.lintstagedrc.json)) |
+| **pre-push**   | `yarn check:changed` → [`scripts/check-changed.sh`](./scripts/check-changed.sh) — the **same** format / lint / package-name / test / README gates as CI                                                            |
 
-- **Format** — `yarn format` on staged `ts`/`tsx`/`js`/`json`/`yaml`/`md`/`css` (and related) files
-- **Lint** — `yarn lint` on staged JS/TS (same flags as CI, including `require-await`)
-- **Package tests** — when `codemods/**/scripts/*.{ts,tsx}` is staged, run that package's `yarn test`
-- **README freshness** — when any `codemods/**/codemod.yaml` is staged, run `yarn readme` and stage `README.md`
-
-If formatting or linting fails, the commit is blocked until the issues are fixed.
-
-**Worktrees / fresh clones:** run `yarn install` in that worktree before committing. If `git config core.hooksPath` is unset, husky is not active and commits will skip these checks (CI will still fail).
-
-The hook only inspects **staged** files. Unstaged edits can still fail CI — run `yarn format:check`, `yarn lint`, and `yarn readme` before pushing when in doubt.
+CI (`.github/workflows/ci.yml`) calls that same script, so local and remote gates cannot drift. Run `yarn check:changed` anytime to reproduce CI locally.
 
 ## Making changes
 

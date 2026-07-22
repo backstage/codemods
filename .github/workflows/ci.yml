@@ -39,64 +39,9 @@ jobs:
 
       - run: yarn install --immutable
 
-      - name: Get changed files
-        id: changed
-        run: |
-          files=$(git diff --name-only --diff-filter=ACMR origin/main...HEAD | tr '\n' ' ')
-          echo "files=$files" >> "$GITHUB_OUTPUT"
-          lint_files=$(git diff --name-only --diff-filter=ACMR origin/main...HEAD \
-            | grep -E '\.(ts|js|mts|mjs|tsx|jsx)$' | tr '\n' ' ')
-          echo "lint_files=$lint_files" >> "$GITHUB_OUTPUT"
-
-      - name: Get changed codemods
-        id: codemods
-        run: |
-          candidates=$(git diff --name-only origin/main...HEAD -- 'codemods/' \
-            | awk -F/ 'NF>=3 {print $1"/"$2"/"$3}' | sort -u)
-          dirs=""
-          for d in $candidates; do
-            [ -f "$d/package.json" ] && dirs="$dirs $d"
-          done
-          echo "dirs=$(echo $dirs | xargs)" >> "$GITHUB_OUTPUT"
-
-      - name: Format check (changed files)
-        if: steps.changed.outputs.files != ''
-        run: yarn format:check ${{ steps.changed.outputs.files }}
-
-      - name: Lint (changed files)
-        if: steps.changed.outputs.lint_files != ''
-        run: yarn lint ${{ steps.changed.outputs.lint_files }}
-
-      - name: Package name length check
-        if: steps.codemods.outputs.dirs != ''
-        run: |
-          failed=0
-          for dir in ${{ steps.codemods.outputs.dirs }}; do
-            name=$(node -p "require('./$dir/package.json').name")
-            len=${#name}
-            if [ "$len" -gt 50 ]; then
-              echo "::error::Package name '$name' is $len chars (max 50 for Codemod registry)"
-              failed=1
-            fi
-          done
-          [ "$failed" -eq 0 ] || exit 1
-
-      - name: Test (changed codemods)
-        if: steps.codemods.outputs.dirs != ''
-        run: |
-          for dir in ${{ steps.codemods.outputs.dirs }}; do
-            (cd "$dir" && yarn test)
-          done
-
-      - name: README freshness check
-        if: steps.codemods.outputs.dirs != ''
-        run: |
-          yarn readme
-          if ! git diff --quiet README.md; then
-            echo "::error::README.md is out of date. Run 'yarn readme' and commit the result."
-            git diff README.md
-            exit 1
-          fi
+      # Shared with local husky pre-push (scripts/check-changed.sh) so gates cannot drift.
+      - name: Check changed files
+        run: bash scripts/check-changed.sh origin/main
 
   changeset-check:
     name: Changeset Check
