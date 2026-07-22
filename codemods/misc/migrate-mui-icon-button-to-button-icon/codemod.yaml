@@ -1,7 +1,7 @@
 schema_version: '1.0'
 
 name: '@backstage/migrate-mui-icon-button-to-button-icon'
-version: '0.1.0'
+version: '0.2.0'
 description: 'MUI 4 to BUI: Replace IconButton with ButtonIcon. Package name omits -bui- because ButtonIcon is the BUI export name.'
 author: 'Paul Schultz<pschultz@redhat.com>'
 license: 'Apache-2.0'
