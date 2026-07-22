@@ -1,6 +1,4 @@
-import { jssgTransform } from 'codemod:ast-grep'
 import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
-import type CSS from 'codemod:ast-grep/langs/css'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
 
@@ -325,20 +323,6 @@ function hasCssModuleImport(rootNode: SgNode<TSX>, cssModuleImportPath: string):
   return false
 }
 
-async function readCssModuleFile(cssFilePath: string): Promise<string | null> {
-  try {
-    let existing = ''
-    const readCss: Codemod<CSS> = (root) => {
-      existing = root.root().text()
-      return Promise.resolve(null)
-    }
-    await jssgTransform(readCss, cssFilePath, 'css')
-    return existing.trim() ? existing : null
-  } catch {
-    return null
-  }
-}
-
 function extractClassNamesFromCss(cssContent: string): Set<string> {
   const classNames = new Set<string>()
   for (const match of cssContent.matchAll(/\.([A-Za-z0-9_-]+)\s*\{/g)) {
@@ -350,64 +334,127 @@ function extractClassNamesFromCss(cssContent: string): Set<string> {
   return classNames
 }
 
-function extractCssModuleRuleBlocks(cssContent: string): { className: string; block: string }[] {
-  const rules: { className: string; block: string }[] = []
+function extractCssModuleRuleBlocks(cssContent: string): { className: string; body: string }[] {
+  const rules: { className: string; body: string }[] = []
   for (const match of cssContent.matchAll(/\.([A-Za-z0-9_-]+)\s*\{([^}]*)\}/g)) {
     const [, className, ruleBody] = match
-    if (!className) {
+    if (!className || ruleBody === undefined) {
       continue
     }
     rules.push({
       className,
-      block: `.${className} {${ruleBody}}`,
+      body: ruleBody.trim(),
     })
   }
   return rules
 }
 
+function formatLayerRules(rules: { className: string; body: string }[]): string {
+  return rules
+    .map((rule) => {
+      const props = rule.body
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => `    ${line}`)
+        .join('\n')
+      return `  .${rule.className} {\n${props}\n  }`
+    })
+    .join('\n')
+}
+
 function mergeCssModuleContent(existing: string, generated: string): string {
   const trimmedExisting = existing.trimEnd()
+  const generatedTrimmed = generated.trimEnd()
   if (!trimmedExisting) {
-    return `${generated}\n`
+    return `${generatedTrimmed}\n`
   }
 
   const existingClassNames = extractClassNamesFromCss(trimmedExisting)
-  const newRules = extractCssModuleRuleBlocks(generated).filter((rule) => !existingClassNames.has(rule.className))
+  const newRules = extractCssModuleRuleBlocks(generatedTrimmed).filter(
+    (rule) => !existingClassNames.has(rule.className),
+  )
   if (newRules.length === 0) {
     return `${trimmedExisting}\n`
   }
 
-  const formattedNewRules = newRules.map((rule) =>
-    rule.block
-      .split('\n')
-      .map((line) => (line ? `  ${line}` : line))
-      .join('\n'),
-  )
-
   const layerMatch = trimmedExisting.match(/^([\s\S]*@layer\s+components\s*\{)([\s\S]*?)(\}\s*)$/)
   if (layerMatch) {
     const [, layerOpen, layerInner, layerClose] = layerMatch
-    return `${layerOpen}${layerInner}\n${formattedNewRules.join('\n')}\n${layerClose}\n`
+    return `${layerOpen}${layerInner}\n${formatLayerRules(newRules)}\n${layerClose}\n`
   }
 
-  return `${trimmedExisting}\n\n@layer components {\n${formattedNewRules.join('\n')}\n}\n`
+  // Existing file has no @layer block — append the generated module as-is.
+  return `${trimmedExisting}\n\n${generatedTrimmed}\n`
 }
 
-async function writeCssModuleFile(cssFilePath: string, content: string): Promise<void> {
-  const existing = await readCssModuleFile(cssFilePath)
+interface NodeFs {
+  mkdirSync: (dir: string, opts: { recursive: boolean }) => void
+  readFileSync: (file: string, encoding: string) => string
+  writeFileSync: (file: string, data: string) => void
+}
+
+interface NodePath {
+  dirname: (file: string) => string
+}
+
+function getNodeBuiltins(): { fs: NodeFs; path: NodePath } {
+  const nodeRequire = (globalThis as unknown as { require?: (id: string) => unknown }).require
+  if (typeof nodeRequire !== 'function') {
+    throw new Error('Node builtins unavailable: require() is not defined in this runtime')
+  }
+  return {
+    fs: nodeRequire('fs') as NodeFs,
+    path: nodeRequire('path') as NodePath,
+  }
+}
+
+function readCssModuleFile(cssFilePath: string): string | null {
+  try {
+    const { fs } = getNodeBuiltins()
+    const text = fs.readFileSync(cssFilePath, 'utf8')
+    return text.trim() ? text : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * jssg fixture runs execute the transform against `tests/<case>/input.tsx` and
+ * still grant fs access. Skip sidecar writes there so fixtures stay pristine;
+ * `scripts/assert-css-goldens.sh` validates CSS output via a real workflow run.
+ */
+function shouldPersistCssModule(sourceFilename: string): boolean {
+  const normalized = normalizeFilePath(sourceFilename)
+  return !(normalized.includes('/tests/') && /\/input\.[^.]+$/.test(normalized))
+}
+
+function writeCssModuleFile(
+  cssFilePath: string,
+  content: string,
+  sourceFilename: string,
+  dryRun: boolean,
+): void {
+  const existing = readCssModuleFile(cssFilePath)
   const mergedContent = existing ? mergeCssModuleContent(existing, content) : content
-  const writeCss: Codemod<CSS> = () => Promise.resolve(mergedContent)
-  await jssgTransform(writeCss, cssFilePath, 'css')
+  const output = mergedContent.endsWith('\n') ? mergedContent : `${mergedContent}\n`
+  if (dryRun || !shouldPersistCssModule(sourceFilename)) {
+    return
+  }
+  const { fs, path } = getNodeBuiltins()
+  fs.mkdirSync(path.dirname(cssFilePath), { recursive: true })
+  fs.writeFileSync(cssFilePath, output)
 }
 
-const transform: Codemod<TSX> = async (root) => {
+const transform: Codemod<TSX> = (root, options) => {
   const rootNode = root.root()
   const edits: Edit[] = []
+  const dryRun = Boolean(options.dryRun)
 
   const { makeStylesLocal, withStylesLocal, importNodesToRemove } = collectStylesImports(rootNode)
 
   if (!makeStylesLocal && !withStylesLocal) {
-    return null
+    return Promise.resolve(null)
   }
 
   // withStyles is always a TODO — too complex for deterministic migration
@@ -440,12 +487,12 @@ const transform: Codemod<TSX> = async (root) => {
     }
 
     if (!makeStylesLocal) {
-      return edits.length > 0 ? rootNode.commitEdits(edits) : null
+      return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
     }
   }
 
   if (!makeStylesLocal) {
-    return edits.length > 0 ? rootNode.commitEdits(edits) : null
+    return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
   }
 
   const makeStylesPattern = escapeRegex(makeStylesLocal)
@@ -469,7 +516,7 @@ const transform: Codemod<TSX> = async (root) => {
   })
 
   if (makeStylesDeclarations.length === 0) {
-    return edits.length > 0 ? rootNode.commitEdits(edits) : null
+    return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
   }
 
   for (const decl of makeStylesDeclarations) {
@@ -548,7 +595,7 @@ const transform: Codemod<TSX> = async (root) => {
     const cssContent = generateCssModule(rules)
     const cssModuleImportPath = deriveCssModuleImportPath(root.filename())
     const cssModuleFilePath = deriveCssModuleFilePath(root.filename())
-    await writeCssModuleFile(cssModuleFilePath, `${cssContent}\n`)
+    writeCssModuleFile(cssModuleFilePath, `${cssContent}\n`, root.filename(), dryRun)
 
     // Remove the makeStyles declaration
     edits.push(decl.replace(''))
@@ -644,7 +691,7 @@ const transform: Codemod<TSX> = async (root) => {
     migrationMetric.increment({ action: 'import-removed' })
   }
 
-  return edits.length > 0 ? rootNode.commitEdits(edits) : null
+  return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
 }
 
 export default transform

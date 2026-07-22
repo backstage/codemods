@@ -284,6 +284,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/mui4-to-bui-migration-recipe@workspace:codemods/misc/mui4-to-bui-migration-recipe":
+  version: 0.0.0-use.local
+  resolution: "@backstage/mui4-to-bui-migration-recipe@workspace:codemods/misc/mui4-to-bui-migration-recipe"
+  dependencies:
+    codemod: "npm:1.12.3"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/portable-schema-method-call@workspace:codemods/v1.51.0/portable-schema-method-call":
   version: 0.0.0-use.local
   resolution: "@backstage/portable-schema-method-call@workspace:codemods/v1.51.0/portable-schema-method-call"

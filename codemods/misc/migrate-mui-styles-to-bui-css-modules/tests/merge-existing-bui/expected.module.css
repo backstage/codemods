@@ -1,0 +1,10 @@
+.container {
+  display: block;
+}
+
+@layer components {
+  .wrapper {
+    padding: 0;
+    margin: 0;
+  }
+}

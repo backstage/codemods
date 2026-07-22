@@ -1,0 +1,10 @@
+@layer components {
+  .header {
+    color: var(--bui-color-text-primary);
+    padding: var(--bui-space-2);
+  }
+  .body {
+    color: var(--bui-color-text-secondary);
+    background-color: var(--bui-bg-neutral-0);
+  }
+}

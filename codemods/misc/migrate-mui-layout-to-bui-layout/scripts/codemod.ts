@@ -226,11 +226,36 @@ function removeUnusedLayoutImports(
   return removedImportIds
 }
 
+function getImportedName(spec: SgNode<TSX>): string | null {
+  const identifiers = spec.findAll({
+    rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
+  })
+  return identifiers[0]?.text() ?? null
+}
+
+function withTodoComment(comment: string, elementText: string): string {
+  return `<>
+  ${comment}
+  ${elementText}
+</>`
+}
+
 function addBuiImport(rootNode: SgNode<TSX>, names: string[], excludedImportIds: Set<number>, edits: Edit[]): void {
   const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
   const existingImport = existingImports[0] ?? null
 
   if (existingImport) {
+    const existingImportedNames = new Set(
+      existingImport
+        .findAll({ rule: { kind: 'import_specifier' } })
+        .map((spec) => getImportedName(spec))
+        .filter((name): name is string => name !== null),
+    )
+    const namesToAdd = names.filter((name) => !existingImportedNames.has(name))
+    if (namesToAdd.length === 0) {
+      return
+    }
+
     const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
     if (namedImports) {
       const text = namedImports.text()
@@ -239,14 +264,16 @@ function addBuiImport(rootNode: SgNode<TSX>, names: string[], excludedImportIds:
         .split(',')
         .map((n) => n.trim())
         .filter(Boolean)
-      for (const name of names) {
-        if (!existing.includes(name)) {
-          existing.push(name)
-        }
-      }
+      existing.push(...namesToAdd)
       existing.sort()
       edits.push(namedImports.replace(`{ ${existing.join(', ')} }`))
       migrationMetric.increment({ action: 'import-merged' })
+    } else {
+      const sortedNames = [...namesToAdd].sort()
+      edits.push(
+        existingImport.replace(`${existingImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`),
+      )
+      migrationMetric.increment({ action: 'import-added' })
     }
   } else {
     const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
@@ -353,10 +380,12 @@ function isFlexBox(opening: SgNode<TSX>): boolean {
   return false
 }
 
+const LAYOUT_TODO_COMMENT = '{/* TODO(backstage-codemod): verify BUI layout mapping manually */}'
+
 function transformBoxElement(el: SgNode<TSX>, opening: SgNode<TSX>, edits: Edit[]): string | null {
   for (const prop of BOX_SPACING_PROPS) {
     if (hasProp(opening, prop)) {
-      edits.push(el.replace(`{/* TODO(backstage-codemod): verify BUI layout mapping manually */}\n${el.text()}`))
+      edits.push(el.replace(withTodoComment(LAYOUT_TODO_COMMENT, el.text())))
       migrationMetric.increment({ action: 'todo-inserted', reason: 'box-spacing' })
       return null
     }
@@ -365,7 +394,7 @@ function transformBoxElement(el: SgNode<TSX>, opening: SgNode<TSX>, edits: Edit[
   // Check for TODO-triggering props
   for (const prop of BOX_TODO_PROPS) {
     if (hasProp(opening, prop)) {
-      edits.push(el.replace(`{/* TODO(backstage-codemod): verify BUI layout mapping manually */}\n${el.text()}`))
+      edits.push(el.replace(withTodoComment(LAYOUT_TODO_COMMENT, el.text())))
       migrationMetric.increment({ action: 'todo-inserted', reason: `box-${prop}` })
       return null
     }
@@ -373,14 +402,14 @@ function transformBoxElement(el: SgNode<TSX>, opening: SgNode<TSX>, edits: Edit[
 
   // Check for dynamic display prop
   if (isPropDynamic(opening, 'display')) {
-    edits.push(el.replace(`{/* TODO(backstage-codemod): verify BUI layout mapping manually */}\n${el.text()}`))
+    edits.push(el.replace(withTodoComment(LAYOUT_TODO_COMMENT, el.text())))
     migrationMetric.increment({ action: 'todo-inserted', reason: 'dynamic-display' })
     return null
   }
 
   if (!isFlexBox(opening)) {
     // Non-flex Box — TODO
-    edits.push(el.replace(`{/* TODO(backstage-codemod): verify BUI layout mapping manually */}\n${el.text()}`))
+    edits.push(el.replace(withTodoComment(LAYOUT_TODO_COMMENT, el.text())))
     migrationMetric.increment({ action: 'todo-inserted', reason: 'non-flex-box' })
     return null
   }
@@ -439,7 +468,7 @@ function transformBoxElement(el: SgNode<TSX>, opening: SgNode<TSX>, edits: Edit[
 function transformPaperElement(el: SgNode<TSX>, opening: SgNode<TSX>, edits: Edit[]): string | null {
   for (const prop of PAPER_TODO_PROPS) {
     if (hasProp(opening, prop)) {
-      edits.push(el.replace(`{/* TODO(backstage-codemod): verify BUI layout mapping manually */}\n${el.text()}`))
+      edits.push(el.replace(withTodoComment(LAYOUT_TODO_COMMENT, el.text())))
       migrationMetric.increment({ action: 'todo-inserted', reason: `paper-${prop}` })
       return null
     }
@@ -619,7 +648,7 @@ function replaceJsxClosingTag(closing: SgNode<TSX>, tagName: string, edits: Edit
 function transformGridElement(el: SgNode<TSX>, opening: SgNode<TSX>, edits: Edit[]): string | null {
   for (const prop of GRID_TODO_PROPS) {
     if (hasProp(opening, prop)) {
-      edits.push(el.replace(`{/* TODO(backstage-codemod): verify BUI layout mapping manually */}\n${el.text()}`))
+      edits.push(el.replace(withTodoComment(LAYOUT_TODO_COMMENT, el.text())))
       migrationMetric.increment({ action: 'todo-inserted', reason: `grid-${prop}` })
       return null
     }
@@ -629,7 +658,7 @@ function transformGridElement(el: SgNode<TSX>, opening: SgNode<TSX>, edits: Edit
   const isItem = hasBooleanProp(opening, 'item')
 
   if (!isContainer && !isItem) {
-    edits.push(el.replace(`{/* TODO(backstage-codemod): verify BUI layout mapping manually */}\n${el.text()}`))
+    edits.push(el.replace(withTodoComment(LAYOUT_TODO_COMMENT, el.text())))
     migrationMetric.increment({ action: 'todo-inserted', reason: 'grid-unknown-role' })
     return null
   }
@@ -639,7 +668,7 @@ function transformGridElement(el: SgNode<TSX>, opening: SgNode<TSX>, edits: Edit
   if (isContainer) {
     const { props, isTodo } = buildGridRootProps(opening)
     if (isTodo) {
-      edits.push(el.replace(`{/* TODO(backstage-codemod): verify BUI layout mapping manually */}\n${el.text()}`))
+      edits.push(el.replace(withTodoComment(LAYOUT_TODO_COMMENT, el.text())))
       migrationMetric.increment({ action: 'todo-inserted', reason: 'grid-dynamic-spacing' })
       return null
     }
@@ -662,7 +691,7 @@ function transformGridElement(el: SgNode<TSX>, opening: SgNode<TSX>, edits: Edit
 
   const { props, isTodo } = buildGridItemProps(opening)
   if (isTodo) {
-    edits.push(el.replace(`{/* TODO(backstage-codemod): verify BUI layout mapping manually */}\n${el.text()}`))
+    edits.push(el.replace(withTodoComment(LAYOUT_TODO_COMMENT, el.text())))
     migrationMetric.increment({ action: 'todo-inserted', reason: 'grid-item-colspan' })
     return null
   }

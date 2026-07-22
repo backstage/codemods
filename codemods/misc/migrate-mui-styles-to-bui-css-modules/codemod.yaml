@@ -9,12 +9,13 @@ repository: 'https://github.com/backstage/codemods'
 workflow: 'workflow.yaml'
 
 targets:
-  languages: ['tsx', 'ts']
+  languages: ['tsx', 'ts', 'css']
 
-keywords: ['backstage', 'migration', 'mui', 'bui', 'styles', 'bui', 'css', 'modules']
+keywords: ['backstage', 'migration', 'mui', 'bui', 'styles', 'css', 'modules']
 
 registry:
   access: 'public'
   visibility: 'public'
 
-capabilities: []
+capabilities:
+  - fs
