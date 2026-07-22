@@ -17,6 +17,13 @@
         "action": "paper-to-box"
       },
       "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "todo-inserted",
+        "reason": "paper-default-elevation"
+      },
+      "count": 1
     }
   ]
 }

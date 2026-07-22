@@ -1,4 +1,4 @@
-import { Link } from '@backstage/core-components';
+import Link from '@backstage/core-components/Link';
 import { Link as BuiLink } from '@backstage/ui';
 
 const Mixed = () => (

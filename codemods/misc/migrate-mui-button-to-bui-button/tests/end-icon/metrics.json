@@ -1,5 +1,12 @@
 {
-  "migrate-mui-link-to-bui-link": [
+  "migrate-mui-button-to-bui-button": [
+    {
+      "cardinality": {
+        "action": "button-migrated",
+        "variant": "contained"
+      },
+      "count": 1
+    },
     {
       "cardinality": {
         "action": "import-added"
@@ -14,7 +21,9 @@
     },
     {
       "cardinality": {
-        "action": "link-migrated"
+        "action": "prop-renamed",
+        "from": "endIcon",
+        "to": "iconEnd"
       },
       "count": 1
     }

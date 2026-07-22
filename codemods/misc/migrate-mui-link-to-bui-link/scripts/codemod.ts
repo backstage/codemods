@@ -7,7 +7,9 @@ const migrationMetric = useMetricAtom('migrate-mui-link-to-bui-link')
 const BUI_SOURCE = '@backstage/ui'
 const MUI_BARREL = '@material-ui/core'
 const MUI_LINK = '@material-ui/core/Link'
-const CORE_COMPONENTS = '@backstage/core-components'
+
+/** Match the core-components package root, not incidental path substrings. */
+const CORE_COMPONENTS_PATH_RE = /(?:^|[\\/])packages[\\/]core-components(?:[\\/]|$)/
 
 /** Props that need TODO markers because their semantics don't map mechanically. */
 const TODO_PROPS = new Set(['component', 'to'])
@@ -74,6 +76,26 @@ function getImportedName(spec: SgNode<TSX>): string | null {
   return identifiers[0]?.text() ?? null
 }
 
+function getLocalImportNames(rootNode: SgNode<TSX>): Set<string> {
+  const names = new Set<string>()
+  for (const imp of rootNode.findAll({ rule: { kind: 'import_statement' } })) {
+    const defaultName = getDefaultImportName(imp)
+    if (defaultName) {
+      names.add(defaultName)
+    }
+    for (const spec of imp.findAll({ rule: { kind: 'import_specifier' } })) {
+      const identifiers = spec.findAll({
+        rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
+      })
+      const localNameNode = identifiers[1] ?? identifiers[0]
+      if (localNameNode) {
+        names.add(localNameNode.text())
+      }
+    }
+  }
+  return names
+}
+
 function getPrunedBarrelImportText(imp: SgNode<TSX>, namesToRemove: string[], source: string): string {
   const remainingSpecs = imp.findAll({ rule: { kind: 'import_specifier' } }).filter((spec) => {
     const importedName = getImportedName(spec)
@@ -92,15 +114,6 @@ function getPrunedBarrelImportText(imp: SgNode<TSX>, namesToRemove: string[], so
   return isMultiline
     ? `import ${typeKw}{\n  ${specTexts.join(',\n  ')},\n} from '${source}';`
     : `import ${typeKw}{ ${specTexts.join(', ')} } from '${source}';`
-}
-
-function fileImportsCoreComponentsLink(rootNode: SgNode<TSX>): boolean {
-  for (const imp of findImportStatementsFrom(rootNode, CORE_COMPONENTS)) {
-    if (getNamedImportLocalName(imp, 'Link')) {
-      return true
-    }
-  }
-  return false
 }
 
 function collectMuiLinkImports(rootNode: SgNode<TSX>): {
@@ -133,17 +146,38 @@ function collectMuiLinkImports(rootNode: SgNode<TSX>): {
   return { localName, importNodesToRemove, importSpecifiersToRemove }
 }
 
+function resolveBuiLinkName(rootNode: SgNode<TSX>, muiLocalName: string): string {
+  for (const imp of findImportStatementsFrom(rootNode, BUI_SOURCE)) {
+    const existing = getNamedImportLocalName(imp, 'Link')
+    if (existing) {
+      return existing
+    }
+  }
+
+  // MUI local name will be removed; ignore it when checking for `Link` collisions
+  // (e.g. `@backstage/core-components` Link or `@backstage/core-components/Link`).
+  const bound = getLocalImportNames(rootNode)
+  for (const name of bound) {
+    if (name === 'Link' && name !== muiLocalName) {
+      return 'BuiLink'
+    }
+  }
+  return 'Link'
+}
+
 function addBuiImport(
   rootNode: SgNode<TSX>,
+  buiLocalName: string,
   importNodesToRemove: SgNode<TSX>[],
   importSpecifiersToRemove: Map<SgNode<TSX>, { source: string; names: string[] }>,
   edits: Edit[],
   handledBarrelIds: Set<number>,
   replacedDeepImportIds: Set<number>,
 ): void {
+  const importSpec = buiLocalName === 'Link' ? 'Link' : 'Link as BuiLink'
+  const buiImport = `import { ${importSpec} } from '${BUI_SOURCE}';`
   const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
   const existingImport = existingImports[0] ?? null
-  const buiImport = `import { Link } from '${BUI_SOURCE}';`
 
   if (existingImport) {
     if (getNamedImportLocalName(existingImport, 'Link')) {
@@ -153,7 +187,7 @@ function addBuiImport(
     if (namedImports) {
       const specifiers = existingImport.findAll({ rule: { kind: 'import_specifier' } })
       const existingTexts = specifiers.map((spec) => spec.text())
-      existingTexts.push('Link')
+      existingTexts.push(importSpec)
       existingTexts.sort()
       edits.push(namedImports.replace(`{ ${existingTexts.join(', ')} }`))
       migrationMetric.increment({ action: 'import-merged' })
@@ -161,15 +195,11 @@ function addBuiImport(
     return
   }
 
-  const skipIds = new Set([
-    ...importNodesToRemove.map((imp) => imp.id()),
-    ...[...importSpecifiersToRemove.keys()].map((imp) => imp.id()),
-  ])
-  const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
-  const anchorImport = [...allImports].reverse().find((imp) => !skipIds.has(imp.id())) ?? null
-
-  if (anchorImport) {
-    edits.push(anchorImport.replace(`${anchorImport.text()}\n${buiImport}`))
+  // Prefer in-place replacement of a deep MUI Link import to avoid leftover blank lines.
+  const [deep] = importNodesToRemove
+  if (deep) {
+    edits.push(deep.replace(buiImport))
+    replacedDeepImportIds.add(deep.id())
     migrationMetric.increment({ action: 'import-added' })
     return
   }
@@ -185,10 +215,12 @@ function addBuiImport(
     return
   }
 
-  const [deep] = importNodesToRemove
-  if (deep) {
-    edits.push(deep.replace(buiImport))
-    replacedDeepImportIds.add(deep.id())
+  const skipIds = new Set([...importSpecifiersToRemove.keys()].map((imp) => imp.id()))
+  const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
+  const anchorImport = [...allImports].reverse().find((imp) => !skipIds.has(imp.id())) ?? null
+
+  if (anchorImport) {
+    edits.push(anchorImport.replace(`${anchorImport.text()}\n${buiImport}`))
     migrationMetric.increment({ action: 'import-added' })
   }
 }
@@ -224,24 +256,27 @@ function hasProp(opening: SgNode<TSX>, propName: string): boolean {
   )
 }
 
-function isBareLookingLink(element: SgNode<TSX>): boolean {
-  const parent = element.parent()
-  if (!parent) {
-    return true
+function getPropStringValue(opening: SgNode<TSX>, propName: string): string | null {
+  const attr = opening.find({
+    rule: {
+      kind: 'jsx_attribute',
+      has: {
+        kind: 'property_identifier',
+        regex: `^${escapeRegex(propName)}$`,
+      },
+    },
+  })
+  if (!attr) {
+    return null
   }
-
-  for (const sibling of parent.children()) {
-    if (sibling.id() === element.id()) {
-      continue
-    }
-    if (sibling.kind() === 'jsx_text' && sibling.text().trim().length > 0) {
-      return false
-    }
+  const str = attr.find({ rule: { kind: 'string' } })
+  if (!str) {
+    return null
   }
-  return true
+  return str.text().slice(1, -1)
 }
 
-function buildBuiLink(element: SgNode<TSX>, opening: SgNode<TSX>): string {
+function buildBuiLink(element: SgNode<TSX>, opening: SgNode<TSX>, buiLocalName: string): string {
   const attrs: string[] = []
   for (const child of opening.children()) {
     if (child.kind() === 'jsx_attribute') {
@@ -258,20 +293,23 @@ function buildBuiLink(element: SgNode<TSX>, opening: SgNode<TSX>): string {
     }
   }
 
-  if (isBareLookingLink(element) && !attrs.some((attr) => attr.startsWith('standalone'))) {
+  // Only emit standalone when MUI explicitly opted out of underline — avoid over-applying
+  // to sole children of layout containers (div/li/fragment).
+  if (getPropStringValue(opening, 'underline') === 'none' && !attrs.some((attr) => attr.startsWith('standalone'))) {
     attrs.push('standalone')
   }
 
   const propsStr = attrs.length > 0 ? ` ${attrs.join(' ')}` : ''
   if (element.is('jsx_self_closing_element')) {
-    return `<Link${propsStr} />`
+    return `<${buiLocalName}${propsStr} />`
   }
-  return `<Link${propsStr}>${getChildContent(element)}</Link>`
+  return `<${buiLocalName}${propsStr}>${getChildContent(element)}</${buiLocalName}>`
 }
 
 function transformLinkElements(
   rootNode: SgNode<TSX>,
   localName: string,
+  buiLocalName: string,
   edits: Edit[],
 ): { migrated: boolean; preserveImport: boolean } {
   let migrated = false
@@ -314,7 +352,7 @@ function transformLinkElements(
       continue
     }
 
-    edits.push(el.replace(buildBuiLink(el, opening)))
+    edits.push(el.replace(buildBuiLink(el, opening, buiLocalName)))
     migrated = true
     migrationMetric.increment({ action: 'link-migrated' })
   }
@@ -326,13 +364,8 @@ const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root()
   const filename = root.filename()
 
-  if (filename.includes('packages/core-components')) {
+  if (CORE_COMPONENTS_PATH_RE.test(filename)) {
     migrationMetric.increment({ action: 'skipped', reason: 'core-components-path' })
-    return null
-  }
-
-  if (fileImportsCoreComponentsLink(rootNode)) {
-    migrationMetric.increment({ action: 'skipped', reason: 'core-components-import' })
     return null
   }
 
@@ -341,8 +374,9 @@ const transform: Codemod<TSX> = async (root) => {
     return null
   }
 
+  const buiLocalName = resolveBuiLinkName(rootNode, localName)
   const edits: Edit[] = []
-  const { migrated, preserveImport } = transformLinkElements(rootNode, localName, edits)
+  const { migrated, preserveImport } = transformLinkElements(rootNode, localName, buiLocalName, edits)
   if (!migrated && !preserveImport) {
     return null
   }
@@ -353,6 +387,7 @@ const transform: Codemod<TSX> = async (root) => {
   if (migrated) {
     addBuiImport(
       rootNode,
+      buiLocalName,
       importNodesToRemove,
       importSpecifiersToRemove,
       edits,

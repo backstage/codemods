@@ -6,12 +6,13 @@ Converts common MUI layout primitives (Box / Paper / Grid) toward BUI layout.
 
 - Box flex-container happy paths
 - Simple Grid boolean / item patterns
-- Paper heuristic: bare → `Box bg="neutral"`; card-like → `Card` (never `Surface`)
+- Paper heuristic: bare → `Box bg="neutral"` (+ verify TODO for dropped default elevation); card-like → `Card` (never `Surface`)
 
 ## TODOs / won't-do
 
 - `box-component-todo`, `grid-todo`, `paper-elevation-todo`
-- Elevation / ambiguous Paper left with `TODO(backstage-codemod)`
+- Explicit `elevation` / `variant` / ambiguous Paper left with `TODO(backstage-codemod)`
+- Bare Paper without `elevation` still migrates to `Box`, but emits a default-elevation verify TODO (MUI default is `elevation={1}`)
 - Full Grid system / responsive matrix rewrites
 
 ## Test

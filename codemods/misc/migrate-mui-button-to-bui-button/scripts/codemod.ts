@@ -373,13 +373,16 @@ function transformButtonElements(
     // Build new props
     const newProps: string[] = []
 
-    // Map variant (outlined → secondary is intentional and silent).
+    // Map variant (outlined → secondary is intentional; tracked via metric + recipe docs).
     // MUI default is text; BUI default is primary — emit tertiary when omitted.
     const variantValue = getPropStringValue(opening, 'variant')
     if (variantValue) {
       const buiVariant = VARIANT_MAP[variantValue]
       if (buiVariant) {
         newProps.push(`variant="${buiVariant}"`)
+        if (variantValue === 'outlined') {
+          migrationMetric.increment({ action: 'outlined-to-secondary' })
+        }
       } else {
         // Unknown static variant — keep as-is with TODO
         preserveImport = true

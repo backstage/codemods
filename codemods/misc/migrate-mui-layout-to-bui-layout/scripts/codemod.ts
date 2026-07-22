@@ -540,17 +540,16 @@ function transformPaperElement(el: SgNode<TSX>, opening: SgNode<TSX>, edits: Edi
   }
 
   // Bare Paper → Box with neutral background (Surface was removed from BUI).
+  // MUI Paper defaults to elevation={1}; BUI Box has no elevation chrome — leave a verify TODO.
   const newProps = [`bg="neutral"`, ...preservedProps]
   const propsStr = ` ${newProps.join(' ')}`
+  const boxElement = isSelfClosing ? `<Box${propsStr} />` : `<Box${propsStr}>${getChildContent(el)}</Box>`
+  const paperElevationTodo =
+    '{/* TODO(backstage-codemod): verify Paper elevation/visual chrome (MUI default elevation dropped) */}'
 
-  if (isSelfClosing) {
-    edits.push(el.replace(`<Box${propsStr} />`))
-  } else {
-    const children = getChildContent(el)
-    edits.push(el.replace(`<Box${propsStr}>${children}</Box>`))
-  }
-
+  edits.push(el.replace(withTodoComment(paperElevationTodo, boxElement)))
   migrationMetric.increment({ action: 'paper-to-box' })
+  migrationMetric.increment({ action: 'todo-inserted', reason: 'paper-default-elevation' })
   return 'Box'
 }
 

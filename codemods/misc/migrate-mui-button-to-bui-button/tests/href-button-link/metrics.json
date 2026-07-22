@@ -21,6 +21,12 @@
     },
     {
       "cardinality": {
+        "action": "outlined-to-secondary"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
         "action": "prop-renamed",
         "from": "startIcon",
         "to": "iconStart"

@@ -24,6 +24,12 @@
         "action": "onClick-to-onPress"
       },
       "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "outlined-to-secondary"
+      },
+      "count": 1
     }
   ]
 }
