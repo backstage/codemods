@@ -27,9 +27,5 @@
     "oxlint-tsgolint": "^7.0.2001",
     "typescript": "^7.0.2"
   },
-  "resolutions": {
-    "js-yaml@npm:^3.6.1": "npm:3.15.0",
-    "js-yaml@npm:^4.1.1": "npm:4.3.0"
-  },
   "packageManager": "yarn@4.17.1"
 }
