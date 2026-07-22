@@ -42,14 +42,19 @@ Older versions are available in the [`codemods/`](./codemods) directory.
 
 ### misc
 
-| Codemod                                                                                        | Description                                                                                       |
-| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| [migrate-mui-bootstrap-to-bui](./codemods/misc/migrate-mui-bootstrap-to-bui)                   | MUI 4 to BUI: Bootstrap app dependencies and root CSS                                             |
-| [migrate-mui-icons-to-remix-icons](./codemods/misc/migrate-mui-icons-to-remix-icons)           | MUI 4 to BUI: Replace MUI icons with Remix icons                                                  |
-| [migrate-mui-layout-to-bui-layout](./codemods/misc/migrate-mui-layout-to-bui-layout)           | MUI 4 to BUI: Convert common MUI layout primitives to BUI layout                                  |
-| [migrate-mui-styles-to-bui-css-modules](./codemods/misc/migrate-mui-styles-to-bui-css-modules) | MUI 4 to BUI: Migrate makeStyles usage to BUI CSS modules                                         |
-| [mui4-to-bui-migration-recipe](./codemods/misc/mui4-to-bui-migration-recipe)                   | MUI 4 to BUI: Migration recipe that runs every MUI→BUI codemod from the registry in a safe order. |
-| [remove-mui-dependencies](./codemods/misc/remove-mui-dependencies)                             | MUI 4 to BUI: Remove unused @material-ui/\* dependencies from package.json                        |
+| Codemod                                                                                          | Description                                                                                                           |
+| ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| [migrate-mui-alert-to-bui-alert](./codemods/misc/migrate-mui-alert-to-bui-alert)                 | MUI 4 to BUI: Replace MUI Alert with BUI Alert                                                                        |
+| [migrate-mui-bootstrap-to-bui](./codemods/misc/migrate-mui-bootstrap-to-bui)                     | MUI 4 to BUI: Bootstrap app dependencies and root CSS                                                                 |
+| [migrate-mui-button-to-bui-button](./codemods/misc/migrate-mui-button-to-bui-button)             | MUI 4 to BUI: Replace MUI Button with BUI Button                                                                      |
+| [migrate-mui-icon-button-to-button-icon](./codemods/misc/migrate-mui-icon-button-to-button-icon) | MUI 4 to BUI: Replace IconButton with ButtonIcon. Package name omits -bui- because ButtonIcon is the BUI export name. |
+| [migrate-mui-icons-to-remix-icons](./codemods/misc/migrate-mui-icons-to-remix-icons)             | MUI 4 to BUI: Replace MUI icons with Remix icons                                                                      |
+| [migrate-mui-layout-to-bui-layout](./codemods/misc/migrate-mui-layout-to-bui-layout)             | MUI 4 to BUI: Convert common MUI layout primitives to BUI layout                                                      |
+| [migrate-mui-styles-to-bui-css-modules](./codemods/misc/migrate-mui-styles-to-bui-css-modules)   | MUI 4 to BUI: Migrate makeStyles usage to BUI CSS modules                                                             |
+| [migrate-mui-tooltip-to-bui-tooltip](./codemods/misc/migrate-mui-tooltip-to-bui-tooltip)         | MUI 4 to BUI: Replace Tooltip with TooltipTrigger                                                                     |
+| [migrate-mui-typography-to-text](./codemods/misc/migrate-mui-typography-to-text)                 | MUI 4 to BUI: Replace Typography with Text. Package name omits -bui- because Text is the BUI export name.             |
+| [mui4-to-bui-migration-recipe](./codemods/misc/mui4-to-bui-migration-recipe)                     | MUI 4 to BUI: Migration recipe that runs every MUI→BUI codemod from the registry in a safe order.                     |
+| [remove-mui-dependencies](./codemods/misc/remove-mui-dependencies)                               | MUI 4 to BUI: Remove unused @material-ui/\* dependencies from package.json                                            |
 
 <!-- CODEMODS_END -->
 
