@@ -42,8 +42,6 @@ Older versions are available in the [`codemods/`](./codemods) directory.
 
 ### misc
 
-Run the [`mui4-to-bui-migration-recipe`](./codemods/misc/mui4-to-bui-migration-recipe) for the full MUI→BUI family in a safe order (bootstrap → transforms → cleanup), or run any individual codemod on its own.
-
 | Codemod                                                                                        | Description                                                                                       |
 | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | [migrate-mui-bootstrap-to-bui](./codemods/misc/migrate-mui-bootstrap-to-bui)                   | MUI 4 to BUI: Bootstrap app dependencies and root CSS                                             |
