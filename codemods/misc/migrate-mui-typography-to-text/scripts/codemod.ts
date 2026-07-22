@@ -10,8 +10,8 @@ const VARIANT_MAP: Record<string, string> = {
   h2: 'title-medium',
   h3: 'title-small',
   h4: 'title-x-small',
-  h5: 'body-small',
-  h6: 'body-x-small',
+  h5: 'title-x-small',
+  h6: 'title-small',
   subtitle1: 'title-x-small',
   subtitle2: 'body-medium',
   body1: 'body-medium',
@@ -19,6 +19,23 @@ const VARIANT_MAP: Record<string, string> = {
   caption: 'body-x-small',
   overline: 'body-x-small',
   button: 'body-medium',
+}
+
+/** MUI default rendered element for each variant (when `component` is omitted). */
+const AS_FROM_VARIANT: Record<string, string> = {
+  h1: 'h1',
+  h2: 'h2',
+  h3: 'h3',
+  h4: 'h4',
+  h5: 'h5',
+  h6: 'h6',
+  subtitle1: 'h6',
+  subtitle2: 'h6',
+  body1: 'p',
+  body2: 'p',
+  caption: 'span',
+  overline: 'span',
+  button: 'span',
 }
 
 // MUI color prop → BUI Text color prop
@@ -276,12 +293,21 @@ function getElementName(opening: SgNode<TSX>): string | null {
   return null
 }
 
+function resolveAsFromVariant(variantValue: string | null): string | null {
+  if (variantValue) {
+    return AS_FROM_VARIANT[variantValue] ?? null
+  }
+  // MUI Typography default variant is body1 → <p>
+  return 'p'
+}
+
 function buildPartialTextProps(
   opening: SgNode<TSX>,
   buiVariant: string | null,
   buiColor: string | null,
   componentValue: string | null,
   componentDynamic: boolean,
+  asFromVariant: string | null,
 ): string[] {
   const newProps: string[] = []
   if (buiVariant) {
@@ -294,6 +320,9 @@ function buildPartialTextProps(
     newProps.push(`as="${componentValue}"`)
   } else if (componentDynamic && componentValue) {
     newProps.push(`as={${componentValue.slice(1, -1)}}`)
+  } else if (asFromVariant) {
+    newProps.push(`as="${asFromVariant}"`)
+    migrationMetric.increment({ action: 'as-from-variant', as: asFromVariant })
   }
 
   const handledProps = new Set(['variant', 'color', 'component', 'gutterBottom'])
@@ -359,8 +388,11 @@ function transformTypographyElements(rootNode: SgNode<TSX>, localNames: Map<stri
     const { value: componentValue, isDynamic: componentDynamic } = getAttrStringValue(opening, 'component')
     const { attrNode: gutterBottomAttr } = getAttrStringValue(opening, 'gutterBottom')
 
+    const asFromVariant =
+      !componentValue && !componentDynamic && !variantDynamic ? resolveAsFromVariant(variantValue) : null
+
     if (variantDynamic || colorDynamic) {
-      const partialProps = buildPartialTextProps(opening, null, null, componentValue, componentDynamic)
+      const partialProps = buildPartialTextProps(opening, null, null, componentValue, componentDynamic, asFromVariant)
       const textElement = buildTextElement(el, isSelfClosing, partialProps)
       edits.push(
         el.replace(withTodoComment('{/* TODO(backstage-codemod): verify Text variant manually */}', textElement)),
@@ -394,7 +426,14 @@ function transformTypographyElements(rootNode: SgNode<TSX>, localNames: Map<stri
     }
 
     if (needsTodo) {
-      const partialProps = buildPartialTextProps(opening, buiVariant, buiColor, componentValue, componentDynamic)
+      const partialProps = buildPartialTextProps(
+        opening,
+        buiVariant,
+        buiColor,
+        componentValue,
+        componentDynamic,
+        asFromVariant,
+      )
       const textElement = buildTextElement(el, isSelfClosing, partialProps)
       edits.push(
         el.replace(withTodoComment('{/* TODO(backstage-codemod): verify Text variant manually */}', textElement)),
@@ -409,7 +448,14 @@ function transformTypographyElements(rootNode: SgNode<TSX>, localNames: Map<stri
     }
 
     // Build new props
-    const newProps = buildPartialTextProps(opening, buiVariant, buiColor, componentValue, componentDynamic)
+    const newProps = buildPartialTextProps(
+      opening,
+      buiVariant,
+      buiColor,
+      componentValue,
+      componentDynamic,
+      asFromVariant,
+    )
     const propsStr = newProps.length > 0 ? ` ${newProps.join(' ')}` : ''
     const gutterBottomTodo = gutterBottomAttr
       ? '{/* TODO(backstage-codemod): verify Text variant manually (gutterBottom) */}'

@@ -3,13 +3,20 @@
     {
       "cardinality": {
         "action": "as-from-variant",
-        "as": "span"
+        "as": "h5"
       },
       "count": 1
     },
     {
       "cardinality": {
-        "action": "import-merged"
+        "action": "as-from-variant",
+        "as": "h6"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-added"
       },
       "count": 1
     },
@@ -24,7 +31,7 @@
         "action": "typography-migrated",
         "component": "Typography"
       },
-      "count": 1
+      "count": 2
     }
   ]
 }

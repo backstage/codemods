@@ -1,5 +1,5 @@
 import { Text } from '@backstage/ui';
 
 const MyComponent = () => (
-  <Text variant="body-small" color="secondary">Details</Text>
+  <Text variant="body-small" color="secondary" as="p">Details</Text>
 );

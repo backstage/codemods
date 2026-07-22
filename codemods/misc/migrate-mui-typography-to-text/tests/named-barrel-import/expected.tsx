@@ -3,7 +3,7 @@ import { Text } from '@backstage/ui';
 
 const MyComponent = () => (
   <>
-    <Text variant="body-medium">Hello</Text>
+    <Text variant="body-medium" as="p">Hello</Text>
     <Button variant="contained">Click</Button>
   </>
 );

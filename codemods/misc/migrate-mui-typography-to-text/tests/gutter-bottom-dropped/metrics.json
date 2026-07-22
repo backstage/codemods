@@ -2,6 +2,13 @@
   "migrate-mui-typography-to-text": [
     {
       "cardinality": {
+        "action": "as-from-variant",
+        "as": "h4"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
         "action": "gutterBottom-dropped"
       },
       "count": 1

@@ -5,25 +5,27 @@ Migrates MUI `Typography` to Backstage UI `Text` (valid TextVariants only).
 ## Covers
 
 - Body / heading variants mapped to BUI Text variants
+- Emits `as` from the MUI variant default element when `component` is omitted (`h5`→`as="h5"`, `body1`→`as="p"`, …)
 - Named barrel imports; merge into existing `@backstage/ui`
 - Drops `gutterBottom` where unsupported
 
-## Intentional heading demotion
+## Variant map
 
-BUI has fewer title steps than MUI headings. Smaller MUI headings intentionally map into body scale:
+| MUI         | BUI Text        | Default `as` |
+| ----------- | --------------- | ------------ |
+| `h1`        | `title-large`   | `h1`         |
+| `h2`        | `title-medium`  | `h2`         |
+| `h3`        | `title-small`   | `h3`         |
+| `h4`        | `title-x-small` | `h4`         |
+| `h5`        | `title-x-small` | `h5`         |
+| `h6`        | `title-small`   | `h6`         |
+| `subtitle1` | `title-x-small` | `h6`         |
+| `subtitle2` | `body-medium`   | `h6`         |
+| `body1`     | `body-medium`   | `p`          |
+| `body2`     | `body-small`    | `p`          |
+| `caption`   | `body-x-small`  | `span`       |
 
-| MUI         | BUI Text        |
-| ----------- | --------------- |
-| `h1`        | `title-large`   |
-| `h2`        | `title-medium`  |
-| `h3`        | `title-small`   |
-| `h4`        | `title-x-small` |
-| `h5`        | `body-small`    |
-| `h6`        | `body-x-small`  |
-| `subtitle1` | `title-x-small` |
-| `subtitle2` | `body-medium`   |
-
-Review visual hierarchy after apply — especially `h5` / `h6` demotions.
+Explicit `component` still wins and becomes `as`.
 
 ## TODOs / won't-do
 
