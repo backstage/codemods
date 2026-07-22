@@ -487,7 +487,8 @@ const transform: Codemod<TSX> = async (root) => {
     addTextToBuiImport(rootNode, importNodesToRemove, edits)
   }
 
-  return edits.length > 0 ? rootNode.commitEdits(edits) : null
+  const result = await Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
+  return result
 }
 
 export default transform

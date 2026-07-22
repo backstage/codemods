@@ -415,7 +415,7 @@ function transformTooltipElements(rootNode: SgNode<TSX>, tooltipLocalName: strin
 
     const placementValue = getPropStringValue(opening, 'placement')
     const placementDynamic = isPropDynamic(opening, 'placement')
-    const needsPlacementTodo = Boolean(placementValue || placementDynamic)
+    const needsPlacementTodo = Boolean(placementValue ?? placementDynamic)
     if (needsPlacementTodo) {
       migrationMetric.increment({ action: 'placement-dropped', value: placementValue ?? 'dynamic' })
     }
@@ -454,7 +454,8 @@ const transform: Codemod<TSX> = async (root) => {
   const migrated = transformTooltipElements(rootNode, tooltipLocalName, edits)
 
   if (!migrated) {
-    return edits.length > 0 ? rootNode.commitEdits(edits) : null
+    const early = await Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
+    return early
   }
 
   const buiNames = ['Tooltip', 'TooltipTrigger']
@@ -472,7 +473,8 @@ const transform: Codemod<TSX> = async (root) => {
     pruneBarrelImportSpecifiers(imp, namesToRemove, edits)
   }
 
-  return edits.length > 0 ? rootNode.commitEdits(edits) : null
+  const result = await Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
+  return result
 }
 
 export default transform
