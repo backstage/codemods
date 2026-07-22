@@ -18,6 +18,12 @@
         "action": "import-removed"
       },
       "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "onClick-to-onPress"
+      },
+      "count": 1
     }
   ]
 }

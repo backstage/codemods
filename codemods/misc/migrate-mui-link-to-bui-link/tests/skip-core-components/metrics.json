@@ -1,0 +1,11 @@
+{
+  "migrate-mui-link-to-bui-link": [
+    {
+      "cardinality": {
+        "action": "skipped",
+        "reason": "core-components-import"
+      },
+      "count": 1
+    }
+  ]
+}

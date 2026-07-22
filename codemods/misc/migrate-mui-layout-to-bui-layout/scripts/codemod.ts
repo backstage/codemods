@@ -465,18 +465,40 @@ function transformBoxElement(el: SgNode<TSX>, opening: SgNode<TSX>, edits: Edit[
   return 'Flex'
 }
 
-function transformPaperElement(el: SgNode<TSX>, opening: SgNode<TSX>, edits: Edit[]): string | null {
-  for (const prop of PAPER_TODO_PROPS) {
-    if (hasProp(opening, prop)) {
-      edits.push(el.replace(withTodoComment(LAYOUT_TODO_COMMENT, el.text())))
-      migrationMetric.increment({ action: 'todo-inserted', reason: `paper-${prop}` })
-      return null
+/** Card-structure child tags that indicate Paper is card-like (MUI or post-Card-codemod BUI). */
+const CARD_LIKE_CHILD_NAMES = new Set([
+  'CardHeader',
+  'CardContent',
+  'CardActions',
+  'CardBody',
+  'CardFooter',
+  'CardMedia',
+  'CardActionArea',
+])
+
+function getDirectJsxChildElements(el: SgNode<TSX>): SgNode<TSX>[] {
+  return el.children().filter((child) => {
+    const kind = child.kind()
+    return kind === 'jsx_element' || kind === 'jsx_self_closing_element'
+  })
+}
+
+function isCardLikePaper(el: SgNode<TSX>): boolean {
+  for (const child of getDirectJsxChildElements(el)) {
+    const opening = child.is('jsx_self_closing_element') ? child : child.child(0)
+    if (!opening) {
+      continue
+    }
+    const name = getElementName(opening)
+    if (name && CARD_LIKE_CHILD_NAMES.has(name)) {
+      return true
     }
   }
+  return false
+}
 
-  const isSelfClosing = el.is('jsx_self_closing_element')
+function collectPreservedPaperProps(opening: SgNode<TSX>): string[] {
   const newProps: string[] = []
-
   const allAttrs = opening.findAll({ rule: { kind: 'jsx_attribute' } })
   for (const attr of allAttrs) {
     const propIdent = attr.find({ rule: { kind: 'property_identifier' } })
@@ -493,17 +515,43 @@ function transformPaperElement(el: SgNode<TSX>, opening: SgNode<TSX>, edits: Edi
     }
   }
 
-  const propsStr = newProps.length > 0 ? ` ${newProps.join(' ')}` : ''
+  return newProps
+}
 
-  if (isSelfClosing) {
-    edits.push(el.replace(`<Surface${propsStr} />`))
-  } else {
-    const children = getChildContent(el)
-    edits.push(el.replace(`<Surface${propsStr}>${children}</Surface>`))
+function transformPaperElement(el: SgNode<TSX>, opening: SgNode<TSX>, edits: Edit[]): string | null {
+  for (const prop of PAPER_TODO_PROPS) {
+    if (hasProp(opening, prop)) {
+      edits.push(el.replace(withTodoComment(LAYOUT_TODO_COMMENT, el.text())))
+      migrationMetric.increment({ action: 'todo-inserted', reason: `paper-${prop}` })
+      return null
+    }
   }
 
-  migrationMetric.increment({ action: 'paper-to-surface' })
-  return 'Surface'
+  const isSelfClosing = el.is('jsx_self_closing_element')
+  const preservedProps = collectPreservedPaperProps(opening)
+  const isCardLike = !isSelfClosing && isCardLikePaper(el)
+
+  if (isCardLike) {
+    const propsStr = preservedProps.length > 0 ? ` ${preservedProps.join(' ')}` : ''
+    const children = getChildContent(el)
+    edits.push(el.replace(`<Card${propsStr}>${children}</Card>`))
+    migrationMetric.increment({ action: 'paper-to-card' })
+    return 'Card'
+  }
+
+  // Bare Paper → Box with neutral background (Surface was removed from BUI).
+  const newProps = [`bg="neutral"`, ...preservedProps]
+  const propsStr = ` ${newProps.join(' ')}`
+
+  if (isSelfClosing) {
+    edits.push(el.replace(`<Box${propsStr} />`))
+  } else {
+    const children = getChildContent(el)
+    edits.push(el.replace(`<Box${propsStr}>${children}</Box>`))
+  }
+
+  migrationMetric.increment({ action: 'paper-to-box' })
+  return 'Box'
 }
 
 const GRID_BREAKPOINTS = ['xs', 'sm', 'md', 'lg', 'xl'] as const

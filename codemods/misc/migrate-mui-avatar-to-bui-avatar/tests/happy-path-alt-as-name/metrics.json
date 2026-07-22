@@ -1,0 +1,23 @@
+{
+  "migrate-mui-avatar-to-bui-avatar": [
+    {
+      "cardinality": {
+        "action": "avatar-migrated",
+        "droppedStyle": "false"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-added"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-removed"
+      },
+      "count": 1
+    }
+  ]
+}

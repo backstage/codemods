@@ -1,0 +1,30 @@
+{
+  "migrate-mui-switch-to-bui-switch": [
+    {
+      "cardinality": {
+        "action": "import-merged"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-removed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "prop-renamed",
+        "from": "defaultChecked",
+        "to": "defaultSelected"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "switch-migrated"
+      },
+      "count": 1
+    }
+  ]
+}

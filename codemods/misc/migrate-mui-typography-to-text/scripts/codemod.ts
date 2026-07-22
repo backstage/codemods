@@ -7,18 +7,18 @@ const migrationMetric = useMetricAtom('migrate-mui-typography-to-text')
 // MUI Typography variant → BUI Text variant
 const VARIANT_MAP: Record<string, string> = {
   h1: 'title-large',
-  h2: 'title-small',
-  h3: 'subtitle',
-  h4: 'body-small',
-  h5: 'caption',
-  h6: 'caption',
-  subtitle1: 'subtitle',
-  subtitle2: 'subtitle',
-  body1: 'body',
+  h2: 'title-medium',
+  h3: 'title-small',
+  h4: 'title-x-small',
+  h5: 'body-small',
+  h6: 'body-x-small',
+  subtitle1: 'title-x-small',
+  subtitle2: 'body-medium',
+  body1: 'body-medium',
   body2: 'body-small',
-  caption: 'caption',
-  overline: 'caption',
-  button: 'body',
+  caption: 'body-x-small',
+  overline: 'body-x-small',
+  button: 'body-medium',
 }
 
 // MUI color prop → BUI Text color prop

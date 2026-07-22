@@ -13,16 +13,12 @@ const VARIANT_MAP: Record<string, string> = {
 const BUI_SOURCE = '@backstage/ui'
 
 /** Props that need TODO markers because their semantics don't map mechanically. */
-const TODO_PROPS = new Set([
-  'startIcon',
-  'endIcon',
-  'href',
-  'component',
-  'fullWidth',
-  'disableElevation',
-  'disableRipple',
-  'disableFocusRipple',
-])
+const TODO_PROPS = new Set(['component', 'fullWidth', 'disableElevation', 'disableRipple', 'disableFocusRipple'])
+
+const ICON_PROP_RENAMES: Record<string, string> = {
+  startIcon: 'iconStart',
+  endIcon: 'iconEnd',
+}
 
 function escapeRegex(str: string): string {
   return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -124,46 +120,65 @@ function pruneBarrelImportSpecifiers(imp: SgNode<TSX>, namesToRemove: string[], 
   migrationMetric.increment({ action: 'import-removed' })
 }
 
-function addButtonToBuiImport(rootNode: SgNode<TSX>, importNodesToRemove: SgNode<TSX>[], edits: Edit[]): boolean {
+function addBuiImport(
+  rootNode: SgNode<TSX>,
+  names: string[],
+  importNodesToRemove: SgNode<TSX>[],
+  edits: Edit[],
+): boolean {
   const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
   const existingImport = existingImports[0] ?? null
+  const sortedNames = [...names].sort()
 
   if (existingImport) {
-    const specifiers = existingImport.findAll({ rule: { kind: 'import_specifier' } })
-    const hasButton = specifiers.some((spec) => getImportedName(spec) === 'Button')
-    if (!hasButton) {
-      const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
-      if (namedImports) {
-        const names = specifiers.map((spec) => spec.text())
-        names.push('Button')
-        names.sort()
-        edits.push(namedImports.replace(`{ ${names.join(', ')} }`))
-        migrationMetric.increment({ action: 'import-merged' })
-      } else {
-        edits.push(existingImport.replace(`${existingImport.text()}\nimport { Button } from '${BUI_SOURCE}';`))
-        migrationMetric.increment({ action: 'import-added' })
+    const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
+    if (namedImports) {
+      const specifiers = existingImport.findAll({ rule: { kind: 'import_specifier' } })
+      const existingImported = new Set<string>()
+      const existingTexts: string[] = []
+      for (const spec of specifiers) {
+        const imported = getImportedName(spec)
+        if (imported) {
+          existingImported.add(imported)
+        }
+        existingTexts.push(spec.text())
       }
+      for (const name of names) {
+        if (!existingImported.has(name)) {
+          existingTexts.push(name)
+          existingImported.add(name)
+        }
+      }
+      existingTexts.sort()
+      edits.push(namedImports.replace(`{ ${existingTexts.join(', ')} }`))
+      migrationMetric.increment({ action: 'import-merged' })
+    } else {
+      edits.push(
+        existingImport.replace(`${existingImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`),
+      )
+      migrationMetric.increment({ action: 'import-added' })
     }
     return false
   }
 
+  const buiImport = `import { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`
   const removableIds = new Set(importNodesToRemove.map((imp) => imp.id()))
   const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
   const anchorImport = [...allImports].reverse().find((imp) => !removableIds.has(imp.id())) ?? null
 
   if (anchorImport) {
-    edits.push(anchorImport.replace(`${anchorImport.text()}\nimport { Button } from '${BUI_SOURCE}';`))
+    edits.push(anchorImport.replace(`${anchorImport.text()}\n${buiImport}`))
   } else if (importNodesToRemove.length > 0) {
     const [importNode] = importNodesToRemove
     if (importNode) {
-      edits.push(importNode.replace(`import { Button } from '${BUI_SOURCE}';`))
+      edits.push(importNode.replace(buiImport))
       migrationMetric.increment({ action: 'import-added' })
       return true
     }
   } else if (allImports.length > 0) {
     const lastImport = allImports.at(-1)
     if (lastImport) {
-      edits.push(lastImport.replace(`${lastImport.text()}\nimport { Button } from '${BUI_SOURCE}';`))
+      edits.push(lastImport.replace(`${lastImport.text()}\n${buiImport}`))
     }
   }
 
@@ -226,6 +241,20 @@ function getPropStringValue(opening: SgNode<TSX>, propName: string): string | nu
   return null
 }
 
+function getPropRawValue(opening: SgNode<TSX>, propName: string): string | null {
+  const attr = getPropAttr(opening, propName)
+  if (!attr) {
+    return null
+  }
+  for (const child of attr.children()) {
+    const kind = child.kind()
+    if (kind === 'string' || kind === 'jsx_expression') {
+      return child.text()
+    }
+  }
+  return null
+}
+
 function isPropDynamic(opening: SgNode<TSX>, propName: string): boolean {
   const attr = getPropAttr(opening, propName)
   if (!attr) {
@@ -234,13 +263,43 @@ function isPropDynamic(opening: SgNode<TSX>, propName: string): boolean {
   return attr.find({ rule: { kind: 'jsx_expression' } }) !== null
 }
 
+function isSimpleOnClick(attr: SgNode<TSX>): boolean {
+  const expr = attr.find({ rule: { kind: 'jsx_expression' } })
+  if (!expr) {
+    return false
+  }
+  const children: SgNode<TSX>[] = []
+  for (const child of expr.children()) {
+    if (child.kind() !== '{' && child.kind() !== '}') {
+      children.push(child)
+    }
+  }
+  if (children.length !== 1) {
+    return false
+  }
+  const [onlyChild] = children
+  if (!onlyChild) {
+    return false
+  }
+  // Identifier handler: onClick={handleSave}
+  if (onlyChild.is('identifier')) {
+    return true
+  }
+  // Arrow/function that does not reference the event parameter
+  if (onlyChild.kind() === 'arrow_function' || onlyChild.kind() === 'function_expression') {
+    return !onlyChild.text().includes('event') && !/\(\s*e\s*[,)]/.test(onlyChild.text())
+  }
+  return false
+}
+
 function transformButtonElements(
   rootNode: SgNode<TSX>,
   buttonLocalName: string,
   edits: Edit[],
-): { preserveImport: boolean; migrated: boolean } {
+): { preserveImport: boolean; migrated: boolean; buiNames: Set<string> } {
   let preserveImport = false
   let migrated = false
+  const buiNames = new Set<string>()
   const jsxElements = rootNode.findAll({
     rule: {
       any: [{ kind: 'jsx_element' }, { kind: 'jsx_self_closing_element' }],
@@ -287,6 +346,13 @@ function transformButtonElements(
       todoReasons.push('dynamic-color')
     }
 
+    // Complex onClick that cannot be rewritten to onPress
+    const onClickAttr = getPropAttr(opening, 'onClick')
+    if (onClickAttr && !isSimpleOnClick(onClickAttr)) {
+      needsTodo = true
+      todoReasons.push('complex-onClick')
+    }
+
     if (needsTodo) {
       preserveImport = true
       edits.push(
@@ -301,10 +367,14 @@ function transformButtonElements(
       continue
     }
 
+    const hasHref = hasProp(opening, 'href')
+    const componentName = hasHref ? 'ButtonLink' : 'Button'
+
     // Build new props
     const newProps: string[] = []
 
-    // Map variant
+    // Map variant (outlined → secondary is intentional and silent).
+    // MUI default is text; BUI default is primary — emit tertiary when omitted.
     const variantValue = getPropStringValue(opening, 'variant')
     if (variantValue) {
       const buiVariant = VARIANT_MAP[variantValue]
@@ -324,6 +394,8 @@ function transformButtonElements(
         migrationMetric.increment({ action: 'todo-inserted', reason: 'unknown-variant' })
         continue
       }
+    } else if (!isPropDynamic(opening, 'variant')) {
+      newProps.push('variant="tertiary"')
     }
 
     // Map disabled → isDisabled
@@ -331,16 +403,31 @@ function transformButtonElements(
     if (disabledAttr) {
       const exprNode = disabledAttr.find({ rule: { kind: 'jsx_expression' } })
       if (exprNode) {
-        // disabled={expr} → isDisabled={expr}
         newProps.push(`isDisabled=${exprNode.text()}`)
       } else {
-        // Boolean shorthand: disabled → isDisabled
         newProps.push('isDisabled')
       }
     }
 
-    // Preserve all other safe props as-is (onClick, className, etc.)
-    const handledProps = new Set(['variant', 'disabled', 'color'])
+    const handledProps = new Set(['variant', 'disabled', 'color', 'onClick', 'startIcon', 'endIcon'])
+    if (onClickAttr) {
+      const raw = getPropRawValue(opening, 'onClick')
+      if (raw) {
+        newProps.push(`onPress=${raw}`)
+        migrationMetric.increment({ action: 'onClick-to-onPress' })
+      }
+    }
+
+    for (const [from, to] of Object.entries(ICON_PROP_RENAMES)) {
+      const raw = getPropRawValue(opening, from)
+      if (raw) {
+        newProps.push(`${to}=${raw}`)
+        handledProps.add(from)
+        migrationMetric.increment({ action: 'prop-renamed', from, to })
+      }
+    }
+
+    // Preserve remaining safe props (including href for ButtonLink)
     const allAttrs = opening.findAll({ rule: { kind: 'jsx_attribute' } })
     for (const attr of allAttrs) {
       const propIdent = attr.find({ rule: { kind: 'property_identifier' } })
@@ -365,22 +452,25 @@ function transformButtonElements(
     const propsStr = newProps.length > 0 ? ` ${newProps.join(' ')}` : ''
 
     if (isSelfClosing) {
-      edits.push(el.replace(`<Button${propsStr} />`))
+      edits.push(el.replace(`<${componentName}${propsStr} />`))
     } else {
-      // Preserve children via AST traversal
       const children = el
         .children()
         .filter((c) => c.kind() !== 'jsx_opening_element' && c.kind() !== 'jsx_closing_element')
         .map((c) => c.text())
         .join('')
-      edits.push(el.replace(`<Button${propsStr}>${children}</Button>`))
+      edits.push(el.replace(`<${componentName}${propsStr}>${children}</${componentName}>`))
     }
 
+    buiNames.add(componentName)
     migrated = true
-    migrationMetric.increment({ action: 'button-migrated', variant: variantValue ?? 'default' })
+    migrationMetric.increment({
+      action: hasHref ? 'button-link-migrated' : 'button-migrated',
+      variant: variantValue ?? 'default',
+    })
   }
 
-  return { preserveImport, migrated }
+  return { preserveImport, migrated, buiNames }
 }
 
 const transform: Codemod<TSX> = async (root) => {
@@ -393,11 +483,11 @@ const transform: Codemod<TSX> = async (root) => {
     return null
   }
 
-  const { preserveImport, migrated } = transformButtonElements(rootNode, buttonLocalName, edits)
+  const { preserveImport, migrated, buiNames } = transformButtonElements(rootNode, buttonLocalName, edits)
 
   let replacedImport = false
   if (migrated) {
-    replacedImport = addButtonToBuiImport(rootNode, importNodesToRemove, edits)
+    replacedImport = addBuiImport(rootNode, [...buiNames], importNodesToRemove, edits)
   }
 
   if (!preserveImport) {

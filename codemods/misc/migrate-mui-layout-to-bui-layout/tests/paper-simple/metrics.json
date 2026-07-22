@@ -14,7 +14,7 @@
     },
     {
       "cardinality": {
-        "action": "paper-to-surface"
+        "action": "paper-to-box"
       },
       "count": 1
     }

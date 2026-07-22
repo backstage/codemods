@@ -20,7 +20,8 @@
     },
     {
       "cardinality": {
-        "action": "textfield-migrated"
+        "action": "textfield-migrated",
+        "component": "TextField"
       },
       "count": 1
     }

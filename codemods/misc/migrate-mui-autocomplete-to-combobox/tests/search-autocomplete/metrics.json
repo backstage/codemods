@@ -1,0 +1,22 @@
+{
+  "migrate-mui-autocomplete-to-combobox": [
+    {
+      "cardinality": {
+        "action": "autocomplete-to-search"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-added"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-removed"
+      },
+      "count": 2
+    }
+  ]
+}

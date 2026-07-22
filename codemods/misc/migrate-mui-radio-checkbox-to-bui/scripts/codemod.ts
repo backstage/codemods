@@ -449,6 +449,114 @@ function isCheckboxFormGroup(element: SgNode<TSX>, localNames: Map<string, strin
   return hasCheckbox
 }
 
+function isInsideChoiceGroup(
+  element: SgNode<TSX>,
+  radioGroupLocal: string | null,
+  formGroupLocal: string | null,
+): boolean {
+  for (const ancestor of element.ancestors()) {
+    if (ancestor.kind() !== 'jsx_element') {
+      continue
+    }
+    const opening = ancestor.child(0)
+    if (!opening) {
+      continue
+    }
+    const ancestorName = getElementName(opening)
+    if (ancestorName && (ancestorName === radioGroupLocal || ancestorName === formGroupLocal)) {
+      return true
+    }
+  }
+  return false
+}
+
+function buildStandaloneCheckboxProps(controlEl: SgNode<TSX>, fclOpening?: SgNode<TSX>): string[] {
+  const props: string[] = []
+  if (hasProp(controlEl, 'checked')) {
+    const checkedRaw = getPropRawValue(controlEl, 'checked')
+    if (checkedRaw !== null && checkedRaw !== '') {
+      props.push(`isSelected=${checkedRaw}`)
+    } else {
+      props.push('isSelected')
+    }
+  }
+  const onChangeRaw = getPropRawValue(controlEl, 'onChange')
+  if (onChangeRaw !== null) {
+    props.push(`onChange=${onChangeRaw}`)
+  }
+  const nameRaw = getPropRawValue(controlEl, 'name')
+  if (nameRaw !== null) {
+    props.push(`name=${nameRaw}`)
+  }
+  if (hasProp(controlEl, 'disabled') || (fclOpening && hasProp(fclOpening, 'disabled'))) {
+    props.push('isDisabled')
+  }
+
+  // Preserve remaining safe props from the Checkbox itself
+  const handled = new Set(['checked', 'onChange', 'name', 'disabled', 'color', 'size', 'indeterminate'])
+  for (const attr of controlEl.findAll({ rule: { kind: 'jsx_attribute' } })) {
+    const propIdent = attr.find({ rule: { kind: 'property_identifier' } })
+    if (!propIdent) {
+      continue
+    }
+    const propName = propIdent.text()
+    if (handled.has(propName)) {
+      continue
+    }
+    props.push(attr.text())
+  }
+
+  return props
+}
+
+function tryTransformStandaloneFormControlLabel(el: SgNode<TSX>, localNames: Map<string, string>): string | null {
+  const controlType = detectControlType(el, localNames)
+  if (controlType !== 'Checkbox') {
+    return null
+  }
+  const label = getPropStringValue(el, 'label')
+  if (!label) {
+    return null
+  }
+  const controlEl = extractControlProps(el)
+  if (!controlEl) {
+    return null
+  }
+  const props = buildStandaloneCheckboxProps(controlEl, el)
+  const propsStr = props.length > 0 ? ` ${props.join(' ')}` : ''
+  return `<Checkbox${propsStr}>${label}</Checkbox>`
+}
+
+function tryTransformStandaloneCheckbox(el: SgNode<TSX>): string | null {
+  const isSelfClosing = el.is('jsx_self_closing_element')
+  const opening = isSelfClosing ? el : el.child(0)
+  if (!opening) {
+    return null
+  }
+
+  // Skip checkboxes that are nested inside FormControlLabel control={...}
+  for (const ancestor of el.ancestors()) {
+    if (ancestor.kind() === 'jsx_attribute') {
+      const propIdent = ancestor.find({ rule: { kind: 'property_identifier' } })
+      if (propIdent?.text() === 'control') {
+        return null
+      }
+    }
+  }
+
+  const props = buildStandaloneCheckboxProps(opening)
+  const propsStr = props.length > 0 ? ` ${props.join(' ')}` : ''
+
+  if (isSelfClosing) {
+    return `<Checkbox${propsStr} />`
+  }
+
+  const children = getJsxChildren(el)
+    .map((c) => c.text())
+    .join('')
+  return `<Checkbox${propsStr}>${children}</Checkbox>`
+}
+
 function transformGroupElements(
   rootNode: SgNode<TSX>,
   localNames: Map<string, string>,
@@ -458,6 +566,8 @@ function transformGroupElements(
   let preserveImport = false
   const radioGroupLocal = [...localNames.entries()].find(([, v]) => v === 'RadioGroup')?.[0] ?? null
   const formGroupLocal = [...localNames.entries()].find(([, v]) => v === 'FormGroup')?.[0] ?? null
+  const fclLocal = [...localNames.entries()].find(([, v]) => v === 'FormControlLabel')?.[0] ?? null
+  const checkboxLocal = [...localNames.entries()].find(([, v]) => v === 'Checkbox')?.[0] ?? null
 
   const jsxElements = rootNode.findAll({
     rule: {
@@ -537,6 +647,39 @@ function transformGroupElements(
       migrationMetric.increment({ action: 'checkbox-group-migrated' })
       continue
     }
+
+    // Standalone FormControlLabel + Checkbox (not inside a choice group)
+    if (name === fclLocal && isSelfClosing && !isInsideChoiceGroup(el, radioGroupLocal, formGroupLocal)) {
+      const output = tryTransformStandaloneFormControlLabel(el, localNames)
+      if (output === null) {
+        preserveImport = true
+        edits.push(
+          el.replace(
+            withTodoComment(
+              `{/* TODO(backstage-codemod): finish standalone checkbox migration manually */}`,
+              el.text(),
+            ),
+          ),
+        )
+        migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-standalone-fcl' })
+        continue
+      }
+      edits.push(el.replace(output))
+      usedBuiNames.add('Checkbox')
+      migrationMetric.increment({ action: 'standalone-checkbox-migrated', via: 'FormControlLabel' })
+      continue
+    }
+
+    // Standalone Checkbox (not inside FormGroup / RadioGroup / FormControlLabel control)
+    if (name === checkboxLocal && !isInsideChoiceGroup(el, radioGroupLocal, formGroupLocal)) {
+      const output = tryTransformStandaloneCheckbox(el)
+      if (output === null) {
+        continue
+      }
+      edits.push(el.replace(output))
+      usedBuiNames.add('Checkbox')
+      migrationMetric.increment({ action: 'standalone-checkbox-migrated', via: 'Checkbox' })
+    }
   }
 
   return { usedBuiNames, preserveImport }
@@ -549,7 +692,7 @@ const transform: Codemod<TSX> = (root) => {
   const { localNames, importNodesToRemove, barrelImportsToPrune } = collectGroupImports(rootNode)
 
   const hasTarget = [...localNames.values()].some(
-    (v) => v === 'RadioGroup' || v === 'FormGroup' || v === 'FormControlLabel',
+    (v) => v === 'RadioGroup' || v === 'FormGroup' || v === 'FormControlLabel' || v === 'Checkbox',
   )
   if (!hasTarget) {
     return Promise.resolve(null)

@@ -1,0 +1,32 @@
+{
+  "migrate-mui-card-to-bui-card": [
+    {
+      "cardinality": {
+        "action": "card-migrated",
+        "from": "Card",
+        "to": "Card"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "card-migrated",
+        "from": "CardContent",
+        "to": "CardBody"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-added"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-removed"
+      },
+      "count": 1
+    }
+  ]
+}

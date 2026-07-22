@@ -216,7 +216,48 @@ function isSingleIconChild(child: SgNode<TSX>): boolean {
 }
 
 /** Props that are dropped silently (MUI-specific, no BUI equivalent). */
-const DROPPED_PROPS = new Set(['size', 'edge', 'color', 'disableRipple', 'disableFocusRipple'])
+const DROPPED_PROPS = new Set(['size', 'edge', 'disableRipple', 'disableFocusRipple'])
+
+/** MUI IconButton color → BUI ButtonIcon variant. Absent/default/inherit → tertiary. */
+const COLOR_TO_VARIANT: Record<string, string> = {
+  primary: 'primary',
+  secondary: 'secondary',
+  default: 'tertiary',
+  inherit: 'tertiary',
+}
+
+function getAttrStringValue(
+  opening: SgNode<TSX>,
+  propName: string,
+): { value: string | null; isDynamic: boolean; attrNode: SgNode<TSX> | null } {
+  const attr = getPropAttr(opening, propName)
+  if (!attr) {
+    return { value: null, isDynamic: false, attrNode: null }
+  }
+
+  const stringNode = attr.find({ rule: { kind: 'string' } })
+  if (stringNode) {
+    const frag = stringNode.find({ rule: { kind: 'string_fragment' } })
+    return { value: frag?.text() ?? null, isDynamic: false, attrNode: attr }
+  }
+
+  const exprNode = attr.find({ rule: { kind: 'jsx_expression' } })
+  if (exprNode) {
+    return { value: exprNode.text(), isDynamic: true, attrNode: attr }
+  }
+
+  return { value: '', isDynamic: false, attrNode: attr }
+}
+
+function mapColorToVariant(colorValue: string | null, isDynamic: boolean): string | null {
+  if (isDynamic) {
+    return null
+  }
+  if (colorValue === null || colorValue === '') {
+    return 'tertiary'
+  }
+  return COLOR_TO_VARIANT[colorValue] ?? null
+}
 
 function transformIconButtonElements(
   rootNode: SgNode<TSX>,
@@ -271,11 +312,19 @@ function transformIconButtonElements(
       continue
     }
 
+    const { value: colorValue, isDynamic: colorDynamic } = getAttrStringValue(opening, 'color')
+    const buiVariant = mapColorToVariant(colorValue, colorDynamic)
+    if (buiVariant === null) {
+      insertTodo(colorDynamic ? 'dynamic-color' : `unmapped-color-${colorValue}`)
+      continue
+    }
+
     // Build new props
     const newProps: string[] = []
 
     // icon prop from child
     newProps.push(formatIconProp(iconChild))
+    newProps.push(`variant="${buiVariant}"`)
 
     // Map props from opening element
     const allAttrs = opening.findAll({ rule: { kind: 'jsx_attribute' } })
@@ -285,6 +334,11 @@ function transformIconButtonElements(
         continue
       }
       const propName = propIdent.text()
+
+      if (propName === 'color') {
+        migrationMetric.increment({ action: 'prop-dropped', prop: 'color' })
+        continue
+      }
 
       if (propName === 'disabled') {
         // Map disabled → isDisabled

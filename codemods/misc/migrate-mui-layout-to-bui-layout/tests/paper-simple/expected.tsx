@@ -1,6 +1,6 @@
 
-import { Surface } from '@backstage/ui';
+import { Box } from '@backstage/ui';
 
 const MyComponent = () => (
-  <Surface className="wrapper"><p>Content</p></Surface>
+  <Box bg="neutral" className="wrapper"><p>Content</p></Box>
 );

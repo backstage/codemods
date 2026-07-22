@@ -1,0 +1,11 @@
+{
+  "migrate-mui-autocomplete-to-combobox": [
+    {
+      "cardinality": {
+        "action": "todo-inserted",
+        "reason": "ambiguous-autocomplete"
+      },
+      "count": 1
+    }
+  ]
+}

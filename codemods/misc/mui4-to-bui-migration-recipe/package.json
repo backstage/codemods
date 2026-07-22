@@ -4,7 +4,7 @@
   "description": "MUI 4 to BUI: Migration recipe that runs every deterministic MUI→BUI codemod from the registry in a safe order.",
   "type": "module",
   "scripts": {
-    "test": "yarn exec codemod workflow validate -w workflow.yaml"
+    "test": "bash scripts/validate-workflows.sh"
   },
   "devDependencies": {
     "codemod": "1.12.13"

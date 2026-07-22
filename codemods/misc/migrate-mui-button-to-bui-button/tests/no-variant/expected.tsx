@@ -1,5 +1,5 @@
 import { Button } from '@backstage/ui';
 
 const MyComponent = () => (
-  <Button onClick={handleClick}>Click me</Button>
+  <Button variant="tertiary" onPress={handleClick}>Click me</Button>
 );
