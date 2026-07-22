@@ -51,9 +51,17 @@ render_group() {
   echo ""
 }
 
-# Separate version directories (v*) from non-version groups (misc, etc.)
-mapfile -t version_dirs < <(ls "$CODEMODS_DIR" | grep '^v' | sort -Vr)
-mapfile -t other_dirs < <(ls "$CODEMODS_DIR" | grep -v '^v' | grep -v '^\.gitkeep$' | sort)
+# Separate version directories (v*) from non-version groups (misc, etc.).
+# Avoid `mapfile` / array slicing so this works on macOS system bash 3.2.
+version_dirs=()
+while IFS= read -r line; do
+  version_dirs+=("$line")
+done < <(ls "$CODEMODS_DIR" | grep '^v' | sort -Vr)
+
+other_dirs=()
+while IFS= read -r line; do
+  other_dirs+=("$line")
+done < <(ls "$CODEMODS_DIR" | grep -v '^v' | grep -v '^\.gitkeep$' | sort)
 
 # Show latest 2 versions
 total=${#version_dirs[@]}
@@ -64,9 +72,14 @@ fi
 
 # Build the section
 section=""
-for version in "${version_dirs[@]:0:$show}"; do
+i=0
+for version in "${version_dirs[@]}"; do
+  if [ "$i" -ge "$show" ]; then
+    break
+  fi
   section+=$(render_group "$version")
   section+=$'\n'
+  i=$((i + 1))
 done
 
 if [ "$total" -gt "$show" ]; then
