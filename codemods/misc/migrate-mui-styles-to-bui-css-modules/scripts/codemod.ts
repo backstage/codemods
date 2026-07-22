@@ -6,8 +6,7 @@ import { useMetricAtom } from 'codemod:metrics'
 const migrationMetric = useMetricAtom('migrate-mui-styles-to-bui-css-modules')
 
 function parseCssRoot(source: string): SgNode<CSS> {
-  // parse() is language-erased at the type level; narrow the CSS root explicitly.
-  return parse('css', source).root() as unknown as SgNode<CSS>
+  return parse<CSS>('css', source).root()
 }
 
 /**
