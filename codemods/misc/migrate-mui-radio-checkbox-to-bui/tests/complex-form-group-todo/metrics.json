@@ -1,0 +1,11 @@
+{
+  "migrate-mui-radio-checkbox-to-bui": [
+    {
+      "cardinality": {
+        "action": "todo-inserted",
+        "reason": "complex-form-group"
+      },
+      "count": 1
+    }
+  ]
+}

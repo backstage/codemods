@@ -1,0 +1,11 @@
+{
+  "migrate-mui-slider-to-bui-slider": [
+    {
+      "cardinality": {
+        "action": "todo-inserted",
+        "reason": "marks"
+      },
+      "count": 1
+    }
+  ]
+}

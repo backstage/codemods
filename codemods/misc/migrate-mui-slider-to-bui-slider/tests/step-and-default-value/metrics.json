@@ -1,0 +1,38 @@
+{
+  "migrate-mui-slider-to-bui-slider": [
+    {
+      "cardinality": {
+        "action": "import-added"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-removed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "prop-renamed",
+        "from": "max",
+        "to": "maxValue"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "prop-renamed",
+        "from": "min",
+        "to": "minValue"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "slider-migrated"
+      },
+      "count": 1
+    }
+  ]
+}
