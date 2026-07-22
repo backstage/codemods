@@ -51,9 +51,17 @@ render_group() {
   echo ""
 }
 
-# Separate version directories (v*) from non-version groups (misc, etc.)
-mapfile -t version_dirs < <(ls "$CODEMODS_DIR" | grep '^v' | sort -Vr)
-mapfile -t other_dirs < <(ls "$CODEMODS_DIR" | grep -v '^v' | grep -v '^\.gitkeep$' | sort)
+# Separate version directories (v*) from non-version groups (misc, etc.).
+# Avoid `mapfile` / array slicing so this works on macOS system bash 3.2.
+version_dirs=()
+while IFS= read -r line; do
+  version_dirs+=("$line")
+done < <(ls "$CODEMODS_DIR" | grep '^v' | sort -Vr)
+
+other_dirs=()
+while IFS= read -r line; do
+  other_dirs+=("$line")
+done < <(ls "$CODEMODS_DIR" | grep -v '^v' | grep -v '^\.gitkeep$' | sort)
 
 # Show latest 2 versions
 total=${#version_dirs[@]}
@@ -62,11 +70,19 @@ if [ "$total" -lt "$show" ]; then
   show=$total
 fi
 
-# Build the section
+# Build the section.
+# Note: $(...) strips trailing newlines from render_group, so always append
+# an explicit blank line afterwards — otherwise oxfmt may pull the following
+# prose into the markdown table.
 section=""
-for version in "${version_dirs[@]:0:$show}"; do
+i=0
+for version in "${version_dirs[@]}"; do
+  if [ "$i" -ge "$show" ]; then
+    break
+  fi
   section+=$(render_group "$version")
-  section+=$'\n'
+  section+=$'\n\n'
+  i=$((i + 1))
 done
 
 if [ "$total" -gt "$show" ]; then
@@ -80,7 +96,7 @@ for group in "${other_dirs[@]}"; do
   codemod_count=$(find "$local_dir" -mindepth 2 -maxdepth 2 -name 'codemod.yaml' 2>/dev/null | head -1 || true)
   if [ -n "$codemod_count" ]; then
     section+=$(render_group "$group")
-    section+=$'\n'
+    section+=$'\n\n'
   fi
 done
 
@@ -93,12 +109,23 @@ if ! grep -q "$START_MARKER" "$README"; then
   exit 1
 fi
 
-# Replace content between markers
-awk -v start="$START_MARKER" -v end="$END_MARKER" -v content="$section" '
+# Replace content between markers.
+# Write the section to a temp file and have awk read it — BSD awk (macOS)
+# rejects newlines in `-v` string values.
+section_file="$README.section.tmp"
+printf '%s' "$section" >"$section_file"
+awk -v start="$START_MARKER" -v end="$END_MARKER" -v section_file="$section_file" '
+  BEGIN {
+    while ((getline line < section_file) > 0) {
+      content = content line "\n"
+    }
+    close(section_file)
+  }
   $0 ~ start { print; printf "%s", content; skip=1; next }
   $0 ~ end   { skip=0 }
   !skip      { print }
-' "$README" > "$README.tmp"
+' "$README" >"$README.tmp"
+rm -f "$section_file"
 
 mv "$README.tmp" "$README"
 
