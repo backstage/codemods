@@ -1,0 +1,11 @@
+{
+  "migrate-mui-link-to-bui-link": [
+    {
+      "cardinality": {
+        "action": "todo-inserted",
+        "reason": "component, to"
+      },
+      "count": 1
+    }
+  ]
+}

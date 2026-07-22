@@ -2,7 +2,7 @@ schema_version: '1.0'
 
 name: '@backstage/migrate-mui-textfield-to-bui-textfield'
 version: '0.2.1'
-description: 'MUI 4 to BUI: Replace TextField with BUI TextField'
+description: 'MUI 4 to BUI: Replace TextField with BUI TextField / TextAreaField / PasswordField / NumberField'
 author: 'Paul Schultz<pschultz@redhat.com>'
 license: 'Apache-2.0'
 repository: 'https://github.com/backstage/codemods'

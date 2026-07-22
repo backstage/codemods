@@ -1,0 +1,41 @@
+{
+  "migrate-mui-select-family-to-bui-select": [
+    {
+      "cardinality": {
+        "action": "import-added"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-removed"
+      },
+      "count": 4
+    },
+    {
+      "cardinality": {
+        "action": "onChange-rewritten"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "select-migrated"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "size-from-form-control"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "size-mapped",
+        "size": "small"
+      },
+      "count": 1
+    }
+  ]
+}

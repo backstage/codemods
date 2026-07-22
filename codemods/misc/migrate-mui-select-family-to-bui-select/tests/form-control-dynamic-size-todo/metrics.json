@@ -1,0 +1,11 @@
+{
+  "migrate-mui-select-family-to-bui-select": [
+    {
+      "cardinality": {
+        "action": "todo-inserted",
+        "reason": "dynamic-size"
+      },
+      "count": 1
+    }
+  ]
+}

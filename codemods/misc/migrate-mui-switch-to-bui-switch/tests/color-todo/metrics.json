@@ -1,0 +1,11 @@
+{
+  "migrate-mui-switch-to-bui-switch": [
+    {
+      "cardinality": {
+        "action": "todo-inserted",
+        "reason": "color"
+      },
+      "count": 1
+    }
+  ]
+}

@@ -7,7 +7,7 @@ import { useMetricAtom } from 'codemod:metrics'
 const TSX_LANG = 'tsx'
 
 function parseTsx(source: string): SgRoot<TSX> {
-  return parse(TSX_LANG, source) as SgRoot<TSX>
+  return parse<TSX>(TSX_LANG, source)
 }
 
 const PERMISSION_REACT = '@backstage/plugin-permission-react'

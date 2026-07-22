@@ -34,8 +34,8 @@
     },
     {
       "cardinality": {
-        "action": "prop-dropped",
-        "prop": "size"
+        "action": "size-mapped",
+        "size": "small"
       },
       "count": 1
     }

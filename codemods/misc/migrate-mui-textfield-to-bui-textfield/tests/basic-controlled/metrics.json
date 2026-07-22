@@ -28,7 +28,14 @@
     },
     {
       "cardinality": {
-        "action": "textfield-migrated"
+        "action": "size-defaulted-to-medium"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "textfield-migrated",
+        "component": "TextField"
       },
       "count": 1
     }

@@ -13,7 +13,7 @@ const callsMigrated = useMetricAtom('render-test-app-calls-migrated')
 const navAssertionsFlagged = useMetricAtom('nav-assertions-flagged')
 
 function parseTsx(source: string): SgRoot<TSX> {
-  return parse(TSX_LANG, source) as SgRoot<TSX>
+  return parse<TSX>(TSX_LANG, source)
 }
 
 function collapseExtraBlankLines(source: string): string {
