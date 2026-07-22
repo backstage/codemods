@@ -37,8 +37,7 @@ Run the [`migration-recipe`](./codemods/v1.51.0/migration-recipe) to apply every
 | [remove-immediate-stitching-mode](./codemods/v1.51.0/remove-immediate-stitching-mode)               | Migrate catalog.stitchingStrategy.mode from immediate to deferred                                      |
 | [rename-header-main-class](./codemods/v1.51.0/rename-header-main-class)                             | Rename removed .bui-Header to .bui-HeaderContent and classNames.root to classNames.content             |
 | [render-test-app-nav-migration](./codemods/v1.51.0/render-test-app-nav-migration)                   | Migrate renderInTestApp nav-item tests to renderTestApp for Backstage 1.51.0                           |
-
-Older versions are available in the [`codemods/`](./codemods) directory.
+| Older versions are available in the [`codemods/`](./codemods) directory.                            |
 
 ### misc
 
@@ -64,7 +63,7 @@ Older versions are available in the [`codemods/`](./codemods) directory.
 | [migrate-mui-tooltip-to-bui-tooltip](./codemods/misc/migrate-mui-tooltip-to-bui-tooltip)           | MUI 4 to BUI: Replace Tooltip with TooltipTrigger                                                                          |
 | [migrate-mui-typography-to-text](./codemods/misc/migrate-mui-typography-to-text)                   | MUI 4 to BUI: Replace Typography with Text. Package name omits -bui- because Text is the BUI export name.                  |
 | [mui4-to-bui-migration-recipe](./codemods/misc/mui4-to-bui-migration-recipe)                       | MUI 4 to BUI: Migration recipe that runs every MUI→BUI codemod from the registry in a safe order.                          |
-| [remove-mui-dependencies](./codemods/misc/remove-mui-dependencies)                                 | MUI 4 to BUI: Remove unused @material-ui/\* dependencies from package.json                                                 |
+| [remove-mui-dependencies](./codemods/misc/remove-mui-dependencies)                                 | MUI 4 to BUI: Remove unused @material-ui/* dependencies from package.json                                                  |
 
 <!-- CODEMODS_END -->
 

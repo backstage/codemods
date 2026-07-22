@@ -106,12 +106,23 @@ if ! grep -q "$START_MARKER" "$README"; then
   exit 1
 fi
 
-# Replace content between markers
-awk -v start="$START_MARKER" -v end="$END_MARKER" -v content="$section" '
+# Replace content between markers.
+# Write the section to a temp file and have awk read it — BSD awk (macOS)
+# rejects newlines in `-v` string values.
+section_file="$README.section.tmp"
+printf '%s' "$section" >"$section_file"
+awk -v start="$START_MARKER" -v end="$END_MARKER" -v section_file="$section_file" '
+  BEGIN {
+    while ((getline line < section_file) > 0) {
+      content = content line "\n"
+    }
+    close(section_file)
+  }
   $0 ~ start { print; printf "%s", content; skip=1; next }
   $0 ~ end   { skip=0 }
   !skip      { print }
-' "$README" > "$README.tmp"
+' "$README" >"$README.tmp"
+rm -f "$section_file"
 
 mv "$README.tmp" "$README"
 
