@@ -63,7 +63,7 @@ Older versions are available in the [`codemods/`](./codemods) directory.
 | [migrate-mui-textfield-to-bui-textfield](./codemods/misc/migrate-mui-textfield-to-bui-textfield)   | MUI 4 to BUI: Replace TextField with BUI TextField                                                                         |
 | [migrate-mui-tooltip-to-bui-tooltip](./codemods/misc/migrate-mui-tooltip-to-bui-tooltip)           | MUI 4 to BUI: Replace Tooltip with TooltipTrigger                                                                          |
 | [migrate-mui-typography-to-text](./codemods/misc/migrate-mui-typography-to-text)                   | MUI 4 to BUI: Replace Typography with Text. Package name omits -bui- because Text is the BUI export name.                  |
-| [mui4-to-bui-migration-recipe](./codemods/misc/mui4-to-bui-migration-recipe)                       | MUI 4 to BUI: Migration recipe that runs every MUI→BUI codemod from the registry in a safe order.                          |
+| [mui4-to-bui-migration-recipe](./codemods/misc/mui4-to-bui-migration-recipe)                       | MUI 4 to BUI: Migration recipe that runs every deterministic MUI→BUI codemod from the registry in a safe order.            |
 | [remove-mui-dependencies](./codemods/misc/remove-mui-dependencies)                                 | MUI 4 to BUI: Remove unused @material-ui/* dependencies from package.json                                                  |
 
 <!-- CODEMODS_END -->
