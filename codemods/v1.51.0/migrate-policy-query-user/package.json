@@ -1,6 +1,6 @@
 {
   "name": "@backstage/migrate-policy-query-user",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Backstage 1.51.0: Migrate PolicyQueryUser off removed token, expiresInSeconds, and identity fields",
   "type": "module",
   "scripts": {

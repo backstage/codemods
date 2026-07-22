@@ -1,7 +1,7 @@
 schema_version: '1.0'
 
 name: '@backstage/remove-mui-dependencies'
-version: '0.2.0'
+version: '0.2.1'
 description: 'MUI 4 to BUI: Remove unused @material-ui/* dependencies from package.json'
 author: 'Paul Schultz<pschultz@redhat.com>'
 license: 'Apache-2.0'

@@ -1,7 +1,7 @@
 schema_version: '1.0'
 
 name: '@backstage/add-jest-peer-dependency'
-version: '0.2.2'
+version: '0.2.3'
 description: 'Backstage 1.46.0: Add jest as explicit peer dependency to root package.json'
 author: 'Paul Schultz<pschultz@redhat.com>'
 license: 'Apache-2.0'

@@ -1,6 +1,6 @@
 {
   "name": "@backstage/migrate-collapsible-to-accordion",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Backstage 1.45.0: Migrate Collapsible compound component to Accordion — Collapsible.Root/Trigger/Panel to Accordion/AccordionTrigger/AccordionPanel",
   "type": "module",
   "scripts": {

@@ -1,6 +1,6 @@
 {
   "name": "@backstage/remove-alert-surface-prop",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Backstage 1.48.0: Remove deprecated surface prop from Alert component in @backstage/ui",
   "type": "module",
   "scripts": {

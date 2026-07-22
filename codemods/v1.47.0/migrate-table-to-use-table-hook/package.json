@@ -1,6 +1,6 @@
 {
   "name": "@backstage/migrate-table-to-use-table-hook",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Backstage 1.47.0: Migrate Table component to new useTable hook API from @backstage/ui",
   "type": "module",
   "scripts": {

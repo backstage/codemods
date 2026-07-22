@@ -1,6 +1,6 @@
 {
   "name": "@backstage/rename-bui-header-css-classes",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Backstage 1.49.0: Rename BUI HeaderPage CSS classes to Header",
   "type": "module",
   "scripts": {

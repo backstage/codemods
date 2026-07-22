@@ -1,7 +1,7 @@
 schema_version: '1.0'
 
 name: '@backstage/migrate-mui-menu-popover-to-bui-menu'
-version: '0.2.0'
+version: '0.2.1'
 description: 'MUI 4 to BUI: Replace Menu and Popover patterns with BUI Menu'
 author: 'Paul Schultz<pschultz@redhat.com>'
 license: 'Apache-2.0'

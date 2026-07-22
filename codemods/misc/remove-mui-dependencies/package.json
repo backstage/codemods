@@ -1,6 +1,6 @@
 {
   "name": "@backstage/remove-mui-dependencies",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "MUI 4 to BUI: Remove unused @material-ui/* dependencies from package.json",
   "type": "module",
   "scripts": {

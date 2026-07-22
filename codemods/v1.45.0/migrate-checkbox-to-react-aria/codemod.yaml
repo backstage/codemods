@@ -1,7 +1,7 @@
 schema_version: '1.0'
 
 name: '@backstage/migrate-checkbox-to-react-aria'
-version: '0.2.1'
+version: '0.2.2'
 description: 'Backstage 1.45.0: Migrate Checkbox component from Base UI to React Aria — prop renames and label to children conversion'
 author: 'Paul Schultz<pschultz@redhat.com>'
 license: 'Apache-2.0'

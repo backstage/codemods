@@ -1,6 +1,6 @@
 {
   "name": "@backstage/loading-to-is-pending",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Backstage 1.51.0: Rename deprecated loading prop to isPending in @backstage/ui and data-loading to data-ispending in CSS",
   "type": "module",
   "scripts": {

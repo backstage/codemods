@@ -1,6 +1,6 @@
 {
   "name": "@backstage/migrate-mui-slider-to-bui-slider",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "MUI 4 to BUI: Replace Slider with BUI Slider",
   "type": "module",
   "scripts": {

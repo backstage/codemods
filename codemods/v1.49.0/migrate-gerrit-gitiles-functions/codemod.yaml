@@ -1,7 +1,7 @@
 schema_version: '1.0'
 
 name: '@backstage/migrate-gerrit-gitiles-functions'
-version: '0.1.1'
+version: '0.1.2'
 description: 'Backstage 1.49.0: Rename deprecated Gerrit Gitiles functions in @backstage/integration'
 author: 'Paul Schultz<pschultz@redhat.com>'
 license: 'Apache-2.0'

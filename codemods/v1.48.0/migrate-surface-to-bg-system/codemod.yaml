@@ -1,7 +1,7 @@
 schema_version: '1.0'
 
 name: '@backstage/migrate-surface-to-bg-system'
-version: '0.2.1'
+version: '0.2.2'
 description: 'Backstage 1.48.0: Migrate surface/onSurface props to bg system in @backstage/ui'
 author: 'Paul Schultz<pschultz@redhat.com>'
 license: 'Apache-2.0'

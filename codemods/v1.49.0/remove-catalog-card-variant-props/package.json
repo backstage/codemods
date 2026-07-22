@@ -1,6 +1,6 @@
 {
   "name": "@backstage/remove-catalog-card-variant-props",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Backstage 1.49.0: Remove deprecated variant and gridSizes props from catalog card components",
   "type": "module",
   "scripts": {

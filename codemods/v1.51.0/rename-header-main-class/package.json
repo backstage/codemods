@@ -1,6 +1,6 @@
 {
   "name": "@backstage/rename-header-main-class",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Backstage 1.51.0: Rename removed .bui-Header to .bui-HeaderContent and classNames.root to classNames.content",
   "type": "module",
   "scripts": {

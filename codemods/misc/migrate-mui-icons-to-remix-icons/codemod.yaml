@@ -1,7 +1,7 @@
 schema_version: '1.0'
 
 name: '@backstage/migrate-mui-icons-to-remix-icons'
-version: '0.2.0'
+version: '0.2.1'
 description: 'MUI 4 to BUI: Replace MUI icons with Remix icons'
 author: 'Paul Schultz<pschultz@redhat.com>'
 license: 'Apache-2.0'

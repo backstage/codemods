@@ -1,6 +1,6 @@
 {
   "name": "@backstage/migrate-mui-typography-to-text",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "MUI 4 to BUI: Replace Typography with Text. Package name omits -bui- because Text is the BUI export name.",
   "type": "module",
   "scripts": {

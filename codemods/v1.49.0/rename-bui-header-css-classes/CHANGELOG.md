@@ -1,5 +1,11 @@
 # @backstage/rename-bui-header-css-classes
 
+## 0.1.2
+
+### Patch Changes
+
+- 0c67fc5: Update workspace engine deps: `codemod` 1.12.3 → 1.12.13, `@jssg/utils` ^0.0.8 → ^0.0.9.
+
 ## 0.1.1
 
 ### Patch Changes

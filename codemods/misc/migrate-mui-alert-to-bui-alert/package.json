@@ -1,6 +1,6 @@
 {
   "name": "@backstage/migrate-mui-alert-to-bui-alert",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "MUI 4 to BUI: Replace MUI Alert with BUI Alert",
   "type": "module",
   "scripts": {

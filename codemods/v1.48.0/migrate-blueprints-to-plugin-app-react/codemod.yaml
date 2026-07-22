@@ -1,7 +1,7 @@
 schema_version: '1.0'
 
 name: '@backstage/migrate-blueprints-to-plugin-app-react'
-version: '0.2.1'
+version: '0.2.2'
 description: 'Backstage 1.48.0: Move blueprint exports from @backstage/frontend-plugin-api to @backstage/plugin-app-react'
 author: 'Paul Schultz<pschultz@redhat.com>'
 license: 'Apache-2.0'

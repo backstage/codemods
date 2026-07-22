@@ -1,6 +1,6 @@
 {
   "name": "@backstage/render-test-app-nav-migration",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Migrate renderInTestApp nav-item tests to renderTestApp for Backstage 1.51.0",
   "type": "module",
   "scripts": {

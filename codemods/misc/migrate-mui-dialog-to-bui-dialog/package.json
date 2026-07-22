@@ -1,6 +1,6 @@
 {
   "name": "@backstage/migrate-mui-dialog-to-bui-dialog",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "MUI 4 to BUI: Replace Dialog shell with BUI Dialog",
   "type": "module",
   "scripts": {
