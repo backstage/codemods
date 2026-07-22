@@ -7,12 +7,12 @@ nodes:
     name: 'Run every MUI 4 to BUI codemod in order'
     type: automatic
     steps:
-      # --- Phase 1: bootstrap prerequisites (run first)
+      # --- Phase 1: bootstrap / package setup (run first)
       - name: 'Bootstrap BUI dependencies and root CSS'
         codemod:
           source: '@backstage/migrate-mui-bootstrap-to-bui'
 
-      # --- Phase 2: component / icon / style / layout transforms (any order within)
+      # --- Phase 2: icon source + styling architecture
       - name: 'Replace MUI icons with Remix icons'
         codemod:
           source: '@backstage/migrate-mui-icons-to-remix-icons'
@@ -21,13 +21,14 @@ nodes:
         codemod:
           source: '@backstage/migrate-mui-styles-to-bui-css-modules'
 
-      - name: 'Convert MUI layout primitives to BUI layout'
-        codemod:
-          source: '@backstage/migrate-mui-layout-to-bui-layout'
-
+      # --- Phase 3: core components
       - name: 'Migrate Typography to Text'
         codemod:
           source: '@backstage/migrate-mui-typography-to-text'
+
+      - name: 'Migrate Alert to BUI Alert'
+        codemod:
+          source: '@backstage/migrate-mui-alert-to-bui-alert'
 
       - name: 'Migrate Button to BUI Button'
         codemod:
@@ -37,55 +38,58 @@ nodes:
         codemod:
           source: '@backstage/migrate-mui-icon-button-to-button-icon'
 
-      - name: 'Migrate Alert to BUI Alert'
-        codemod:
-          source: '@backstage/migrate-mui-alert-to-bui-alert'
-
       - name: 'Migrate Tooltip to BUI Tooltip'
         codemod:
           source: '@backstage/migrate-mui-tooltip-to-bui-tooltip'
 
-      - name: 'Migrate TextField to BUI TextField'
-        codemod:
-          source: '@backstage/migrate-mui-textfield-to-bui-textfield'
-
-      - name: 'Migrate Select family to BUI Select'
-        codemod:
-          source: '@backstage/migrate-mui-select-family-to-bui-select'
-
-      - name: 'Migrate radio/checkbox groups to BUI groups'
-        codemod:
-          source: '@backstage/migrate-mui-radio-checkbox-groups-to-bui-groups'
-
-      - name: 'Migrate Slider to BUI Slider'
-        codemod:
-          source: '@backstage/migrate-mui-slider-to-bui-slider'
-
-      - name: 'Migrate Accordion to BUI Accordion'
-        codemod:
-          source: '@backstage/migrate-mui-accordion-to-bui-accordion'
-
-      - name: 'Migrate Chip to Tag'
-        codemod:
-          source: '@backstage/migrate-mui-chip-to-tag'
-
+      # --- Phase 4: complex components
       - name: 'Migrate Dialog to BUI Dialog'
         codemod:
           source: '@backstage/migrate-mui-dialog-to-bui-dialog'
-
-      - name: 'Migrate List family to BUI List'
-        codemod:
-          source: '@backstage/migrate-mui-list-family-to-bui-list'
-
-      - name: 'Migrate Menu/Popover to BUI Menu'
-        codemod:
-          source: '@backstage/migrate-mui-menu-popover-to-bui-menu'
 
       - name: 'Migrate Tabs to BUI Tabs'
         codemod:
           source: '@backstage/migrate-mui-tabs-to-bui-tabs'
 
-      # --- Phase 3: cleanup (run last)
+      - name: 'Migrate Menu/Popover to BUI Menu'
+        codemod:
+          source: '@backstage/migrate-mui-menu-popover-to-bui-menu'
+
+      - name: 'Migrate List family to BUI List'
+        codemod:
+          source: '@backstage/migrate-mui-list-family-to-bui-list'
+
+      - name: 'Migrate Chip to Tag'
+        codemod:
+          source: '@backstage/migrate-mui-chip-to-tag'
+
+      # --- Phase 5: form controls
+      - name: 'Migrate Select family to BUI Select'
+        codemod:
+          source: '@backstage/migrate-mui-select-family-to-bui-select'
+
+      - name: 'Migrate TextField to BUI TextField'
+        codemod:
+          source: '@backstage/migrate-mui-textfield-to-bui-textfield'
+
+      - name: 'Migrate Accordion to BUI Accordion'
+        codemod:
+          source: '@backstage/migrate-mui-accordion-to-bui-accordion'
+
+      - name: 'Migrate radio/checkbox groups to BUI groups'
+        codemod:
+          source: '@backstage/migrate-mui-radio-checkbox-to-bui'
+
+      - name: 'Migrate Slider to BUI Slider'
+        codemod:
+          source: '@backstage/migrate-mui-slider-to-bui-slider'
+
+      # --- Phase 6: layout primitives (after components so wrappers settle first)
+      - name: 'Convert MUI layout primitives to BUI layout'
+        codemod:
+          source: '@backstage/migrate-mui-layout-to-bui-layout'
+
+      # --- Phase 7: cleanup (run last)
       - name: 'Remove unused @material-ui/* dependencies'
         codemod:
           source: '@backstage/remove-mui-dependencies'

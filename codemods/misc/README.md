@@ -11,7 +11,7 @@ Prefer the ordered recipe:
 ### Ordering
 
 1. **Bootstrap first** — `@backstage/migrate-mui-bootstrap-to-bui`
-2. **Transforms (any order within)** — icons, styles/CSS modules, layout, and component codemods from PRs [#128](https://github.com/backstage/codemods/pull/128), [#129](https://github.com/backstage/codemods/pull/129), [#130](https://github.com/backstage/codemods/pull/130), and [#131](https://github.com/backstage/codemods/pull/131)
+2. **Transforms** — icons, styles/CSS modules, core and complex components, form controls, then layout (see the [recipe README](./mui4-to-bui-migration-recipe/README.md) for the full ordered list)
 3. **Cleanup last** — `@backstage/remove-mui-dependencies`
 
-See the [recipe README](./mui4-to-bui-migration-recipe/README.md) for the full package list, registry links, and notes on intentional package names that omit `-bui-` in the target segment (`Text`, `Tag`, `ButtonIcon`, Remix).
+See the [recipe README](./mui4-to-bui-migration-recipe/README.md) for registry links, domain coverage, out-of-scope items, and notes on intentional package names that omit `-bui-` in the target segment (`Text`, `Tag`, `ButtonIcon`, Remix).
