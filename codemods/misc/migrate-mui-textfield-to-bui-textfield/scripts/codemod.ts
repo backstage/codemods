@@ -149,6 +149,48 @@ function collectTextFieldImports(rootNode: SgNode<TSX>): {
   return { textFieldLocalName, importNodesToRemove, barrelImportsToPrune }
 }
 
+function collectFormControlLocalNames(rootNode: SgNode<TSX>): Set<string> {
+  const names = new Set<string>()
+
+  for (const imp of findImportStatementsFrom(rootNode, '@material-ui/core/FormControl')) {
+    const name = getDefaultImportName(imp)
+    if (name) {
+      names.add(name)
+    }
+  }
+
+  for (const imp of findImportStatementsFrom(rootNode, MUI_BARREL_SOURCE)) {
+    const localName = getNamedImportLocalName(imp, 'FormControl')
+    if (localName) {
+      names.add(localName)
+    }
+  }
+
+  return names
+}
+
+function findParentFormControlOpening(el: SgNode<TSX>, formControlNames: Set<string>): SgNode<TSX> | null {
+  if (formControlNames.size === 0) {
+    return null
+  }
+
+  for (const ancestor of el.ancestors()) {
+    if (ancestor.kind() !== 'jsx_element') {
+      continue
+    }
+    const opening = ancestor.child(0)
+    if (opening?.kind() !== 'jsx_opening_element') {
+      continue
+    }
+    const name = getElementName(opening)
+    if (name && formControlNames.has(name)) {
+      return opening
+    }
+  }
+
+  return null
+}
+
 function addBuiImport(
   rootNode: SgNode<TSX>,
   names: string[],
@@ -257,10 +299,13 @@ function getPropStringValue(opening: SgNode<TSX>, propName: string): string | nu
   if (!attr) {
     return null
   }
-  const stringNode = attr.find({ rule: { kind: 'string' } })
-  if (stringNode) {
-    const frag = stringNode.find({ rule: { kind: 'string_fragment' } })
-    return frag?.text() ?? null
+  // Only accept a direct string child (size="small"). Nested strings inside
+  // expressions like size={cond ? 'small' : 'medium'} are dynamic, not static.
+  for (const child of attr.children()) {
+    if (child.kind() === 'string') {
+      const frag = child.find({ rule: { kind: 'string_fragment' } })
+      return frag?.text() ?? null
+    }
   }
   return null
 }
@@ -424,15 +469,30 @@ function tryRewriteOnChangeHandler(attr: SgNode<TSX>): string | null {
 }
 
 function isDynamicSizeProp(opening: SgNode<TSX>): boolean {
-  const attr = getPropAttr(opening, 'size')
-  if (!attr) {
-    return false
-  }
-  return attr.find({ rule: { kind: 'string' } }) === null
+  return hasProp(opening, 'size') && getPropStringValue(opening, 'size') === null
 }
 
-function mapSizeProp(opening: SgNode<TSX>, newProps: string[]): void {
-  const sizeValue = getPropStringValue(opening, 'size')
+function mapSizeProp(openings: SgNode<TSX>[], newProps: string[]): void {
+  const [primary, ...fallbacks] = openings
+
+  let sizeValue = primary ? getPropStringValue(primary, 'size') : null
+  let fromFormControl = false
+
+  if (sizeValue === null) {
+    for (const fallback of fallbacks) {
+      const fallbackSize = getPropStringValue(fallback, 'size')
+      if (fallbackSize !== null) {
+        sizeValue = fallbackSize
+        fromFormControl = true
+        break
+      }
+    }
+  }
+
+  if (fromFormControl) {
+    migrationMetric.increment({ action: 'size-from-form-control' })
+  }
+
   if (sizeValue === 'small') {
     newProps.push('size="small"')
     migrationMetric.increment({ action: 'size-mapped', size: 'small' })
@@ -469,6 +529,7 @@ function resolveTargetComponent(opening: SgNode<TSX>): string {
 function transformTextFieldElements(
   rootNode: SgNode<TSX>,
   textFieldLocalName: string,
+  formControlNames: Set<string>,
   edits: Edit[],
 ): { preserveImport: boolean; migrated: boolean; buiNames: Set<string> } {
   let preserveImport = false
@@ -492,11 +553,18 @@ function transformTextFieldElements(
       continue
     }
 
+    const parentFormControl = findParentFormControlOpening(el, formControlNames)
+    const sizeOpenings = parentFormControl ? [opening, parentFormControl] : [opening]
+
     const isMultiline = hasProp(opening, 'multiline')
     let needsTodo = false
     const todoReasons: string[] = []
 
-    if (isDynamicSizeProp(opening)) {
+    const textFieldHasStaticSize = getPropStringValue(opening, 'size') !== null
+    if (
+      isDynamicSizeProp(opening) ||
+      (!textFieldHasStaticSize && parentFormControl !== null && isDynamicSizeProp(parentFormControl))
+    ) {
       needsTodo = true
       todoReasons.push('size')
     }
@@ -620,7 +688,7 @@ function transformTextFieldElements(
         }
         if (propName === 'size') {
           sizeHandled = true
-          mapSizeProp(opening, newProps)
+          mapSizeProp(sizeOpenings, newProps)
           continue
         }
         newProps.push(child.text())
@@ -634,7 +702,7 @@ function transformTextFieldElements(
     }
 
     if (!sizeHandled) {
-      mapSizeProp(opening, newProps)
+      mapSizeProp(sizeOpenings, newProps)
     }
 
     const propsStr = newProps.length > 0 ? ` ${newProps.join(' ')}` : ''
@@ -679,7 +747,13 @@ const transform: Codemod<TSX> = (root) => {
     return Promise.resolve(null)
   }
 
-  const { preserveImport, migrated, buiNames } = transformTextFieldElements(rootNode, textFieldLocalName, edits)
+  const formControlNames = collectFormControlLocalNames(rootNode)
+  const { preserveImport, migrated, buiNames } = transformTextFieldElements(
+    rootNode,
+    textFieldLocalName,
+    formControlNames,
+    edits,
+  )
 
   let replacedImport = false
   const handledBarrelIds = new Set<number>()

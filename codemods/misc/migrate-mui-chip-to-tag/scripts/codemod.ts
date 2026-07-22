@@ -227,32 +227,19 @@ function getPropStringValue(opening: SgNode<TSX>, propName: string): string | nu
   if (!attr) {
     return null
   }
-  const stringNode = attr.find({ rule: { kind: 'string' } })
-  if (stringNode) {
-    const frag = stringNode.find({ rule: { kind: 'string_fragment' } })
-    return frag?.text() ?? null
+  // Only accept a direct string child (size="small"). Nested strings inside
+  // expressions like size={cond ? 'small' : 'medium'} are dynamic, not static.
+  for (const child of attr.children()) {
+    if (child.kind() === 'string') {
+      const frag = child.find({ rule: { kind: 'string_fragment' } })
+      return frag?.text() ?? null
+    }
   }
   return null
 }
 
-function getPropAttr(opening: SgNode<TSX>, propName: string): SgNode<TSX> | null {
-  return opening.find({
-    rule: {
-      kind: 'jsx_attribute',
-      has: {
-        kind: 'property_identifier',
-        regex: `^${escapeRegex(propName)}$`,
-      },
-    },
-  })
-}
-
 function isDynamicSizeProp(opening: SgNode<TSX>): boolean {
-  const attr = getPropAttr(opening, 'size')
-  if (!attr) {
-    return false
-  }
-  return attr.find({ rule: { kind: 'string' } }) === null
+  return hasProp(opening, 'size') && getPropStringValue(opening, 'size') === null
 }
 
 function recordSizeMetric(sizeValue: string | null): void {

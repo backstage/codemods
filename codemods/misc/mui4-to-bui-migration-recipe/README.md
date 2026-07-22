@@ -57,7 +57,8 @@ Also see the short ordering note in [`../README.md`](../README.md).
 
 BUI controls default to `size="small"` while MUI defaults to medium. These packages emit `size="medium"` when MUI omitted size (or used `medium`/`large`), and preserve explicit `size="small"`:
 
-- Button / ButtonIcon / TextField family / Tag
+- Button / ButtonIcon / Tag
+- TextField family (TextField prop first; else parent FormControl `size`)
 - Select (Select prop first; else FormControl `size`)
 - Combobox / SearchAutocomplete (Autocomplete prop first; else `renderInput` TextField `size`)
 

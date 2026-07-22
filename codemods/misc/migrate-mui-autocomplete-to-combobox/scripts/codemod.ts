@@ -294,10 +294,13 @@ function getDirectPropStringValue(opening: SgNode<TSX>, propName: string): strin
   if (!attr) {
     return null
   }
-  const stringNode = attr.find({ rule: { kind: 'string' } })
-  if (stringNode) {
-    const frag = stringNode.find({ rule: { kind: 'string_fragment' } })
-    return frag?.text() ?? null
+  // Only accept a direct string child (size="small"). Nested strings inside
+  // expressions like size={cond ? 'small' : 'medium'} are dynamic, not static.
+  for (const child of attr.children()) {
+    if (child.kind() === 'string') {
+      const frag = child.find({ rule: { kind: 'string_fragment' } })
+      return frag?.text() ?? null
+    }
   }
   return null
 }
@@ -326,10 +329,13 @@ function getPropStringValue(opening: SgNode<TSX>, propName: string): string | nu
   if (!attr) {
     return null
   }
-  const stringNode = attr.find({ rule: { kind: 'string' } })
-  if (stringNode) {
-    const frag = stringNode.find({ rule: { kind: 'string_fragment' } })
-    return frag?.text() ?? null
+  // Only accept a direct string child (size="small"). Nested strings inside
+  // expressions like size={cond ? 'small' : 'medium'} are dynamic, not static.
+  for (const child of attr.children()) {
+    if (child.kind() === 'string') {
+      const frag = child.find({ rule: { kind: 'string_fragment' } })
+      return frag?.text() ?? null
+    }
   }
   return null
 }
@@ -509,17 +515,17 @@ function extractRenderInputFieldProp(opening: SgNode<TSX>, propName: 'label' | '
   if (!stringAttr) {
     return null
   }
-  const stringNode = stringAttr.find({ rule: { kind: 'string' } })
-  const frag = stringNode?.find({ rule: { kind: 'string_fragment' } })
-  return frag?.text() ?? null
+  for (const child of stringAttr.children()) {
+    if (child.kind() === 'string') {
+      const frag = child.find({ rule: { kind: 'string_fragment' } })
+      return frag?.text() ?? null
+    }
+  }
+  return null
 }
 
 function isDynamicSizeProp(opening: SgNode<TSX>): boolean {
-  const attr = getDirectPropAttr(opening, 'size')
-  if (!attr) {
-    return false
-  }
-  return attr.find({ rule: { kind: 'string' } }) === null
+  return getDirectPropAttr(opening, 'size') !== null && getDirectPropStringValue(opening, 'size') === null
 }
 
 function addMappedSizeProp(opening: SgNode<TSX>, props: string[]): void {
