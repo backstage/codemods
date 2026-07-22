@@ -96,4 +96,3 @@ Conventions to follow:
 - Use single-quoted scalars in `codemod.yaml` and `workflow.yaml` to match the oxfmt convention.
 
 Use an existing codemod like `catalog-node-alpha-to-stable` as a reference when creating a new one.
-test
