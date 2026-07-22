@@ -335,15 +335,62 @@ function getJsxChildren(element: SgNode<TSX>): SgNode<TSX>[] {
 
 function getParamName(paramNode: SgNode<TSX>): string {
   const ident = paramNode.find({ rule: { kind: 'identifier' } })
-  return ident?.text() ?? paramNode.text().replace(/:.*$/, '').trim()
+  return ident?.text() ?? paramNode.text()
 }
 
-function identifierUsedIn(text: string, name: string): boolean {
-  return new RegExp(`\\b${escapeRegex(name)}\\b`).test(text)
+function applyNodeTextReplacements(node: SgNode<TSX>, replacements: { target: SgNode<TSX>; text: string }[]): string {
+  const base = node.range().start.index
+  let text = node.text()
+  const sorted = [...replacements].sort((a, b) => b.target.range().start.index - a.target.range().start.index)
+  for (const { target, text: next } of sorted) {
+    const start = target.range().start.index - base
+    const end = target.range().end.index - base
+    text = `${text.slice(0, start)}${next}${text.slice(end)}`
+  }
+  return text
 }
 
-function replaceIdentifier(text: string, name: string, replacement: string): string {
-  return text.replaceAll(new RegExp(`\\b${escapeRegex(name)}\\b`, 'g'), replacement)
+function identifierUsedInBody(body: SgNode<TSX>, name: string): boolean {
+  return (
+    body.find({
+      rule: {
+        kind: 'identifier',
+        regex: `^${escapeRegex(name)}$`,
+      },
+    }) !== null
+  )
+}
+
+function replaceIdentifierInBody(body: SgNode<TSX>, name: string, replacement: string): string {
+  const targets = body.findAll({
+    rule: {
+      kind: 'identifier',
+      regex: `^${escapeRegex(name)}$`,
+    },
+  })
+  return applyNodeTextReplacements(
+    body,
+    targets.map((target) => ({ target, text: replacement })),
+  )
+}
+
+function getJsxExpressionInnerReference(expr: SgNode<TSX>): SgNode<TSX> | null {
+  const meaningful: SgNode<TSX>[] = []
+  for (const child of expr.children()) {
+    const kind = child.kind()
+    if (kind === '{' || kind === '}') {
+      continue
+    }
+    meaningful.push(child)
+  }
+  if (meaningful.length !== 1) {
+    return null
+  }
+  const [inner] = meaningful
+  if (inner?.is('identifier') || inner?.is('member_expression')) {
+    return inner
+  }
+  return null
 }
 
 /**
@@ -359,9 +406,9 @@ function rewriteTabsOnChangeHandler(attr: SgNode<TSX>): string | null {
 
   const arrow = expr.find({ rule: { kind: 'arrow_function' } })
   if (!arrow) {
-    const innerText = expr.text().slice(1, -1).trim()
-    if (/^[\w$.]+$/.test(innerText)) {
-      return `{(key) => ${innerText}(undefined, key)}`
+    const innerRef = getJsxExpressionInnerReference(expr)
+    if (innerRef) {
+      return `{(key) => ${innerRef.text()}(undefined, key)}`
     }
     return null
   }
@@ -395,11 +442,10 @@ function rewriteTabsOnChangeHandler(attr: SgNode<TSX>): string | null {
     return null
   }
 
-  const bodyText = body.text()
-  const eventUsed = identifierUsedIn(bodyText, eventName) && !eventName.startsWith('_')
+  const eventUsed = identifierUsedInBody(body, eventName) && !eventName.startsWith('_')
 
   if (!eventUsed) {
-    return `{key => ${replaceIdentifier(bodyText, valueName, 'key')}}`
+    return `{key => ${replaceIdentifierInBody(body, valueName, 'key')}}`
   }
 
   // Handler references the event param — cannot safely rewrite without breaking semantics

@@ -315,6 +315,149 @@ function unwrapJsxExpression(raw: string): string {
   return raw
 }
 
+function getJsxExpressionFromAttr(attr: SgNode<TSX>): SgNode<TSX> | null {
+  return attr.find({ rule: { kind: 'jsx_expression' } })
+}
+
+function getJsxExpressionInnerNode(expr: SgNode<TSX>): SgNode<TSX> | null {
+  const children: SgNode<TSX>[] = []
+  for (const child of expr.children()) {
+    if (child.kind() !== '{' && child.kind() !== '}') {
+      children.push(child)
+    }
+  }
+  const [onlyChild] = children
+  return children.length === 1 ? (onlyChild ?? null) : null
+}
+
+function getParamName(paramNode: SgNode<TSX>): string {
+  const ident = paramNode.find({ rule: { kind: 'identifier' } })
+  return ident?.text() ?? paramNode.text()
+}
+
+function getCallExpressionFromArrowBody(body: SgNode<TSX>): SgNode<TSX> | null {
+  if (body.is('call_expression')) {
+    return body
+  }
+  if (!body.is('statement_block')) {
+    return null
+  }
+  const statements = body.children().filter((child) => child.kind() !== '{' && child.kind() !== '}')
+  if (statements.length !== 1) {
+    return null
+  }
+  const [statement] = statements
+  if (!statement?.is('expression_statement')) {
+    return null
+  }
+  return statement.find({ rule: { kind: 'call_expression' } })
+}
+
+function simplifySecondArgCallbackFromAttr(attr: SgNode<TSX>): string | null {
+  const expr = getJsxExpressionFromAttr(attr)
+  if (!expr) {
+    return null
+  }
+  const inner = getJsxExpressionInnerNode(expr)
+  if (!inner) {
+    return null
+  }
+
+  if (inner.is('identifier')) {
+    return inner.text()
+  }
+
+  if (!inner.is('arrow_function')) {
+    return null
+  }
+
+  const params = inner.field('parameters')
+  if (params?.kind() !== 'formal_parameters') {
+    return null
+  }
+
+  const paramChildren: SgNode<TSX>[] = []
+  for (const child of params.children()) {
+    if (child.is('required_parameter') || child.is('identifier')) {
+      paramChildren.push(child)
+    }
+  }
+  if (paramChildren.length !== 2) {
+    return null
+  }
+
+  const [, secondParam] = paramChildren
+  if (!secondParam) {
+    return null
+  }
+  const secondParamName = getParamName(secondParam)
+
+  const callExpr = getCallExpressionFromArrowBody(inner.field('body'))
+  if (!callExpr) {
+    return null
+  }
+
+  const callee = callExpr.field('function')
+  if (!callee?.is('identifier')) {
+    return null
+  }
+
+  const args = callExpr.field('arguments')
+  if (!args) {
+    return null
+  }
+
+  const argChildren: SgNode<TSX>[] = []
+  for (const child of args.children()) {
+    if (child.kind() !== '(' && child.kind() !== ')' && child.kind() !== ',') {
+      argChildren.push(child)
+    }
+  }
+  if (argChildren.length !== 1) {
+    return null
+  }
+
+  const [onlyArg] = argChildren
+  if (!onlyArg?.is('identifier') || onlyArg.text() !== secondParamName) {
+    return null
+  }
+
+  return callee.text()
+}
+
+function flattenStringOptionsFromAttr(attr: SgNode<TSX>): string | null {
+  const expr = getJsxExpressionFromAttr(attr)
+  if (!expr) {
+    return null
+  }
+  const inner = getJsxExpressionInnerNode(expr)
+  if (!inner?.is('array')) {
+    return null
+  }
+
+  const strings: string[] = []
+  for (const child of inner.children()) {
+    if (child.kind() === '[' || child.kind() === ']' || child.kind() === ',') {
+      continue
+    }
+    if (!child.is('string')) {
+      return null
+    }
+    const frag = child.find({ rule: { kind: 'string_fragment' } })
+    if (!frag) {
+      return null
+    }
+    strings.push(frag.text())
+  }
+
+  if (strings.length === 0) {
+    return '[]'
+  }
+
+  const objects = strings.map((value) => `{ value: '${value}', label: '${value}' }`)
+  return `[${objects.join(', ')}]`
+}
+
 function looksLikeSearchText(text: string | null): boolean {
   if (!text) {
     return false
@@ -343,58 +486,6 @@ function extractRenderInputFieldProp(opening: SgNode<TSX>, propName: 'label' | '
   const stringNode = stringAttr.find({ rule: { kind: 'string' } })
   const frag = stringNode?.find({ rule: { kind: 'string_fragment' } })
   return frag?.text() ?? null
-}
-
-function simplifySecondArgCallback(rawExpr: string): string | null {
-  const expr = unwrapJsxExpression(rawExpr)
-
-  // (_event, next) => onChange(next)  OR  (_e, v) => setQuery(v)
-  const arrowCall = expr.match(
-    /^\(\s*[_a-zA-Z][\w$]*\s*,\s*([_a-zA-Z][\w$]*)\s*\)\s*=>\s*([_a-zA-Z][\w$]*)\(\s*\1\s*\)$/,
-  )
-  if (arrowCall?.[2]) {
-    return arrowCall[2]
-  }
-
-  // (_event, next) => { onChange(next) }
-  const arrowBlock = expr.match(
-    /^\(\s*[_a-zA-Z][\w$]*\s*,\s*([_a-zA-Z][\w$]*)\s*\)\s*=>\s*\{\s*([_a-zA-Z][\w$]*)\(\s*\1\s*\)\s*;?\s*\}$/,
-  )
-  if (arrowBlock?.[2]) {
-    return arrowBlock[2]
-  }
-
-  // identifier handler — keep as-is (signature differs, but best-effort)
-  if (/^[_a-zA-Z][\w$]*$/.test(expr)) {
-    return expr
-  }
-
-  return null
-}
-
-function flattenStringOptionsLiteral(optionsRaw: string): string | null {
-  const expr = unwrapJsxExpression(optionsRaw)
-  const arrayMatch = expr.match(/^\[\s*([\s\S]*)\s*\]$/)
-  if (!arrayMatch) {
-    return null
-  }
-  const inner = arrayMatch[1] ?? ''
-  if (inner.trim().length === 0) {
-    return '[]'
-  }
-
-  const stringLiterals = [...inner.matchAll(/(['"])([^'"\\]*)\1/g)].map((m) => m[2] ?? '')
-  // Require the array to be only string literals (best-effort flatten).
-  const withoutStrings = inner
-    .replaceAll(/(['"])([^'"\\]*)\1/g, '')
-    .replaceAll(',', '')
-    .trim()
-  if (withoutStrings.length > 0 || stringLiterals.length === 0) {
-    return null
-  }
-
-  const objects = stringLiterals.map((value) => `{ value: '${value}', label: '${value}' }`)
-  return `[${objects.join(', ')}]`
 }
 
 type AutocompleteKind = 'combobox' | 'search' | 'todo'
@@ -435,8 +526,8 @@ function classifyAutocomplete(opening: SgNode<TSX>): AutocompleteKind {
   // Form-like option picker → Combobox only when options are a string[] literal
   // we can reshape to `{ value, label }`. Object options + getOptionLabel are unsafe.
   if (hasOptions && (hasGetOptionLabel || hasValue || hasOnChange)) {
-    const optionsRaw = getPropRawValue(opening, 'options')
-    if (optionsRaw && flattenStringOptionsLiteral(optionsRaw)) {
+    const optionsAttr = getPropAttr(opening, 'options')
+    if (optionsAttr && flattenStringOptionsFromAttr(optionsAttr)) {
       return 'combobox'
     }
     return 'todo'
@@ -446,13 +537,17 @@ function classifyAutocomplete(opening: SgNode<TSX>): AutocompleteKind {
 }
 
 function buildComboboxReplacement(opening: SgNode<TSX>): string | null {
-  const optionsRaw = getPropRawValue(opening, 'options')
-  if (!optionsRaw) {
+  const optionsAttr = getPropAttr(opening, 'options')
+  if (!optionsAttr) {
     return null
   }
 
-  const flattened = flattenStringOptionsLiteral(optionsRaw)
-  const optionsExpr = flattened ?? unwrapJsxExpression(optionsRaw)
+  const flattened = flattenStringOptionsFromAttr(optionsAttr)
+  const optionsRaw = getPropRawValue(opening, 'options')
+  const optionsExpr = flattened ?? (optionsRaw ? unwrapJsxExpression(optionsRaw) : null)
+  if (!optionsExpr) {
+    return null
+  }
 
   const props: string[] = [`options={${optionsExpr}}`]
 
@@ -461,13 +556,16 @@ function buildComboboxReplacement(opening: SgNode<TSX>): string | null {
     props.push(`value={${unwrapJsxExpression(valueRaw)}}`)
   }
 
-  const onChangeRaw = getPropRawValue(opening, 'onChange')
-  if (onChangeRaw && onChangeRaw !== 'true') {
-    const simplified = simplifySecondArgCallback(onChangeRaw)
-    if (!simplified) {
-      return null
+  const onChangeAttr = getPropAttr(opening, 'onChange')
+  if (onChangeAttr) {
+    const onChangeRaw = getPropRawValue(opening, 'onChange')
+    if (onChangeRaw && onChangeRaw !== 'true') {
+      const simplified = simplifySecondArgCallbackFromAttr(onChangeAttr)
+      if (!simplified) {
+        return null
+      }
+      props.push(`onSelectionChange={${simplified}}`)
     }
-    props.push(`onSelectionChange={${simplified}}`)
   }
 
   const label = extractRenderInputFieldProp(opening, 'label')
@@ -496,13 +594,16 @@ function buildSearchReplacement(opening: SgNode<TSX>): string | null {
     props.push(`inputValue={${unwrapJsxExpression(inputValueRaw)}}`)
   }
 
-  const onInputChangeRaw = getPropRawValue(opening, 'onInputChange')
-  if (onInputChangeRaw && onInputChangeRaw !== 'true') {
-    const simplified = simplifySecondArgCallback(onInputChangeRaw)
-    if (!simplified) {
-      return null
+  const onInputChangeAttr = getPropAttr(opening, 'onInputChange')
+  if (onInputChangeAttr) {
+    const onInputChangeRaw = getPropRawValue(opening, 'onInputChange')
+    if (onInputChangeRaw && onInputChangeRaw !== 'true') {
+      const simplified = simplifySecondArgCallbackFromAttr(onInputChangeAttr)
+      if (!simplified) {
+        return null
+      }
+      props.push(`onInputChange={${simplified}}`)
     }
-    props.push(`onInputChange={${simplified}}`)
   }
 
   const placeholder = extractRenderInputFieldProp(opening, 'placeholder')
