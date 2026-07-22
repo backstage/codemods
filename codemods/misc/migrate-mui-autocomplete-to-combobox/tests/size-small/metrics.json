@@ -2,7 +2,7 @@
   "migrate-mui-autocomplete-to-combobox": [
     {
       "cardinality": {
-        "action": "autocomplete-to-search"
+        "action": "autocomplete-to-combobox"
       },
       "count": 1
     },
@@ -20,7 +20,8 @@
     },
     {
       "cardinality": {
-        "action": "size-defaulted-to-medium"
+        "action": "size-mapped",
+        "size": "small"
       },
       "count": 1
     }

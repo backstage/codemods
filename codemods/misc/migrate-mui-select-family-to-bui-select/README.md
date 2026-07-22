@@ -7,6 +7,7 @@ Migrates MUI Select wrapper patterns to Backstage UI Select.
 - Basic FormControl + Select + MenuItem patterns
 - Named / partial barrel imports
 - Merging into an existing `@backstage/ui` import
+- MUI density/size remapping (`small` → `small`, omitted/`medium`/`large` → `medium`; FormControl fallback)
 
 ## TODOs / won't-do
 

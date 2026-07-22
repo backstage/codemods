@@ -1,5 +1,11 @@
 {
-  "migrate-mui-select-family-to-bui-select": [
+  "migrate-mui-autocomplete-to-combobox": [
+    {
+      "cardinality": {
+        "action": "autocomplete-to-combobox"
+      },
+      "count": 1
+    },
     {
       "cardinality": {
         "action": "import-added"
@@ -8,25 +14,20 @@
     },
     {
       "cardinality": {
-        "action": "import-pruned"
+        "action": "import-removed"
+      },
+      "count": 2
+    },
+    {
+      "cardinality": {
+        "action": "size-from-render-input"
       },
       "count": 1
     },
     {
       "cardinality": {
-        "action": "onChange-rewritten"
-      },
-      "count": 1
-    },
-    {
-      "cardinality": {
-        "action": "select-migrated"
-      },
-      "count": 1
-    },
-    {
-      "cardinality": {
-        "action": "size-defaulted-to-medium"
+        "action": "size-mapped",
+        "size": "small"
       },
       "count": 1
     }

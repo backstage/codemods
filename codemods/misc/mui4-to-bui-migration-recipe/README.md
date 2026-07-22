@@ -55,7 +55,11 @@ Also see the short ordering note in [`../README.md`](../README.md).
 
 ### Density (size defaults)
 
-BUI controls default to `size="small"` while MUI defaults to medium. Button, ButtonIcon, TextField family, and Tag emit `size="medium"` when MUI omitted size (or used `medium`/`large`), so migrations do not silently shrink. Explicit MUI `size="small"` is preserved.
+BUI controls default to `size="small"` while MUI defaults to medium. These packages emit `size="medium"` when MUI omitted size (or used `medium`/`large`), and preserve explicit `size="small"`:
+
+- Button / ButtonIcon / TextField family / Tag
+- Select (Select prop first; else FormControl `size`)
+- Combobox / SearchAutocomplete (Autocomplete prop first; else `renderInput` TextField `size`)
 
 ## Package naming
 

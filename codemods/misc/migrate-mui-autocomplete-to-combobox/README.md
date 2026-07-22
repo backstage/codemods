@@ -9,6 +9,7 @@ Heuristically migrates MUI 4 `Autocomplete` to Backstage UI `Combobox` or `Searc
 - Deep and barrel imports from `@material-ui/lab`
 - Best-effort option literal flattening for string arrays
 - Prunes unused `TextField` imports left behind by `renderInput`
+- Maps MUI `size` to BUI `size` (`small` preserved; `medium`/`large`/omitted → `medium`; falls back to static `size` on the `renderInput` `TextField`)
 
 ## TODOs left for humans
 
@@ -16,6 +17,7 @@ Heuristically migrates MUI 4 `Autocomplete` to Backstage UI `Combobox` or `Searc
 - Object `options` / `getOptionLabel` shapes (not safe for BUI Combobox)
 - `freeSolo`, custom `renderOption`, and other complex cases
 - Non-trivial `onChange` / options shapes
+- Dynamic `size` on Autocomplete
 
 ## Won't do
 

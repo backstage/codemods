@@ -276,6 +276,32 @@ function getPropAttr(opening: SgNode<TSX>, propName: string): SgNode<TSX> | null
   })
 }
 
+function getDirectPropAttr(opening: SgNode<TSX>, propName: string): SgNode<TSX> | null {
+  for (const child of opening.children()) {
+    if (!child.is('jsx_attribute')) {
+      continue
+    }
+    const propId = child.find({ rule: { kind: 'property_identifier' } })
+    if (propId?.text() === propName) {
+      return child
+    }
+  }
+  return null
+}
+
+function getDirectPropStringValue(opening: SgNode<TSX>, propName: string): string | null {
+  const attr = getDirectPropAttr(opening, propName)
+  if (!attr) {
+    return null
+  }
+  const stringNode = attr.find({ rule: { kind: 'string' } })
+  if (stringNode) {
+    const frag = stringNode.find({ rule: { kind: 'string_fragment' } })
+    return frag?.text() ?? null
+  }
+  return null
+}
+
 function hasProp(opening: SgNode<TSX>, propName: string): boolean {
   return getPropAttr(opening, propName) !== null
 }
@@ -466,7 +492,7 @@ function looksLikeSearchText(text: string | null): boolean {
   return /\b(search|find|filter)\b/i.test(text)
 }
 
-function extractRenderInputFieldProp(opening: SgNode<TSX>, propName: 'label' | 'placeholder'): string | null {
+function extractRenderInputFieldProp(opening: SgNode<TSX>, propName: 'label' | 'placeholder' | 'size'): string | null {
   const attr = getPropAttr(opening, 'renderInput')
   if (!attr) {
     return null
@@ -486,6 +512,56 @@ function extractRenderInputFieldProp(opening: SgNode<TSX>, propName: 'label' | '
   const stringNode = stringAttr.find({ rule: { kind: 'string' } })
   const frag = stringNode?.find({ rule: { kind: 'string_fragment' } })
   return frag?.text() ?? null
+}
+
+function isDynamicSizeProp(opening: SgNode<TSX>): boolean {
+  const attr = getDirectPropAttr(opening, 'size')
+  if (!attr) {
+    return false
+  }
+  return attr.find({ rule: { kind: 'string' } }) === null
+}
+
+function addMappedSizeProp(opening: SgNode<TSX>, props: string[]): void {
+  const autocompleteSize = getDirectPropStringValue(opening, 'size')
+  if (autocompleteSize !== null) {
+    mapStaticSizeValue(autocompleteSize, false, props)
+    return
+  }
+
+  const renderInputSize = extractRenderInputFieldProp(opening, 'size')
+  if (renderInputSize !== null) {
+    mapStaticSizeValue(renderInputSize, true, props)
+    return
+  }
+
+  props.push('size="medium"')
+  migrationMetric.increment({ action: 'size-defaulted-to-medium' })
+}
+
+function mapStaticSizeValue(muiSize: string, fromRenderInput: boolean, props: string[]): void {
+  if (fromRenderInput) {
+    migrationMetric.increment({ action: 'size-from-render-input' })
+  }
+
+  if (muiSize === 'small') {
+    props.push('size="small"')
+    migrationMetric.increment({ action: 'size-mapped', size: 'small' })
+    return
+  }
+  if (muiSize === 'medium') {
+    props.push('size="medium"')
+    migrationMetric.increment({ action: 'size-mapped', size: 'medium' })
+    return
+  }
+  if (muiSize === 'large') {
+    props.push('size="medium"')
+    migrationMetric.increment({ action: 'size-large-to-medium' })
+    return
+  }
+
+  props.push('size="medium"')
+  migrationMetric.increment({ action: 'size-defaulted-to-medium' })
 }
 
 type AutocompleteKind = 'combobox' | 'search' | 'todo'
@@ -583,6 +659,8 @@ function buildComboboxReplacement(opening: SgNode<TSX>): string | null {
     props.push(`name="${nameStr}"`)
   }
 
+  addMappedSizeProp(opening, props)
+
   return `<Combobox ${props.join(' ')} />`
 }
 
@@ -610,6 +688,8 @@ function buildSearchReplacement(opening: SgNode<TSX>): string | null {
   if (placeholder) {
     props.push(`placeholder="${placeholder}"`)
   }
+
+  addMappedSizeProp(opening, props)
 
   return `<SearchAutocomplete ${props.join(' ')} />`
 }
@@ -652,6 +732,20 @@ function transformAutocompleteElements(
       )
       preserveImport = true
       migrationMetric.increment({ action: 'todo-inserted', reason: 'ambiguous-autocomplete' })
+      continue
+    }
+
+    if (isDynamicSizeProp(opening)) {
+      edits.push(
+        el.replace(
+          withTodoComment(
+            `{/* TODO(backstage-codemod): verify Autocomplete migration manually — ambiguous Combobox vs SearchAutocomplete */}`,
+            el.text(),
+          ),
+        ),
+      )
+      preserveImport = true
+      migrationMetric.increment({ action: 'todo-inserted', reason: 'size' })
       continue
     }
 

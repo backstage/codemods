@@ -479,6 +479,59 @@ function formatOption(option: OptionInfo): string {
   return `{ id: '${escapeSingleQuotes(option.id)}', label: '${escapeSingleQuotes(option.label)}' }`
 }
 
+function isDynamicSizeProp(opening: SgNode<TSX>): boolean {
+  const attr = getPropAttr(opening, 'size')
+  if (!attr) {
+    return false
+  }
+  return attr.find({ rule: { kind: 'string' } }) === null
+}
+
+function hasDynamicSizeOnAny(openings: SgNode<TSX>[]): boolean {
+  return openings.some((opening) => isDynamicSizeProp(opening))
+}
+
+function appendSizeProp(openings: SgNode<TSX>[], newProps: string[]): void {
+  const [primary, ...fallbacks] = openings
+
+  let sizeValue = primary ? getPropStringValue(primary, 'size') : null
+  let fromFormControl = false
+
+  if (sizeValue === null) {
+    for (const fallback of fallbacks) {
+      const fallbackSize = getPropStringValue(fallback, 'size')
+      if (fallbackSize !== null) {
+        sizeValue = fallbackSize
+        fromFormControl = true
+        break
+      }
+    }
+  }
+
+  if (fromFormControl) {
+    migrationMetric.increment({ action: 'size-from-form-control' })
+  }
+
+  if (sizeValue === 'small') {
+    newProps.push('size="small"')
+    migrationMetric.increment({ action: 'size-mapped', size: 'small' })
+    return
+  }
+  if (sizeValue === 'medium') {
+    newProps.push('size="medium"')
+    migrationMetric.increment({ action: 'size-mapped', size: 'medium' })
+    return
+  }
+  if (sizeValue === 'large') {
+    newProps.push('size="medium"')
+    migrationMetric.increment({ action: 'size-large-to-medium' })
+    return
+  }
+
+  newProps.push('size="medium"')
+  migrationMetric.increment({ action: 'size-defaulted-to-medium' })
+}
+
 function findSelectInFormControl(
   formControlElement: SgNode<TSX>,
   localNames: Map<string, string>,
@@ -618,11 +671,27 @@ function transformSelectPatterns(
         continue
       }
 
+      if (hasDynamicSizeOnAny([selectOpening, opening])) {
+        preserveImport = true
+        edits.push(
+          el.replace(
+            withTodoComment(
+              `{/* TODO(backstage-codemod): finish Select migration manually (dynamic-size) */}`,
+              el.text(),
+            ),
+          ),
+        )
+        migrationMetric.increment({ action: 'todo-inserted', reason: 'dynamic-size' })
+        continue
+      }
+
       const newProps: string[] = []
 
       if (label) {
         newProps.push(`label={${JSON.stringify(label)}}`)
       }
+
+      appendSizeProp([selectOpening, opening], newProps)
 
       const valueRaw = getPropRawValue(selectOpening, 'value')
       if (valueRaw) {
@@ -687,7 +756,23 @@ function transformSelectPatterns(
         continue
       }
 
+      if (isDynamicSizeProp(opening)) {
+        preserveImport = true
+        edits.push(
+          el.replace(
+            withTodoComment(
+              `{/* TODO(backstage-codemod): finish Select migration manually (dynamic-size) */}`,
+              el.text(),
+            ),
+          ),
+        )
+        migrationMetric.increment({ action: 'todo-inserted', reason: 'dynamic-size' })
+        continue
+      }
+
       const newProps: string[] = []
+
+      appendSizeProp([opening], newProps)
 
       const valueRaw = getPropRawValue(opening, 'value')
       if (valueRaw) {

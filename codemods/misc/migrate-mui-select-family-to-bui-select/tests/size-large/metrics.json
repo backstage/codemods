@@ -8,9 +8,9 @@
     },
     {
       "cardinality": {
-        "action": "import-pruned"
+        "action": "import-removed"
       },
-      "count": 1
+      "count": 4
     },
     {
       "cardinality": {
@@ -26,7 +26,7 @@
     },
     {
       "cardinality": {
-        "action": "size-defaulted-to-medium"
+        "action": "size-large-to-medium"
       },
       "count": 1
     }
