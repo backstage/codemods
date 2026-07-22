@@ -77,11 +77,57 @@ function getNamedImportLocalName(imp: SgNode<TSX>, targetName: string): string |
 interface MenuImports {
   localNames: Map<string, string>
   importNodesToRemove: SgNode<TSX>[]
+  importSpecifiersToRemove: Map<SgNode<TSX>, { source: string; names: string[] }>
+}
+
+function getImportedName(spec: SgNode<TSX>): string | null {
+  const identifiers = spec.findAll({
+    rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
+  })
+  return identifiers[0]?.text() ?? null
+}
+
+function getPrunedBarrelImportText(imp: SgNode<TSX>, namesToRemove: string[], source: string): string {
+  const remainingSpecs = imp.findAll({ rule: { kind: 'import_specifier' } }).filter((spec) => {
+    const importedName = getImportedName(spec)
+    return importedName !== null && !namesToRemove.includes(importedName)
+  })
+
+  if (remainingSpecs.length === 0) {
+    return ''
+  }
+
+  const typeOnly = imp.text().trimStart().startsWith('import type')
+  const isMultiline = imp.text().includes('\n')
+  const specTexts = remainingSpecs.map((spec) => spec.text())
+  const typeKw = typeOnly ? 'type ' : ''
+
+  return isMultiline
+    ? `import ${typeKw}{\n  ${specTexts.join(',\n  ')},\n} from '${source}';`
+    : `import ${typeKw}{ ${specTexts.join(', ')} } from '${source}';`
+}
+
+function pruneBarrelImportSpecifiers(
+  imp: SgNode<TSX>,
+  source: string,
+  namesToRemove: string[],
+  edits: Edit[],
+): void {
+  edits.push(imp.replace(getPrunedBarrelImportText(imp, namesToRemove, source)))
+  migrationMetric.increment({ action: 'import-removed' })
+}
+
+function withTodoComment(comment: string, elementText: string): string {
+  return `<>
+  ${comment}
+  ${elementText}
+</>`
 }
 
 function collectMenuImports(rootNode: SgNode<TSX>): MenuImports {
   const localNames = new Map<string, string>()
   const importNodesToRemove: SgNode<TSX>[] = []
+  const importSpecifiersToRemove = new Map<SgNode<TSX>, { source: string; names: string[] }>()
 
   for (const componentName of MUI_MENU_COMPONENTS) {
     for (const imp of findImportStatementsFrom(rootNode, `@material-ui/core/${componentName}`)) {
@@ -94,77 +140,94 @@ function collectMenuImports(rootNode: SgNode<TSX>): MenuImports {
   }
 
   for (const imp of findImportStatementsFrom(rootNode, '@material-ui/core')) {
-    let foundCount = 0
+    const namesToRemove: string[] = []
     for (const componentName of MUI_MENU_COMPONENTS) {
       const localName = getNamedImportLocalName(imp, componentName)
       if (localName) {
         localNames.set(localName, componentName)
-        foundCount++
+        namesToRemove.push(componentName)
       }
     }
-    if (foundCount > 0) {
+    if (namesToRemove.length > 0) {
       const allSpecifiers = imp.findAll({ rule: { kind: 'import_specifier' } })
-      if (foundCount >= allSpecifiers.length) {
+      if (namesToRemove.length >= allSpecifiers.length) {
         importNodesToRemove.push(imp)
+      } else {
+        importSpecifiersToRemove.set(imp, { source: '@material-ui/core', names: namesToRemove })
       }
     }
   }
 
-  return { localNames, importNodesToRemove }
+  return { localNames, importNodesToRemove, importSpecifiersToRemove }
 }
 
 function addBuiImport(
   rootNode: SgNode<TSX>,
   names: string[],
   importNodesToRemove: SgNode<TSX>[],
+  importSpecifiersToRemove: Map<SgNode<TSX>, { source: string; names: string[] }>,
   edits: Edit[],
+  handledBarrelIds: Set<number>,
 ): boolean {
   const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
   const existingImport = existingImports[0] ?? null
   const sortedNames = [...names].sort()
+  const buiImport = `import { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`
 
   if (existingImport) {
     const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
     if (namedImports) {
-      const text = namedImports.text()
-      const inner = text.slice(1, -1).trim()
-      const existing = inner
-        .split(',')
-        .map((n) => n.trim())
-        .filter(Boolean)
+      const specifiers = existingImport.findAll({ rule: { kind: 'import_specifier' } })
+      const existingImported = new Set<string>()
+      const existingTexts: string[] = []
+      for (const spec of specifiers) {
+        const imported = getImportedName(spec)
+        if (imported) {
+          existingImported.add(imported)
+        }
+        existingTexts.push(spec.text())
+      }
       for (const name of names) {
-        if (!existing.includes(name)) {
-          existing.push(name)
+        if (!existingImported.has(name)) {
+          existingTexts.push(name)
+          existingImported.add(name)
         }
       }
-      existing.sort()
-      edits.push(namedImports.replace(`{ ${existing.join(', ')} }`))
+      existingTexts.sort()
+      edits.push(namedImports.replace(`{ ${existingTexts.join(', ')} }`))
       migrationMetric.increment({ action: 'import-merged' })
     }
     return false
   }
 
-  const removableIds = new Set(importNodesToRemove.map((imp) => imp.id()))
+  const skipIds = new Set([
+    ...importNodesToRemove.map((imp) => imp.id()),
+    ...[...importSpecifiersToRemove.keys()].map((imp) => imp.id()),
+  ])
   const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
-  const anchorImport = [...allImports].reverse().find((imp) => !removableIds.has(imp.id())) ?? null
+  const anchorImport = [...allImports].reverse().find((imp) => !skipIds.has(imp.id())) ?? null
 
   if (anchorImport) {
-    edits.push(
-      anchorImport.replace(`${anchorImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`),
-    )
-  } else if (importNodesToRemove.length === 1) {
-    const [importNode] = importNodesToRemove
-    if (importNode) {
-      edits.push(importNode.replace(`import { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
+    edits.push(anchorImport.replace(`${anchorImport.text()}\n${buiImport}`))
+  } else {
+    const [barrelToFold] = [...importSpecifiersToRemove.entries()]
+    if (barrelToFold) {
+      const [imp, { source, names: namesToRemove }] = barrelToFold
+      const pruned = getPrunedBarrelImportText(imp, namesToRemove, source)
+      edits.push(imp.replace(pruned.length > 0 ? `${pruned}\n${buiImport}` : buiImport))
+      handledBarrelIds.add(imp.id())
       migrationMetric.increment({ action: 'import-added' })
-      return true
+      migrationMetric.increment({ action: 'import-removed' })
+      return false
     }
-  } else if (importNodesToRemove.length > 0) {
-    const [importNode] = importNodesToRemove
-    if (importNode) {
-      edits.push(importNode.replace(`import { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`))
-      migrationMetric.increment({ action: 'import-added' })
-      return true
+
+    if (importNodesToRemove.length > 0) {
+      const [importNode] = importNodesToRemove
+      if (importNode) {
+        edits.push(importNode.replace(buiImport))
+        migrationMetric.increment({ action: 'import-added' })
+        return true
+      }
     }
   }
 
@@ -493,7 +556,10 @@ function transformMenuElements(
       preserveImport = true
       edits.push(
         el.replace(
-          `<>{/* TODO(backstage-codemod): finish menu host migration manually (${todoReasons.join(', ')}) */}\n${el.text()}</>`,
+          withTodoComment(
+            `{/* TODO(backstage-codemod): finish menu host migration manually (${todoReasons.join(', ')}) */}`,
+            el.text(),
+          ),
         ),
       )
       migrationMetric.increment({ action: 'todo-inserted', reason: todoReasons.join(', ') })
@@ -516,7 +582,10 @@ function transformMenuElements(
         preserveImport = true
         edits.push(
           el.replace(
-            `<>{/* TODO(backstage-codemod): finish menu host migration manually (no-trigger-element) */}\n${el.text()}</>`,
+            withTodoComment(
+              `{/* TODO(backstage-codemod): finish menu host migration manually (no-trigger-element) */}`,
+              el.text(),
+            ),
           ),
         )
         migrationMetric.increment({ action: 'todo-inserted', reason: 'no-trigger-element' })
@@ -527,7 +596,10 @@ function transformMenuElements(
         preserveImport = true
         edits.push(
           el.replace(
-            `<>{/* TODO(backstage-codemod): finish menu host migration manually (complex-onClose) */}\n${el.text()}</>`,
+            withTodoComment(
+              `{/* TODO(backstage-codemod): finish menu host migration manually (complex-onClose) */}`,
+              el.text(),
+            ),
           ),
         )
         migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-onClose' })
@@ -571,24 +643,38 @@ function transformMenuElements(
   return { preserveImport, migrated, buiNames }
 }
 
-const transform: Codemod<TSX> = (root) => {
+const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
-  const { localNames, importNodesToRemove } = collectMenuImports(rootNode)
+  const { localNames, importNodesToRemove, importSpecifiersToRemove } = collectMenuImports(rootNode)
 
   if (localNames.size === 0) {
-    return Promise.resolve(null)
+    return null
   }
 
   const { preserveImport, migrated, buiNames } = transformMenuElements(rootNode, localNames, edits)
 
   let replacedImport = false
+  const handledBarrelIds = new Set<number>()
   if (migrated) {
-    replacedImport = addBuiImport(rootNode, [...buiNames], importNodesToRemove, edits)
+    replacedImport = addBuiImport(
+      rootNode,
+      [...buiNames],
+      importNodesToRemove,
+      importSpecifiersToRemove,
+      edits,
+      handledBarrelIds,
+    )
   }
 
   if (!preserveImport) {
+    for (const [imp, { source, names }] of importSpecifiersToRemove) {
+      if (handledBarrelIds.has(imp.id())) {
+        continue
+      }
+      pruneBarrelImportSpecifiers(imp, source, names, edits)
+    }
     for (const imp of importNodesToRemove) {
       if (replacedImport && imp.id() === importNodesToRemove[0]?.id()) {
         migrationMetric.increment({ action: 'import-removed' })
@@ -599,7 +685,7 @@ const transform: Codemod<TSX> = (root) => {
     }
   }
 
-  return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
+  return edits.length > 0 ? rootNode.commitEdits(edits) : null
 }
 
 export default transform
