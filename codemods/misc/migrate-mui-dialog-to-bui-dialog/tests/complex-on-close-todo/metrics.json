@@ -1,0 +1,11 @@
+{
+  "migrate-mui-dialog-to-bui-dialog": [
+    {
+      "cardinality": {
+        "action": "todo-inserted",
+        "reason": "complex-onClose"
+      },
+      "count": 1
+    }
+  ]
+}

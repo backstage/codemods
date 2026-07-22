@@ -1,0 +1,11 @@
+{
+  "migrate-mui-chip-to-tag": [
+    {
+      "cardinality": {
+        "action": "todo-inserted",
+        "reason": "interactive-chip"
+      },
+      "count": 1
+    }
+  ]
+}

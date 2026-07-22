@@ -1,0 +1,22 @@
+{
+  "migrate-mui-list-family-to-bui-list": [
+    {
+      "cardinality": {
+        "action": "import-added"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-removed"
+      },
+      "count": 4
+    },
+    {
+      "cardinality": {
+        "action": "list-item-migrated"
+      },
+      "count": 1
+    }
+  ]
+}

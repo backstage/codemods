@@ -1,0 +1,11 @@
+{
+  "migrate-mui-tabs-to-bui-tabs": [
+    {
+      "cardinality": {
+        "action": "todo-inserted",
+        "reason": "complex-props"
+      },
+      "count": 1
+    }
+  ]
+}
