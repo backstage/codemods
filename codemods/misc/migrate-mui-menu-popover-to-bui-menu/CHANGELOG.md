@@ -1,5 +1,11 @@
 # @backstage/migrate-mui-menu-popover-to-bui-menu
 
+## 0.3.0
+
+### Minor Changes
+
+- fcc87ed: Harden MUI 4 → BUI migrations: Button icons/href/onPress, TextField specialized variants, Popover vs Menu heuristic, and standalone Checkbox.
+
 ## 0.2.1
 
 ### Patch Changes

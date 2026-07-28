@@ -1,5 +1,11 @@
 # @backstage/remove-mui-dependencies
 
+## 0.2.2
+
+### Patch Changes
+
+- bd3ac57: Add thin operator README stubs (covers / TODOs / won't-do) for existing MUI 4 → BUI packages.
+
 ## 0.2.1
 
 ### Patch Changes

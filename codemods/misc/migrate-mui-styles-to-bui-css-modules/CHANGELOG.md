@@ -1,5 +1,12 @@
 # @backstage/migrate-mui-styles-to-bui-css-modules
 
+## 0.2.2
+
+### Patch Changes
+
+- 86e3063: Rewrite remaining MUI→BUI helper transforms to be AST-first (no regex source rewriting).
+- f2b262f: Close remaining MUI→BUI review gaps: Link coexistence/aliasing + path skip, Paper default-elevation TODO, outlined→secondary metric, README/recipe operator docs.
+
 ## 0.2.1
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @backstage/migrate-mui-icon-button-to-button-icon
 
+## 0.2.2
+
+### Patch Changes
+
+- 5556ca0: Preserve MUI medium density on BUI migrations by emitting size="medium" when size is omitted (BUI defaults to small).
+- fcc87ed: Fix MUI 4 → BUI transforms: Typography maps only valid TextVariants, Paper never becomes Surface (Box bg=neutral / Card / TODO), and IconButton defaults to tertiary with color + onPress mapping.
+
 ## 0.2.1
 
 ### Patch Changes

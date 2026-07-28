@@ -1,5 +1,17 @@
 # @backstage/migrate-mui-textfield-to-bui-textfield
 
+## 0.3.0
+
+### Minor Changes
+
+- fcc87ed: Harden MUI 4 → BUI migrations: Button icons/href/onPress, TextField specialized variants, Popover vs Menu heuristic, and standalone Checkbox.
+
+### Patch Changes
+
+- 86e3063: Rewrite remaining MUI→BUI helper transforms to be AST-first (no regex source rewriting).
+- 5556ca0: Preserve MUI medium density on BUI migrations by emitting size="medium" when size is omitted (BUI defaults to small).
+- 8f2d17c: Fall back to parent FormControl size for TextField density, and treat ternary/expression size props as dynamic across Select/Autocomplete/Chip/TextField.
+
 ## 0.2.1
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @backstage/migrate-permissioned-route
 
+## 0.3.3
+
+### Patch Changes
+
+- b801285: Use `parse<TSX>(...)` instead of casting `SgRoot` when parsing synthetic TSX sources.
+
 ## 0.3.2
 
 ### Patch Changes

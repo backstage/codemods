@@ -1,5 +1,12 @@
 # @backstage/migrate-mui-layout-to-bui-layout
 
+## 0.2.2
+
+### Patch Changes
+
+- f2b262f: Close remaining MUI→BUI review gaps: Link coexistence/aliasing + path skip, Paper default-elevation TODO, outlined→secondary metric, README/recipe operator docs.
+- fcc87ed: Fix MUI 4 → BUI transforms: Typography maps only valid TextVariants, Paper never becomes Surface (Box bg=neutral / Card / TODO), and IconButton defaults to tertiary with color + onPress mapping.
+
 ## 0.2.1
 
 ### Patch Changes

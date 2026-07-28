@@ -1,5 +1,19 @@
 # @backstage/mui4-to-bui-migration-recipe
 
+## 0.3.0
+
+### Minor Changes
+
+- fcc87ed: Add Avatar, Skeleton, Link, Card, Autocomplete→Combobox, and Switch codemods; update the MUI 4 → BUI recipe order and local workflow for pre-publish dry-runs.
+
+### Patch Changes
+
+- 5556ca0: Preserve MUI medium density on BUI migrations by emitting size="medium" when size is omitted (BUI defaults to small).
+- 0da8de5: Preserve MUI medium density for Select and Autocomplete→Combobox/SearchAutocomplete, including FormControl and renderInput size fallbacks.
+- 8f2d17c: Fall back to parent FormControl size for TextField density, and treat ternary/expression size props as dynamic across Select/Autocomplete/Chip/TextField.
+- f2b262f: Close remaining MUI→BUI review gaps: Link coexistence/aliasing + path skip, Paper default-elevation TODO, outlined→secondary metric, README/recipe operator docs.
+- dc35e56: Keep MUI heading weight for h5/h6 (title scale) and emit matching as elements so Text stays block-level in stacks and cards.
+
 ## 0.2.2
 
 ### Patch Changes

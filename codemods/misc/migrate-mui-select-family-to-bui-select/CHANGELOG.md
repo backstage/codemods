@@ -1,5 +1,14 @@
 # @backstage/migrate-mui-select-family-to-bui-select
 
+## 0.2.2
+
+### Patch Changes
+
+- 86e3063: Rewrite remaining MUI→BUI helper transforms to be AST-first (no regex source rewriting).
+- 0da8de5: Preserve MUI medium density for Select and Autocomplete→Combobox/SearchAutocomplete, including FormControl and renderInput size fallbacks.
+- 8f2d17c: Fall back to parent FormControl size for TextField density, and treat ternary/expression size props as dynamic across Select/Autocomplete/Chip/TextField.
+- bd3ac57: Add thin operator README stubs (covers / TODOs / won't-do) for existing MUI 4 → BUI packages.
+
 ## 0.2.1
 
 ### Patch Changes

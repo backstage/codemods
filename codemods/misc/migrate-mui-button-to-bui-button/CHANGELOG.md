@@ -1,5 +1,16 @@
 # @backstage/migrate-mui-button-to-bui-button
 
+## 0.3.0
+
+### Minor Changes
+
+- fcc87ed: Harden MUI 4 → BUI migrations: Button icons/href/onPress, TextField specialized variants, Popover vs Menu heuristic, and standalone Checkbox.
+
+### Patch Changes
+
+- 5556ca0: Preserve MUI medium density on BUI migrations by emitting size="medium" when size is omitted (BUI defaults to small).
+- f2b262f: Close remaining MUI→BUI review gaps: Link coexistence/aliasing + path skip, Paper default-elevation TODO, outlined→secondary metric, README/recipe operator docs.
+
 ## 0.2.1
 
 ### Patch Changes

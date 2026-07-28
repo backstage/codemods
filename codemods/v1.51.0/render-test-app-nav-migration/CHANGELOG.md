@@ -1,5 +1,11 @@
 # @backstage/render-test-app-nav-migration
 
+## 0.2.3
+
+### Patch Changes
+
+- b801285: Use `parse<TSX>(...)` instead of casting `SgRoot` when parsing synthetic TSX sources.
+
 ## 0.2.2
 
 ### Patch Changes
