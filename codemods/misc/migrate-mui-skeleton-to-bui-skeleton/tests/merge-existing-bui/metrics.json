@@ -1,0 +1,22 @@
+{
+  "migrate-mui-skeleton-to-bui-skeleton": [
+    {
+      "cardinality": {
+        "action": "import-merged"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-removed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "skeleton-migrated"
+      },
+      "count": 1
+    }
+  ]
+}

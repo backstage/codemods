@@ -315,23 +315,83 @@ function getChildContent(element: SgNode<TSX>): string {
     .join('')
 }
 
-function transformFooterCloseButtons(content: string, closeHandler: string | null): string {
-  if (!closeHandler) {
-    return content
+function getSimpleOnClickHandler(opening: SgNode<TSX>): string | null {
+  const attr = getPropAttr(opening, 'onClick')
+  if (!attr) {
+    return null
+  }
+  const expr = attr.find({ rule: { kind: 'jsx_expression' } })
+  if (!expr) {
+    return null
+  }
+  const children: SgNode<TSX>[] = []
+  for (const child of expr.children()) {
+    if (child.kind() !== '{' && child.kind() !== '}') {
+      children.push(child)
+    }
+  }
+  const [onlyChild] = children
+  if (children.length === 1 && onlyChild?.is('identifier')) {
+    return onlyChild.text()
+  }
+  return null
+}
+
+function isCloseFooterButton(element: SgNode<TSX>, closeHandler: string): boolean {
+  const isSelfClosing = element.is('jsx_self_closing_element')
+  const opening = isSelfClosing ? element : element.child(0)
+  if (!opening) {
+    return false
+  }
+  if (getElementName(opening) !== 'button') {
+    return false
+  }
+  return getSimpleOnClickHandler(opening) === closeHandler
+}
+
+function transformFooterCloseButton(element: SgNode<TSX>, closeHandler: string): string {
+  const isSelfClosing = element.is('jsx_self_closing_element')
+  const opening = isSelfClosing ? element : element.child(0)
+  if (!opening) {
+    return element.text()
   }
 
-  const buttonPattern = /<button\s+([^>]*)>([\s\S]*?)<\/button>/g
-  const onClickPattern = new RegExp(`onClick=\\{${escapeRegex(closeHandler)}\\}`)
-
-  return content.replace(buttonPattern, (match: string, attrs: string, label: string) => {
-    if (!onClickPattern.test(attrs)) {
-      return match
+  const extraAttrs: string[] = []
+  for (const attr of opening.findAll({ rule: { kind: 'jsx_attribute' } })) {
+    const propIdent = attr.find({ rule: { kind: 'property_identifier' } })
+    if (!propIdent || propIdent.text() === 'onClick') {
+      continue
     }
-    migrationMetric.increment({ action: 'footer-close-button-migrated' })
-    const extraAttrs = attrs.replace(onClickPattern, '').trim()
-    const attrStr = extraAttrs.length > 0 ? ` ${extraAttrs}` : ''
-    return `<Button slot="close" onPress={${closeHandler}}${attrStr}>${label}</Button>`
-  })
+    extraAttrs.push(attr.text())
+  }
+
+  const attrStr = extraAttrs.length > 0 ? ` ${extraAttrs.join(' ')}` : ''
+  migrationMetric.increment({ action: 'footer-close-button-migrated' })
+
+  if (isSelfClosing) {
+    return `<Button slot="close" onPress={${closeHandler}}${attrStr} />`
+  }
+
+  return `<Button slot="close" onPress={${closeHandler}}${attrStr}>${getChildContent(element)}</Button>`
+}
+
+function transformDialogActionsContent(actionsElement: SgNode<TSX>, closeHandler: string | null): string {
+  const parts: string[] = []
+
+  for (const child of getJsxChildren(actionsElement)) {
+    const kind = child.kind()
+    if (
+      closeHandler &&
+      (kind === 'jsx_element' || kind === 'jsx_self_closing_element') &&
+      isCloseFooterButton(child, closeHandler)
+    ) {
+      parts.push(transformFooterCloseButton(child, closeHandler))
+      continue
+    }
+    parts.push(child.text())
+  }
+
+  return parts.join('')
 }
 
 function transformDialogChildren(
@@ -361,10 +421,8 @@ function transformDialogChildren(
           }
           const buiName = COMPONENT_MAP[muiName]
           if (buiName) {
-            let innerContent = getChildContent(child)
-            if (muiName === 'DialogActions') {
-              innerContent = transformFooterCloseButtons(innerContent, closeHandler)
-            }
+            const innerContent =
+              muiName === 'DialogActions' ? transformDialogActionsContent(child, closeHandler) : getChildContent(child)
             parts.push(`<${buiName}>${innerContent}</${buiName}>`)
             migrationMetric.increment({ action: 'child-renamed', from: muiName, to: buiName })
             continue
@@ -500,9 +558,17 @@ function transformDialogElements(
           },
         })
         for (const actionsEl of actionsElements) {
-          const actionsContent = getChildContent(actionsEl)
-          if (actionsContent.includes(`onClick={${simpleHandler}}`)) {
-            usesFooterCloseButton = true
+          for (const child of getJsxChildren(actionsEl)) {
+            const kind = child.kind()
+            if (
+              (kind === 'jsx_element' || kind === 'jsx_self_closing_element') &&
+              isCloseFooterButton(child, simpleHandler)
+            ) {
+              usesFooterCloseButton = true
+              break
+            }
+          }
+          if (usesFooterCloseButton) {
             break
           }
         }

@@ -1,0 +1,42 @@
+{
+  "migrate-mui-textfield-to-bui-textfield": [
+    {
+      "cardinality": {
+        "action": "import-added"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-removed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "onChange-rewritten"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "prop-dropped",
+        "prop": "type"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "size-defaulted-to-medium"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "textfield-migrated",
+        "component": "NumberField"
+      },
+      "count": 1
+    }
+  ]
+}

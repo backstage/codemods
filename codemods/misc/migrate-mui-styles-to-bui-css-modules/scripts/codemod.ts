@@ -1,8 +1,13 @@
-import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
+import { parse, type Codemod, type Edit, type SgNode } from 'codemod:ast-grep'
+import type CSS from 'codemod:ast-grep/langs/css'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
 
 const migrationMetric = useMetricAtom('migrate-mui-styles-to-bui-css-modules')
+
+function parseCssRoot(source: string): SgNode<CSS> {
+  return parse<CSS>('css', source).root()
+}
 
 /**
  * Map JSS camelCase property names to CSS kebab-case.
@@ -323,10 +328,33 @@ function hasCssModuleImport(rootNode: SgNode<TSX>, cssModuleImportPath: string):
   return false
 }
 
+function getRuleSetClassName(ruleSet: SgNode<CSS>): string | null {
+  const classSelector = ruleSet.find({ rule: { kind: 'class_selector' } })
+  if (!classSelector) {
+    return null
+  }
+  const classNameNode = classSelector.find({ rule: { kind: 'class_name' } })
+  const ident = classNameNode?.find({ rule: { kind: 'identifier' } })
+  return ident?.text() ?? null
+}
+
+function getRuleSetBody(ruleSet: SgNode<CSS>): string | null {
+  const block = ruleSet.find({ rule: { kind: 'block' } })
+  if (!block) {
+    return null
+  }
+  const blockText = block.text()
+  if (blockText.length < 2) {
+    return null
+  }
+  return blockText.slice(1, -1).trim()
+}
+
 function extractClassNamesFromCss(cssContent: string): Set<string> {
   const classNames = new Set<string>()
-  for (const match of cssContent.matchAll(/\.([A-Za-z0-9_-]+)\s*\{/g)) {
-    const [, className] = match
+  const cssRoot = parseCssRoot(cssContent)
+  for (const ruleSet of cssRoot.findAll({ rule: { kind: 'rule_set' } })) {
+    const className = getRuleSetClassName(ruleSet)
     if (className) {
       classNames.add(className)
     }
@@ -336,17 +364,34 @@ function extractClassNamesFromCss(cssContent: string): Set<string> {
 
 function extractCssModuleRuleBlocks(cssContent: string): { className: string; body: string }[] {
   const rules: { className: string; body: string }[] = []
-  for (const match of cssContent.matchAll(/\.([A-Za-z0-9_-]+)\s*\{([^}]*)\}/g)) {
-    const [, className, ruleBody] = match
-    if (!className || ruleBody === undefined) {
+  const cssRoot = parseCssRoot(cssContent)
+  for (const ruleSet of cssRoot.findAll({ rule: { kind: 'rule_set' } })) {
+    const className = getRuleSetClassName(ruleSet)
+    if (!className) {
       continue
     }
-    rules.push({
-      className,
-      body: ruleBody.trim(),
-    })
+    const body = getRuleSetBody(ruleSet)
+    if (body === null) {
+      continue
+    }
+    rules.push({ className, body })
   }
   return rules
+}
+
+function findComponentsLayerBlock(cssRoot: SgNode<CSS>): SgNode<CSS> | null {
+  for (const atRule of cssRoot.findAll({ rule: { kind: 'at_rule' } })) {
+    const atKeyword = atRule.find({ rule: { kind: 'at_keyword' } })
+    if (atKeyword?.text() !== '@layer') {
+      continue
+    }
+    const keywordQuery = atRule.find({ rule: { kind: 'keyword_query' } })
+    if (keywordQuery?.text() !== 'components') {
+      continue
+    }
+    return atRule.find({ rule: { kind: 'block' } })
+  }
+  return null
 }
 
 function formatLayerRules(rules: { className: string; body: string }[]): string {
@@ -370,6 +415,7 @@ function mergeCssModuleContent(existing: string, generated: string): string {
     return `${generatedTrimmed}\n`
   }
 
+  const existingRoot = parseCssRoot(trimmedExisting)
   const existingClassNames = extractClassNamesFromCss(trimmedExisting)
   const newRules = extractCssModuleRuleBlocks(generatedTrimmed).filter(
     (rule) => !existingClassNames.has(rule.className),
@@ -378,10 +424,11 @@ function mergeCssModuleContent(existing: string, generated: string): string {
     return `${trimmedExisting}\n`
   }
 
-  const layerMatch = trimmedExisting.match(/^([\s\S]*@layer\s+components\s*\{)([\s\S]*?)(\}\s*)$/)
-  if (layerMatch) {
-    const [, layerOpen, layerInner, layerClose] = layerMatch
-    return `${layerOpen}${layerInner}\n${formatLayerRules(newRules)}\n${layerClose}\n`
+  const layerBlock = findComponentsLayerBlock(existingRoot)
+  if (layerBlock) {
+    const newRulesText = formatLayerRules(newRules)
+    const insertPos = layerBlock.range().end.index - 1
+    return `${trimmedExisting.slice(0, insertPos)}\n${newRulesText}\n${trimmedExisting.slice(insertPos)}\n`
   }
 
   // Existing file has no @layer block — append the generated module as-is.

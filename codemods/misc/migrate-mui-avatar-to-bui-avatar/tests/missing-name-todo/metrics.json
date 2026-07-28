@@ -1,0 +1,11 @@
+{
+  "migrate-mui-avatar-to-bui-avatar": [
+    {
+      "cardinality": {
+        "action": "todo-inserted",
+        "reason": "missing-name"
+      },
+      "count": 1
+    }
+  ]
+}

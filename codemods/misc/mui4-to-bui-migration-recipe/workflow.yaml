@@ -30,6 +30,14 @@ nodes:
         codemod:
           source: '@backstage/migrate-mui-alert-to-bui-alert'
 
+      - name: 'Migrate Avatar to BUI Avatar'
+        codemod:
+          source: '@backstage/migrate-mui-avatar-to-bui-avatar'
+
+      - name: 'Migrate Skeleton to BUI Skeleton'
+        codemod:
+          source: '@backstage/migrate-mui-skeleton-to-bui-skeleton'
+
       - name: 'Migrate Button to BUI Button'
         codemod:
           source: '@backstage/migrate-mui-button-to-bui-button'
@@ -37,6 +45,10 @@ nodes:
       - name: 'Migrate IconButton to ButtonIcon'
         codemod:
           source: '@backstage/migrate-mui-icon-button-to-button-icon'
+
+      - name: 'Migrate Link to BUI Link'
+        codemod:
+          source: '@backstage/migrate-mui-link-to-bui-link'
 
       - name: 'Migrate Tooltip to BUI Tooltip'
         codemod:
@@ -51,7 +63,7 @@ nodes:
         codemod:
           source: '@backstage/migrate-mui-tabs-to-bui-tabs'
 
-      - name: 'Migrate Menu/Popover to BUI Menu'
+      - name: 'Migrate Menu or Popover to BUI Menu/Popover'
         codemod:
           source: '@backstage/migrate-mui-menu-popover-to-bui-menu'
 
@@ -63,6 +75,10 @@ nodes:
         codemod:
           source: '@backstage/migrate-mui-chip-to-tag'
 
+      - name: 'Migrate Card family to BUI Card'
+        codemod:
+          source: '@backstage/migrate-mui-card-to-bui-card'
+
       # --- Phase 5: form controls
       - name: 'Migrate Select family to BUI Select'
         codemod:
@@ -72,6 +88,10 @@ nodes:
         codemod:
           source: '@backstage/migrate-mui-textfield-to-bui-textfield'
 
+      - name: 'Migrate Autocomplete to BUI Combobox'
+        codemod:
+          source: '@backstage/migrate-mui-autocomplete-to-combobox'
+
       - name: 'Migrate Accordion to BUI Accordion'
         codemod:
           source: '@backstage/migrate-mui-accordion-to-bui-accordion'
@@ -79,6 +99,10 @@ nodes:
       - name: 'Migrate radio/checkbox groups to BUI groups'
         codemod:
           source: '@backstage/migrate-mui-radio-checkbox-to-bui'
+
+      - name: 'Migrate Switch to BUI Switch'
+        codemod:
+          source: '@backstage/migrate-mui-switch-to-bui-switch'
 
       - name: 'Migrate Slider to BUI Slider'
         codemod:

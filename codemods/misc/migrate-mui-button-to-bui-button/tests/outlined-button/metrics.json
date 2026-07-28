@@ -18,6 +18,24 @@
         "action": "import-removed"
       },
       "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "onClick-to-onPress"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "outlined-to-secondary"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "size-defaulted-to-medium"
+      },
+      "count": 1
     }
   ]
 }

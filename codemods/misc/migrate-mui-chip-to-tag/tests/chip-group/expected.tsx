@@ -3,8 +3,8 @@ import { Tag, TagGroup } from '@backstage/ui';
 const Tags = () => (
   <>
     <TagGroup>
-  <Tag>A</Tag>
-  <Tag>B</Tag>
+  <Tag size="medium">A</Tag>
+  <Tag size="medium">B</Tag>
 </TagGroup>
     
   </>

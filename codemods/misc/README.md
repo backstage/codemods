@@ -11,7 +11,9 @@ Prefer the ordered recipe:
 ### Ordering
 
 1. **Bootstrap first** — `@backstage/migrate-mui-bootstrap-to-bui`
-2. **Transforms** — icons, styles/CSS modules, core and complex components, form controls, then layout (see the [recipe README](./mui4-to-bui-migration-recipe/README.md) for the full ordered list)
+2. **Transforms** — icons → styles/CSS modules → core (Typography, Alert, Avatar, Skeleton, Button, IconButton, Link, Tooltip) → complex (Dialog, Tabs, Menu/Popover, List, Chip, Card) → forms (Select, TextField, Autocomplete, Accordion, radio/checkbox, Switch, Slider) → layout last
 3. **Cleanup last** — `@backstage/remove-mui-dependencies`
 
-See the [recipe README](./mui4-to-bui-migration-recipe/README.md) for registry links, domain coverage, out-of-scope items, and notes on intentional package names that omit `-bui-` in the target segment (`Text`, `Tag`, `ButtonIcon`, Remix).
+New packages in this family: Avatar, Skeleton, Link, Card, Autocomplete→Combobox, Switch. Pre-publish dry-runs use [`workflow.local.yaml`](./mui4-to-bui-migration-recipe/workflow.local.yaml) against a sibling `../backstage` checkout.
+
+See the [recipe README](./mui4-to-bui-migration-recipe/README.md) for the full ordered table, Paper heuristic notes, registry links, out-of-scope items (Badge overlays, Progress, Drawer, Snackbar, Stepper, Timeline, material-table), and intentional package names that omit `-bui-` in the target segment (`Text`, `Tag`, `ButtonIcon`, Remix).

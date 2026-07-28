@@ -17,6 +17,13 @@
         "action": "import-removed"
       },
       "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "size-mapped",
+        "size": "small"
+      },
+      "count": 1
     }
   ]
 }

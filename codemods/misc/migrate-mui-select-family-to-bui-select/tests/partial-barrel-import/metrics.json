@@ -23,6 +23,12 @@
         "action": "select-migrated"
       },
       "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "size-defaulted-to-medium"
+      },
+      "count": 1
     }
   ]
 }

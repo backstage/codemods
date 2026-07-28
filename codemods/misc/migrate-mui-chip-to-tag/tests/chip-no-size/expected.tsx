@@ -1,5 +1,5 @@
 import { Tag } from '@backstage/ui';
 
 const MyComponent = () => (
-  <Tag>Status</Tag>
+  <Tag size="medium">Status</Tag>
 );

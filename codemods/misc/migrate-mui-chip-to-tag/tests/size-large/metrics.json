@@ -1,0 +1,28 @@
+{
+  "migrate-mui-chip-to-tag": [
+    {
+      "cardinality": {
+        "action": "chip-migrated"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-added"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-removed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "size-large-to-medium"
+      },
+      "count": 1
+    }
+  ]
+}

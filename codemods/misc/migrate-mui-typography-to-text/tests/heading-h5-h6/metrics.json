@@ -1,0 +1,37 @@
+{
+  "migrate-mui-typography-to-text": [
+    {
+      "cardinality": {
+        "action": "as-from-variant",
+        "as": "h5"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "as-from-variant",
+        "as": "h6"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-added"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-removed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "typography-migrated",
+        "component": "Typography"
+      },
+      "count": 2
+    }
+  ]
+}

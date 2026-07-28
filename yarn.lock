@@ -190,6 +190,24 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/migrate-mui-autocomplete-to-combobox@workspace:codemods/misc/migrate-mui-autocomplete-to-combobox":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-mui-autocomplete-to-combobox@workspace:codemods/misc/migrate-mui-autocomplete-to-combobox"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.13"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/migrate-mui-avatar-to-bui-avatar@workspace:codemods/misc/migrate-mui-avatar-to-bui-avatar":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-mui-avatar-to-bui-avatar@workspace:codemods/misc/migrate-mui-avatar-to-bui-avatar"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.13"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/migrate-mui-bootstrap-to-bui@workspace:codemods/misc/migrate-mui-bootstrap-to-bui":
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-mui-bootstrap-to-bui@workspace:codemods/misc/migrate-mui-bootstrap-to-bui"
@@ -202,6 +220,15 @@ __metadata:
 "@backstage/migrate-mui-button-to-bui-button@workspace:codemods/misc/migrate-mui-button-to-bui-button":
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-mui-button-to-bui-button@workspace:codemods/misc/migrate-mui-button-to-bui-button"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.13"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/migrate-mui-card-to-bui-card@workspace:codemods/misc/migrate-mui-card-to-bui-card":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-mui-card-to-bui-card@workspace:codemods/misc/migrate-mui-card-to-bui-card"
   dependencies:
     "@codemod.com/jssg-types": "npm:1.6.2"
     codemod: "npm:1.12.13"
@@ -253,6 +280,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/migrate-mui-link-to-bui-link@workspace:codemods/misc/migrate-mui-link-to-bui-link":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-mui-link-to-bui-link@workspace:codemods/misc/migrate-mui-link-to-bui-link"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.13"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/migrate-mui-list-family-to-bui-list@workspace:codemods/misc/migrate-mui-list-family-to-bui-list":
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-mui-list-family-to-bui-list@workspace:codemods/misc/migrate-mui-list-family-to-bui-list"
@@ -289,6 +325,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/migrate-mui-skeleton-to-bui-skeleton@workspace:codemods/misc/migrate-mui-skeleton-to-bui-skeleton":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-mui-skeleton-to-bui-skeleton@workspace:codemods/misc/migrate-mui-skeleton-to-bui-skeleton"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.13"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/migrate-mui-slider-to-bui-slider@workspace:codemods/misc/migrate-mui-slider-to-bui-slider":
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-mui-slider-to-bui-slider@workspace:codemods/misc/migrate-mui-slider-to-bui-slider"
@@ -301,6 +346,15 @@ __metadata:
 "@backstage/migrate-mui-styles-to-bui-css-modules@workspace:codemods/misc/migrate-mui-styles-to-bui-css-modules":
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-mui-styles-to-bui-css-modules@workspace:codemods/misc/migrate-mui-styles-to-bui-css-modules"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.2"
+    codemod: "npm:1.12.13"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/migrate-mui-switch-to-bui-switch@workspace:codemods/misc/migrate-mui-switch-to-bui-switch":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-mui-switch-to-bui-switch@workspace:codemods/misc/migrate-mui-switch-to-bui-switch"
   dependencies:
     "@codemod.com/jssg-types": "npm:1.6.2"
     codemod: "npm:1.12.13"

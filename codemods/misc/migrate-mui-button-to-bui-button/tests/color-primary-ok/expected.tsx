@@ -1,5 +1,5 @@
 import { Button } from '@backstage/ui';
 
 const MyComponent = () => (
-  <Button variant="primary">OK</Button>
+  <Button variant="primary" size="medium">OK</Button>
 );

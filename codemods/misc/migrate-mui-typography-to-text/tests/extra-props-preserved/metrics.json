@@ -2,6 +2,13 @@
   "migrate-mui-typography-to-text": [
     {
       "cardinality": {
+        "action": "as-from-variant",
+        "as": "p"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
         "action": "import-added"
       },
       "count": 1

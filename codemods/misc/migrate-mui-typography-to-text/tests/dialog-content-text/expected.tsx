@@ -1,5 +1,5 @@
 import { Text } from '@backstage/ui';
 
 const MyDialog = () => (
-  <Text variant="title-small">Overview</Text>
+  <Text variant="title-medium" as="h2">Overview</Text>
 );

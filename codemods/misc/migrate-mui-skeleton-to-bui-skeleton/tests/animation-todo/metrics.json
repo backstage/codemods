@@ -1,0 +1,11 @@
+{
+  "migrate-mui-skeleton-to-bui-skeleton": [
+    {
+      "cardinality": {
+        "action": "todo-inserted",
+        "reason": "animation"
+      },
+      "count": 1
+    }
+  ]
+}

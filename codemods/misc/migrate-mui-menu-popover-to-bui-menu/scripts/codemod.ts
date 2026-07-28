@@ -490,14 +490,81 @@ function unwrapMenuList(
   return getChildContent(element)
 }
 
+/**
+ * Locked heuristic: a Popover whose descendants include MenuList follows the
+ * Menu migration path; otherwise it becomes BUI Popover.
+ *
+ * MenuItem alone is not enough — Select/FormControl also use MenuItem, and the
+ * recipe runs this codemod before Select migration.
+ */
+function hasMenuDescendants(element: SgNode<TSX>, menuListLocalName: string | null): boolean {
+  if (!menuListLocalName) {
+    return false
+  }
+
+  for (const child of element.findAll({
+    rule: {
+      any: [{ kind: 'jsx_element' }, { kind: 'jsx_self_closing_element' }],
+    },
+  })) {
+    if (child.id() === element.id()) {
+      continue
+    }
+    const childOpening = child.is('jsx_self_closing_element') ? child : child.child(0)
+    if (!childOpening) {
+      continue
+    }
+    const childName = getElementName(childOpening)
+    if (childName === menuListLocalName) {
+      return true
+    }
+  }
+
+  return false
+}
+
+function insertHostTodo(el: SgNode<TSX>, reason: string, edits: Edit[]): void {
+  edits.push(
+    el.replace(
+      withTodoComment(`{/* TODO(backstage-codemod): finish menu host migration manually (${reason}) */}`, el.text()),
+    ),
+  )
+  migrationMetric.increment({ action: 'todo-inserted', reason })
+}
+
+function buildTriggerWrapperProps(opening: SgNode<TSX>): string[] | null {
+  const triggerProps: string[] = []
+  const openValue = getPropRawValue(opening, 'open')
+  if (openValue) {
+    triggerProps.push(`isOpen=${openValue}`)
+  }
+
+  if (hasProp(opening, 'onClose')) {
+    const simpleHandler = getSimpleOnCloseHandler(opening)
+    if (!simpleHandler) {
+      return null
+    }
+    triggerProps.push(`onOpenChange={isOpen => !isOpen && ${simpleHandler}()}`)
+    migrationMetric.increment({ action: 'onClose-rewritten' })
+  }
+
+  return triggerProps
+}
+
 function transformMenuElements(
   rootNode: SgNode<TSX>,
   localNames: Map<string, string>,
   edits: Edit[],
-): { preserveImport: boolean; migrated: boolean; buiNames: Set<string> } {
+): {
+  preserveImport: boolean
+  migrated: boolean
+  buiNames: Set<string>
+  consumedMuiNames: Set<string>
+} {
   let preserveImport = false
   let migrated = false
   const buiNames = new Set<string>()
+  const consumedMuiNames = new Set<string>()
   const menuListLocalName = [...localNames.entries()].find(([, v]) => v === 'MenuList')?.[0] ?? null
   const menuItemLocalName = [...localNames.entries()].find(([, v]) => v === 'MenuItem')?.[0] ?? null
 
@@ -549,23 +616,53 @@ function transformMenuElements(
 
     if (needsTodo) {
       preserveImport = true
-      edits.push(
-        el.replace(
-          withTodoComment(
-            `{/* TODO(backstage-codemod): finish menu host migration manually (${todoReasons.join(', ')}) */}`,
-            el.text(),
-          ),
-        ),
-      )
-      migrationMetric.increment({ action: 'todo-inserted', reason: todoReasons.join(', ') })
+      insertHostTodo(el, todoReasons.join(', '), edits)
       continue
     }
 
+    const useMenuPath = muiName === 'Menu' || hasMenuDescendants(el, menuListLocalName)
+
     if (isSelfClosing) {
-      edits.push(el.replace('<Menu />'))
-      buiNames.add('Menu')
+      if (useMenuPath) {
+        edits.push(el.replace('<Menu />'))
+        buiNames.add('Menu')
+        consumedMuiNames.add(muiName)
+        migrated = true
+        migrationMetric.increment({ action: 'menu-migrated', variant: 'self-closing' })
+      } else {
+        preserveImport = true
+        insertHostTodo(el, 'no-trigger-element', edits)
+      }
+      continue
+    }
+
+    if (!useMenuPath) {
+      // Plain Popover → BUI Popover via DialogTrigger. Trigger is required.
+      const triggerSibling = findTriggerSibling(el)
+      if (!triggerSibling) {
+        preserveImport = true
+        insertHostTodo(el, 'no-trigger-element', edits)
+        continue
+      }
+
+      const triggerProps = buildTriggerWrapperProps(opening)
+      if (triggerProps === null) {
+        preserveImport = true
+        insertHostTodo(el, 'complex-onClose', edits)
+        continue
+      }
+
+      const triggerPropsStr = triggerProps.length > 0 ? ` ${triggerProps.join(' ')}` : ''
+      const content = getChildContent(el)
+      const output = `<DialogTrigger${triggerPropsStr}>${triggerSibling.text()}<Popover>${content}</Popover></DialogTrigger>`
+      edits.push(triggerSibling.replace(''))
+      edits.push(el.replace(output))
+      buiNames.add('DialogTrigger')
+      buiNames.add('Popover')
+      consumedMuiNames.add(muiName)
       migrated = true
-      migrationMetric.increment({ action: 'menu-migrated', variant: 'self-closing' })
+      migrationMetric.increment({ action: 'popover-migrated' })
+      migrationMetric.increment({ action: 'dialog-trigger-wrapped' })
       continue
     }
 
@@ -575,29 +672,13 @@ function transformMenuElements(
       triggerSibling = findTriggerSibling(el)
       if (!triggerSibling) {
         preserveImport = true
-        edits.push(
-          el.replace(
-            withTodoComment(
-              `{/* TODO(backstage-codemod): finish menu host migration manually (no-trigger-element) */}`,
-              el.text(),
-            ),
-          ),
-        )
-        migrationMetric.increment({ action: 'todo-inserted', reason: 'no-trigger-element' })
+        insertHostTodo(el, 'no-trigger-element', edits)
         continue
       }
 
       if (hasProp(opening, 'onClose') && !getSimpleOnCloseHandler(opening)) {
         preserveImport = true
-        edits.push(
-          el.replace(
-            withTodoComment(
-              `{/* TODO(backstage-codemod): finish menu host migration manually (complex-onClose) */}`,
-              el.text(),
-            ),
-          ),
-        )
-        migrationMetric.increment({ action: 'todo-inserted', reason: 'complex-onClose' })
+        insertHostTodo(el, 'complex-onClose', edits)
         continue
       }
     }
@@ -607,18 +688,12 @@ function transformMenuElements(
     let menuOutput = `<Menu>${innerContent}</Menu>`
 
     if (hasControlledState && triggerSibling) {
-      const triggerProps: string[] = []
-      const openValue = getPropRawValue(opening, 'open')
-      if (openValue) {
-        triggerProps.push(`isOpen=${openValue}`)
+      const triggerProps = buildTriggerWrapperProps(opening)
+      if (triggerProps === null) {
+        preserveImport = true
+        insertHostTodo(el, 'complex-onClose', edits)
+        continue
       }
-
-      const simpleHandler = getSimpleOnCloseHandler(opening)
-      if (simpleHandler) {
-        triggerProps.push(`onOpenChange={isOpen => !isOpen && ${simpleHandler}()}`)
-        migrationMetric.increment({ action: 'onClose-rewritten' })
-      }
-
       const triggerPropsStr = triggerProps.length > 0 ? ` ${triggerProps.join(' ')}` : ''
       menuOutput = `<MenuTrigger${triggerPropsStr}>${triggerSibling.text()}${menuOutput}</MenuTrigger>`
       edits.push(triggerSibling.replace(''))
@@ -627,15 +702,20 @@ function transformMenuElements(
     }
 
     buiNames.add('Menu')
+    consumedMuiNames.add(muiName)
+    if (menuListLocalName) {
+      consumedMuiNames.add('MenuList')
+    }
     if (menuItemLocalName) {
       buiNames.add('MenuItem')
+      consumedMuiNames.add('MenuItem')
     }
     edits.push(el.replace(menuOutput))
     migrated = true
     migrationMetric.increment({ action: 'menu-migrated', variant: muiName === 'Popover' ? 'popover' : 'menu' })
   }
 
-  return { preserveImport, migrated, buiNames }
+  return { preserveImport, migrated, buiNames, consumedMuiNames }
 }
 
 const transform: Codemod<TSX> = async (root) => {
@@ -648,7 +728,25 @@ const transform: Codemod<TSX> = async (root) => {
     return null
   }
 
-  const { preserveImport, migrated, buiNames } = transformMenuElements(rootNode, localNames, edits)
+  const { preserveImport, migrated, buiNames, consumedMuiNames } = transformMenuElements(rootNode, localNames, edits)
+
+  // Only drop imports for MUI symbols we actually migrated. MenuItem under Select
+  // must stay when a Popover takes the plain Popover path.
+  const filteredImportNodesToRemove = importNodesToRemove.filter((imp) => {
+    const defaultName = getDefaultImportName(imp)
+    if (!defaultName) {
+      return true
+    }
+    const muiName = localNames.get(defaultName)
+    return muiName !== undefined && consumedMuiNames.has(muiName)
+  })
+  const filteredImportSpecifiersToRemove = new Map<SgNode<TSX>, { source: string; names: string[] }>()
+  for (const [imp, { source, names }] of importSpecifiersToRemove) {
+    const kept = names.filter((name) => consumedMuiNames.has(name))
+    if (kept.length > 0) {
+      filteredImportSpecifiersToRemove.set(imp, { source, names: kept })
+    }
+  }
 
   let replacedImport = false
   const handledBarrelIds = new Set<number>()
@@ -656,22 +754,22 @@ const transform: Codemod<TSX> = async (root) => {
     replacedImport = addBuiImport(
       rootNode,
       [...buiNames],
-      importNodesToRemove,
-      importSpecifiersToRemove,
+      filteredImportNodesToRemove,
+      filteredImportSpecifiersToRemove,
       edits,
       handledBarrelIds,
     )
   }
 
   if (!preserveImport) {
-    for (const [imp, { source, names }] of importSpecifiersToRemove) {
+    for (const [imp, { source, names }] of filteredImportSpecifiersToRemove) {
       if (handledBarrelIds.has(imp.id())) {
         continue
       }
       pruneBarrelImportSpecifiers(imp, source, names, edits)
     }
-    for (const imp of importNodesToRemove) {
-      if (replacedImport && imp.id() === importNodesToRemove[0]?.id()) {
+    for (const imp of filteredImportNodesToRemove) {
+      if (replacedImport && imp.id() === filteredImportNodesToRemove[0]?.id()) {
         migrationMetric.increment({ action: 'import-removed' })
         continue
       }

@@ -246,10 +246,13 @@ function getPropStringValue(opening: SgNode<TSX>, propName: string): string | nu
   if (!attr) {
     return null
   }
-  const stringNode = attr.find({ rule: { kind: 'string' } })
-  if (stringNode) {
-    const frag = stringNode.find({ rule: { kind: 'string_fragment' } })
-    return frag?.text() ?? null
+  // Only accept a direct string child (size="small"). Nested strings inside
+  // expressions like size={cond ? 'small' : 'medium'} are dynamic, not static.
+  for (const child of attr.children()) {
+    if (child.kind() === 'string') {
+      const frag = child.find({ rule: { kind: 'string_fragment' } })
+      return frag?.text() ?? null
+    }
   }
   return null
 }
@@ -392,8 +395,38 @@ function getArrowSingleParamName(arrow: SgNode<TSX>): string | null {
   return paramNames[0] ?? null
 }
 
-function targetValuePattern(eventName: string): RegExp {
-  return new RegExp(`${escapeRegex(eventName)}\\.target\\.value`, 'g')
+function applyNodeTextReplacements(node: SgNode<TSX>, replacements: { target: SgNode<TSX>; text: string }[]): string {
+  const base = node.range().start.index
+  let text = node.text()
+  const sorted = [...replacements].sort((a, b) => b.target.range().start.index - a.target.range().start.index)
+  for (const { target, text: next } of sorted) {
+    const start = target.range().start.index - base
+    const end = target.range().end.index - base
+    text = `${text.slice(0, start)}${next}${text.slice(end)}`
+  }
+  return text
+}
+
+function isEventTargetValueMember(node: SgNode<TSX>, eventName: string): boolean {
+  // AST-selected member_expression whose source text is exactly `event.target.value`.
+  return node.is('member_expression') && node.text() === `${eventName}.target.value`
+}
+
+function findEventTargetValueMembers(body: SgNode<TSX>, eventName: string): SgNode<TSX>[] {
+  return body
+    .findAll({ rule: { kind: 'member_expression' } })
+    .filter((node) => isEventTargetValueMember(node, eventName))
+}
+
+function isDescendantOf(node: SgNode<TSX>, ancestor: SgNode<TSX>): boolean {
+  let current = node.parent()
+  while (current) {
+    if (current.id() === ancestor.id()) {
+      return true
+    }
+    current = current.parent()
+  }
+  return false
 }
 
 function tryRewriteOnChangeHandler(attr: SgNode<TSX>): string | null {
@@ -417,17 +450,27 @@ function tryRewriteOnChangeHandler(attr: SgNode<TSX>): string | null {
     return null
   }
 
-  const bodyText = body.text()
-  const pattern = targetValuePattern(eventName)
-  if (!pattern.test(bodyText)) {
+  const targetValueNodes = findEventTargetValueMembers(body, eventName)
+  if (targetValueNodes.length === 0) {
     return null
   }
 
-  const rewrittenBody = bodyText.replace(targetValuePattern(eventName), 'key')
-  const eventRefPattern = new RegExp(`\\b${escapeRegex(eventName)}\\b`)
-  if (eventRefPattern.test(rewrittenBody)) {
-    return null
+  for (const ident of body.findAll({
+    rule: {
+      kind: 'identifier',
+      regex: `^${escapeRegex(eventName)}$`,
+    },
+  })) {
+    const insideTargetValue = targetValueNodes.some((targetValue) => isDescendantOf(ident, targetValue))
+    if (!insideTargetValue) {
+      return null
+    }
   }
+
+  const rewrittenBody = applyNodeTextReplacements(
+    body,
+    targetValueNodes.map((target) => ({ target, text: 'key' })),
+  )
   return `{key => ${rewrittenBody}}`
 }
 
@@ -437,6 +480,55 @@ function escapeSingleQuotes(value: string): string {
 
 function formatOption(option: OptionInfo): string {
   return `{ id: '${escapeSingleQuotes(option.id)}', label: '${escapeSingleQuotes(option.label)}' }`
+}
+
+function isDynamicSizeProp(opening: SgNode<TSX>): boolean {
+  return hasProp(opening, 'size') && getPropStringValue(opening, 'size') === null
+}
+
+function hasDynamicSizeOnAny(openings: SgNode<TSX>[]): boolean {
+  return openings.some((opening) => isDynamicSizeProp(opening))
+}
+
+function appendSizeProp(openings: SgNode<TSX>[], newProps: string[]): void {
+  const [primary, ...fallbacks] = openings
+
+  let sizeValue = primary ? getPropStringValue(primary, 'size') : null
+  let fromFormControl = false
+
+  if (sizeValue === null) {
+    for (const fallback of fallbacks) {
+      const fallbackSize = getPropStringValue(fallback, 'size')
+      if (fallbackSize !== null) {
+        sizeValue = fallbackSize
+        fromFormControl = true
+        break
+      }
+    }
+  }
+
+  if (fromFormControl) {
+    migrationMetric.increment({ action: 'size-from-form-control' })
+  }
+
+  if (sizeValue === 'small') {
+    newProps.push('size="small"')
+    migrationMetric.increment({ action: 'size-mapped', size: 'small' })
+    return
+  }
+  if (sizeValue === 'medium') {
+    newProps.push('size="medium"')
+    migrationMetric.increment({ action: 'size-mapped', size: 'medium' })
+    return
+  }
+  if (sizeValue === 'large') {
+    newProps.push('size="medium"')
+    migrationMetric.increment({ action: 'size-large-to-medium' })
+    return
+  }
+
+  newProps.push('size="medium"')
+  migrationMetric.increment({ action: 'size-defaulted-to-medium' })
 }
 
 function findSelectInFormControl(
@@ -578,11 +670,27 @@ function transformSelectPatterns(
         continue
       }
 
+      if (hasDynamicSizeOnAny([selectOpening, opening])) {
+        preserveImport = true
+        edits.push(
+          el.replace(
+            withTodoComment(
+              `{/* TODO(backstage-codemod): finish Select migration manually (dynamic-size) */}`,
+              el.text(),
+            ),
+          ),
+        )
+        migrationMetric.increment({ action: 'todo-inserted', reason: 'dynamic-size' })
+        continue
+      }
+
       const newProps: string[] = []
 
       if (label) {
         newProps.push(`label={${JSON.stringify(label)}}`)
       }
+
+      appendSizeProp([selectOpening, opening], newProps)
 
       const valueRaw = getPropRawValue(selectOpening, 'value')
       if (valueRaw) {
@@ -647,7 +755,23 @@ function transformSelectPatterns(
         continue
       }
 
+      if (isDynamicSizeProp(opening)) {
+        preserveImport = true
+        edits.push(
+          el.replace(
+            withTodoComment(
+              `{/* TODO(backstage-codemod): finish Select migration manually (dynamic-size) */}`,
+              el.text(),
+            ),
+          ),
+        )
+        migrationMetric.increment({ action: 'todo-inserted', reason: 'dynamic-size' })
+        continue
+      }
+
       const newProps: string[] = []
+
+      appendSizeProp([opening], newProps)
 
       const valueRaw = getPropRawValue(opening, 'value')
       if (valueRaw) {
