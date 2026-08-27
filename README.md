@@ -79,17 +79,17 @@ Older versions are available in the [`codemods/`](./codemods) directory.
 Run any codemod in this repo against your Backstage project with the [Codemod CLI](https://docs.codemod.com/cli):
 
 ```bash
-npx codemod <codemod-name>
+yarn dlx codemod <codemod-name>
 ```
 
 Most codemods include an optional AI-powered fixup step that catches edge cases the AST transforms cannot handle mechanically (namespace imports, spread props, aliased re-exports, etc.). It is disabled by default. Enable it on a single codemod or on a migration recipe (which forwards it to every child codemod that supports it):
 
 ```bash
 # Single codemod
-npx codemod <codemod-name> --param aiFixup=true
+yarn dlx codemod <codemod-name> --param aiFixup=true
 
 # Migration recipe — forwards aiFixup to all supported child codemods
-npx codemod @backstage/v1-51-0-migration-recipe --param aiFixup=true
+yarn dlx codemod @backstage/v1-51-0-migration-recipe --param aiFixup=true
 ```
 
 ## Development
