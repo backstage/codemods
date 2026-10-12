@@ -384,7 +384,7 @@ const transform: Codemod<YAML> = async (root) => {
       const inputHasAnchor = /:\s*&[A-Za-z0-9_-]+/.test(inputLineText)
       const inputIsAlias = inputValueText.startsWith('*')
 
-      let shouldAddTodo = inputHasAnchor || inputIsAlias
+      let shouldAddTodo = (inputHasAnchor && !inputMapping) || inputIsAlias
       let removedInStep = 0
 
       if (!inputMapping) {
@@ -400,7 +400,7 @@ const transform: Codemod<YAML> = async (root) => {
 
         const hasMergePair = directPairs.some((pair) => getPairKey(pair) === '<<')
 
-        if (hasMergePair) {
+        if (hasMergePair || (inputHasAnchor && removablePairs.length > 0)) {
           shouldAddTodo = true
         }
 
