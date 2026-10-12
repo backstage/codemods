@@ -466,6 +466,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/move-connections-backend-imports@workspace:codemods/v1.54.0/move-connections-backend-imports":
+  version: 0.0.0-use.local
+  resolution: "@backstage/move-connections-backend-imports@workspace:codemods/v1.54.0/move-connections-backend-imports"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.3"
+    codemod: "npm:1.18.3"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/mui4-to-bui-migration-recipe@workspace:codemods/misc/mui4-to-bui-migration-recipe":
   version: 0.0.0-use.local
   resolution: "@backstage/mui4-to-bui-migration-recipe@workspace:codemods/misc/mui4-to-bui-migration-recipe"
