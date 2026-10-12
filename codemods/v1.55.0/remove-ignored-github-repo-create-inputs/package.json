@@ -1,5 +1,5 @@
 {
-  "name": "@backstage/remove-ignored-github-repo-create-inputs",
+  "name": "@backstage/remove-ignored-repo-create-inputs",
   "version": "0.1.0",
   "description": "Backstage 1.55.0: Remove ignored github:repo:create inputs from scaffolder templates",
   "type": "module",

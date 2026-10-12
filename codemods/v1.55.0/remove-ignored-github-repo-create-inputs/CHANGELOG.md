@@ -1,4 +1,4 @@
-# @backstage/remove-ignored-github-repo-create-inputs
+# @backstage/remove-ignored-repo-create-inputs
 
 ## 0.1.0
 

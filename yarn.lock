@@ -542,9 +542,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@backstage/remove-ignored-github-repo-create-inputs@workspace:codemods/v1.55.0/remove-ignored-github-repo-create-inputs":
+"@backstage/remove-ignored-repo-create-inputs@workspace:codemods/v1.55.0/remove-ignored-github-repo-create-inputs":
   version: 0.0.0-use.local
-  resolution: "@backstage/remove-ignored-github-repo-create-inputs@workspace:codemods/v1.55.0/remove-ignored-github-repo-create-inputs"
+  resolution: "@backstage/remove-ignored-repo-create-inputs@workspace:codemods/v1.55.0/remove-ignored-github-repo-create-inputs"
   dependencies:
     "@codemod.com/jssg-types": "npm:1.6.3"
     codemod: "npm:1.18.3"
