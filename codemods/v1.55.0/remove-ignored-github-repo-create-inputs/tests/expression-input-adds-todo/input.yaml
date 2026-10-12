@@ -1,0 +1,9 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: expression-template
+spec:
+  steps:
+    - id: create
+      action: github:repo:create
+      input: ${{ parameters.repoInput }}

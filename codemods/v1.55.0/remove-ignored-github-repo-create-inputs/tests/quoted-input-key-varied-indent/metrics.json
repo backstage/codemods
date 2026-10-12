@@ -1,0 +1,10 @@
+{
+  "remove-ignored-github-repo-create-inputs": [
+    {
+      "cardinality": {
+        "action": "input-key-removed"
+      },
+      "count": 2
+    }
+  ]
+}

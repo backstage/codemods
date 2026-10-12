@@ -1,0 +1,11 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: nested-kind
+spec:
+  kind: Template
+  steps:
+    - action: github:repo:create
+      input:
+        sourcePath: ./skeleton
+        repoUrl: github.com?repo=nested&owner=team
