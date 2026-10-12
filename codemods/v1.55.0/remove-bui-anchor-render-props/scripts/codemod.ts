@@ -203,6 +203,21 @@ function isSafeAnchorExpression(node: SgNode<TSX>): boolean {
   return false
 }
 
+function unwrapParenthesizedExpression(node: SgNode<TSX>): SgNode<TSX> {
+  let currentNode = node
+
+  while (currentNode.is('parenthesized_expression')) {
+    const innerNode = currentNode.children().find((child) => child.kind() !== '(' && child.kind() !== ')')
+    if (!innerNode) {
+      return currentNode
+    }
+
+    currentNode = innerNode
+  }
+
+  return currentNode
+}
+
 function isSafeAnchorRenderAttr(attr: SgNode<TSX>): boolean {
   const expr = attr.find({ rule: { kind: 'jsx_expression' } })
   if (!expr) {
@@ -215,7 +230,11 @@ function isSafeAnchorRenderAttr(attr: SgNode<TSX>): boolean {
   }
 
   const [innerNode] = innerNodes
-  return innerNode !== undefined && isSafeAnchorExpression(innerNode)
+  if (!innerNode) {
+    return false
+  }
+
+  return isSafeAnchorExpression(unwrapParenthesizedExpression(innerNode))
 }
 
 function removeJsxAttribute(attrNode: SgNode<TSX>, fullSource: string): Edit {
@@ -322,7 +341,7 @@ const transform: Codemod<TSX> = async (root) => {
     let todoReason: TodoReason | null = null
     let todoTarget: SgNode<TSX> | null = null
 
-    const attributes = opening.findAll({ rule: { kind: 'jsx_attribute' } })
+    const attributes = opening.children().filter((child) => child.is('jsx_attribute'))
     for (const attr of attributes) {
       if (getAttrName(attr) !== 'render') {
         continue

@@ -1,0 +1,11 @@
+{
+  "remove-bui-anchor-render-props": [
+    {
+      "cardinality": {
+        "action": "render-prop-removed",
+        "component": "Link"
+      },
+      "count": 1
+    }
+  ]
+}
