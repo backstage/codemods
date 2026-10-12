@@ -632,6 +632,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/rename-root-connection-auth@workspace:codemods/v1.54.0/rename-root-connection-auth":
+  version: 0.0.0-use.local
+  resolution: "@backstage/rename-root-connection-auth@workspace:codemods/v1.54.0/rename-root-connection-auth"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.3"
+    codemod: "npm:1.18.3"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/render-test-app-nav-migration@workspace:codemods/v1.51.0/render-test-app-nav-migration":
   version: 0.0.0-use.local
   resolution: "@backstage/render-test-app-nav-migration@workspace:codemods/v1.51.0/render-test-app-nav-migration"
