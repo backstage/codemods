@@ -16,11 +16,11 @@ Run the five Backstage 1.54.0 codemods in order from the [Codemod Registry](http
 
 ```bash
 # Preview first
-npx codemod workflow run -w codemods/v1.54.0/migration-recipe/workflow.yaml \
+yarn dlx codemod@latest workflow run -w codemods/v1.54.0/migration-recipe/workflow.yaml \
   --target /path/to/backstage-app --dry-run
 
 # Apply
-npx codemod workflow run -w codemods/v1.54.0/migration-recipe/workflow.yaml \
+yarn dlx codemod@latest workflow run -w codemods/v1.54.0/migration-recipe/workflow.yaml \
   --target /path/to/backstage-app
 ```
 
@@ -31,7 +31,7 @@ Once the recipe itself is published, replace `workflow run -w codemods/v1.54.0/m
 The recipe passes no `aiFixup` parameter and runs AST-only. Only step 4 (#146) has an optional AI fixup. Recipe-level forwarding via `args: ['aiFixup']` has **not** been verified end-to-end with the current CLI and published nested codemod; workflow schema validation alone does not prove forwarding. If needed after the recipe, run #146 individually on a disposable worktree with an approved **openai work provider** (never `openai-codex`), then review all AI edits:
 
 ```bash
-npx codemod run @backstage/migrate-extension-config-schema \
+yarn dlx codemod@latest run @backstage/migrate-extension-config-schema \
   --target /path/to/backstage-app --param aiFixup=true --agent openai
 ```
 
