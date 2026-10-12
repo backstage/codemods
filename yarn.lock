@@ -155,6 +155,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/migrate-connections-query@workspace:codemods/v1.54.0/migrate-connections-query":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-connections-query@workspace:codemods/v1.54.0/migrate-connections-query"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.3"
+    codemod: "npm:1.18.3"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/migrate-gerrit-gitiles-functions@workspace:codemods/v1.49.0/migrate-gerrit-gitiles-functions":
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-gerrit-gitiles-functions@workspace:codemods/v1.49.0/migrate-gerrit-gitiles-functions"
