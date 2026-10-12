@@ -14,7 +14,8 @@ const transform: Codemod<JSON> = (root) => {
     for (const group of ['dependencies', 'peerDependencies']) {
       const dependencies = pair(pkg, group)?.field('value')
       const version = dependencies?.is('object') ? pair(dependencies, 'zod')?.field('value') : undefined
-      if (version?.is('string') && /^"(?:\^|~|>=|=)?4(?:\.|$)/.test(version.text())) {
+      // Accept only a single v4-only specifier; unions and open-ended ranges can resolve to v3/v5.
+      if (version?.is('string') && /^"(?:\^|~|=)?4(?:\.(?:\d+|x|\*))?(?:\.(?:\d+|x|\*))?"$/.test(version.text())) {
         compatible = true
       }
     }

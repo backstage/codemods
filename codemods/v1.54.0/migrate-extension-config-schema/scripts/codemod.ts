@@ -97,6 +97,27 @@ function shadowed(root: Node): Set<string> {
   return names
 }
 
+function unambiguousBlueprintBinding(root: Node, declaration: Node, name: string): boolean {
+  for (const kind of [
+    'variable_declarator',
+    'required_parameter',
+    'function_declaration',
+    'class_declaration',
+  ] as const) {
+    for (const node of root.findAll({ rule: { kind } })) {
+      if (node === declaration || node.range().start.index === declaration.range().start.index) {
+        continue
+      }
+      const binding =
+        node.field('name') ?? node.field('pattern') ?? node.children().find((child) => child.is('identifier'))
+      if (binding?.is('identifier') && binding.text() === name) {
+        return false
+      }
+    }
+  }
+  return true
+}
+
 function directCall(node: Node, names: ReturnType<typeof importedNames>, shadows: Set<string>): boolean {
   if (node.is('identifier')) {
     return !shadows.has(node.text()) && [...factories].some((name) => names.named.get(name) === node.text())
@@ -263,7 +284,12 @@ const transform: Codemod<TSX> = async (root) => {
     const value = declaration.field('value')
     const local = declaration.field('name')
     const callee = value?.is('call_expression') ? value.field('function') : undefined
-    if (callee && directCall(callee, api, shadows) && local?.is('identifier')) {
+    if (
+      callee &&
+      directCall(callee, api, shadows) &&
+      local?.is('identifier') &&
+      unambiguousBlueprintBinding(ast, declaration, local.text())
+    ) {
       blueprints.add(local.text())
     }
   }
@@ -328,8 +354,10 @@ const transform: Codemod<TSX> = async (root) => {
     ) {
       reason = 'dynamic config wrapper'
     }
-    // Comments outside the schema pair may describe the old wrapper; retain it for review.
-    else if (
+    // Replacing the config pair would discard comments between its key and value.
+    else if (/\/\*|\/\//.test(config.text().slice(0, wrapper.range().start.index - config.range().start.index))) {
+      reason = 'comment on config pair'
+    } else if (
       /\/\*|\/\//.test(
         wrapper.text().slice(0, schema.range().start.index - wrapper.range().start.index) +
           wrapper.text().slice(schema.range().end.index - wrapper.range().start.index),
