@@ -1,0 +1,25 @@
+{
+  "remove-kubernetes-implicit-children": [
+    {
+      "cardinality": {
+        "action": "children-prop-removed",
+        "component": "ContainerCard"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "nested-children-removed",
+        "component": "FixDialog"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "nested-children-removed",
+        "component": "PodLogs"
+      },
+      "count": 1
+    }
+  ]
+}

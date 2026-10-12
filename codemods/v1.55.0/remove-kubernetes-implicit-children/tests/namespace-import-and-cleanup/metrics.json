@@ -1,0 +1,19 @@
+{
+  "remove-kubernetes-implicit-children": [
+    {
+      "cardinality": {
+        "action": "nested-children-removed",
+        "component": "ContainerCard"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "unused-import-removed",
+        "importType": "named",
+        "local": "Fragment"
+      },
+      "count": 1
+    }
+  ]
+}
