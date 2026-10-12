@@ -7,8 +7,8 @@ Targets: `package.json` script values (JSON AST), GitHub Actions `.github/workfl
 From a consumer repository containing a root `package.json`:
 
 ```bash
-npx codemod @backstage/rename-openapi-validate-command -t /path/to/repo --dry-run
-npx codemod @backstage/rename-openapi-validate-command -t /path/to/repo
+yarn dlx codemod@latest run @backstage/rename-openapi-validate-command -t /path/to/repo --dry-run
+yarn dlx codemod@latest run @backstage/rename-openapi-validate-command -t /path/to/repo
 ```
 
 For local development (before registry publication), use `yarn exec codemod workflow run -w workflow.yaml -t /path/to/repo --dry-run` from this package. The workflow's automatic shell step uses the root package JSON step to preserve the explicit target path across steps; a target without root `package.json` cannot supply that path. A dry-run does not execute the host shell step. After applying, inspect the actual `.sh` and CI YAML diff; workflow completion alone does not prove any matching commands existed. If a CLI run pauses, verify target scoping before resuming and inspect the resulting diff; a separate `workflow resume` can lose the original `-t` target in CLI 1.18.3.
