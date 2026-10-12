@@ -1,0 +1,20 @@
+schema_version: '1.0'
+
+name: '@backstage/rename-openapi-validate-command'
+version: '0.1.0'
+description: 'Backstage 1.54.0: Rename OpenAPI verify commands in package scripts, shell and CI'
+author: 'Paul Schultz<pschultz@redhat.com>'
+license: 'Apache-2.0'
+repository: 'https://github.com/backstage/codemods'
+workflow: 'workflow.yaml'
+
+targets:
+  languages: ['json', 'yaml']
+
+keywords: ['backstage', 'migration', 'openapi', '1.54.0']
+
+registry:
+  access: 'public'
+  visibility: 'public'
+
+capabilities: []
