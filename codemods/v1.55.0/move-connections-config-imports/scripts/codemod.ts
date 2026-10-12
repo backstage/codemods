@@ -307,7 +307,36 @@ function handleDynamicImports(rootNode: SgNode<TSX>, edits: Edit[], source: stri
     return
   }
 
-  const hasDynamicImport = /\bimport\s*\(\s*['"]@backstage\/connections['"]\s*\)/.test(source)
+  const dynamicImportCalls = rootNode.findAll({
+    rule: {
+      kind: 'call_expression',
+      has: {
+        kind: 'import',
+      },
+    },
+  })
+
+  const hasDynamicImport = dynamicImportCalls.some((callExpression) => {
+    const argumentsNode = callExpression.find({ rule: { kind: 'arguments' } })
+    if (!argumentsNode) {
+      return false
+    }
+
+    const stringArgument = argumentsNode.children().find((child) => child.is('string'))
+    if (!stringArgument) {
+      return false
+    }
+
+    return (
+      stringArgument.find({
+        rule: {
+          kind: 'string_fragment',
+          regex: escapeRegex(ROOT_SOURCE),
+        },
+      }) !== null
+    )
+  })
+
   if (!hasDynamicImport) {
     return
   }
