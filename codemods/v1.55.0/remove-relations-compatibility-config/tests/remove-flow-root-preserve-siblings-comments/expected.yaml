@@ -1,0 +1,4 @@
+{
+  # keep sibling comment
+  app: { title: Backstage }
+}

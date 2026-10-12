@@ -103,12 +103,201 @@ function removeFullLineRange(node: SgNode<YAML>, source: string): Edit {
   }
 }
 
-function toFlowMappingText(pairs: SgNode<YAML>[]): string {
-  if (pairs.length === 0) {
-    return '{}'
+function isHorizontalWhitespace(char: string): boolean {
+  return char === ' ' || char === '\t'
+}
+
+function isWhitespace(char: string): boolean {
+  return char === ' ' || char === '\t' || char === '\n' || char === '\r'
+}
+
+function trimFlowPairStart(source: string, start: number, boundary: number): number {
+  let cursor = start
+  while (cursor > boundary && isHorizontalWhitespace(source.charAt(cursor - 1))) {
+    cursor -= 1
   }
 
-  return `{ ${pairs.map((pair) => pair.text().trim()).join(', ')} }`
+  if (cursor === start || cursor <= boundary) {
+    return start
+  }
+
+  const previousChar = source.charAt(cursor - 1)
+  if (previousChar === ',' || previousChar === '\n' || previousChar === '\r') {
+    return cursor
+  }
+
+  return start
+}
+
+function trimFlowPairEnd(source: string, end: number, boundary: number): number {
+  let cursor = end
+  while (cursor < boundary && isHorizontalWhitespace(source.charAt(cursor))) {
+    cursor += 1
+  }
+
+  if (cursor < boundary && source.charAt(cursor) === '\r') {
+    if (cursor + 1 < boundary && source.charAt(cursor + 1) === '\n') {
+      return cursor + 2
+    }
+
+    return cursor + 1
+  }
+
+  if (cursor < boundary && source.charAt(cursor) === '\n') {
+    return cursor + 1
+  }
+
+  return cursor
+}
+
+function findNextFlowCommaIndex(source: string, start: number, boundary: number): number | null {
+  let cursor = start
+
+  while (cursor < boundary) {
+    const char = source.charAt(cursor)
+
+    if (isWhitespace(char)) {
+      cursor += 1
+      continue
+    }
+
+    if (char === '#') {
+      cursor = lineEndWithNewline(source, cursor)
+      continue
+    }
+
+    return char === ',' ? cursor : null
+  }
+
+  return null
+}
+
+function findPreviousFlowCommaIndex(source: string, start: number, boundary: number): number | null {
+  let cursor = start
+
+  while (cursor >= boundary) {
+    const char = source.charAt(cursor)
+
+    if (isWhitespace(char)) {
+      cursor -= 1
+      continue
+    }
+
+    const currentLineStart = lineStart(source, cursor)
+    const commentStart = source.lastIndexOf('#', cursor)
+
+    if (commentStart >= currentLineStart) {
+      cursor = commentStart - 1
+      continue
+    }
+
+    return char === ',' ? cursor : null
+  }
+
+  return null
+}
+
+function mergeDeleteEdits(edits: Edit[]): Edit[] {
+  if (edits.length <= 1) {
+    return edits
+  }
+
+  const sortedEdits = [...edits].sort((left, right) => {
+    if (left.startPos === right.startPos) {
+      return left.endPos - right.endPos
+    }
+
+    return left.startPos - right.startPos
+  })
+
+  const firstEdit = sortedEdits.at(0)
+  if (!firstEdit) {
+    return []
+  }
+
+  const mergedEdits: Edit[] = [{ ...firstEdit }]
+
+  for (const currentEdit of sortedEdits.slice(1)) {
+    const lastEdit = mergedEdits.at(-1)
+    if (!lastEdit) {
+      continue
+    }
+
+    if (currentEdit.startPos <= lastEdit.endPos) {
+      lastEdit.endPos = Math.max(lastEdit.endPos, currentEdit.endPos)
+      continue
+    }
+
+    mergedEdits.push({ ...currentEdit })
+  }
+
+  return mergedEdits
+}
+
+function removeFlowPairs(flowMapping: SgNode<YAML>, pairsToRemove: SgNode<YAML>[], source: string): Edit[] {
+  const mappingRange = flowMapping.range()
+  const mappingStart = mappingRange.start.index
+  const mappingEnd = mappingRange.end.index
+
+  const deletedCommaIndexes = new Set<number>()
+  const flowEdits: Edit[] = []
+
+  const sortedPairs = [...pairsToRemove].sort((left, right) => left.range().start.index - right.range().start.index)
+
+  for (const pair of sortedPairs) {
+    const pairRange = pair.range()
+    const pairStartPos = trimFlowPairStart(source, pairRange.start.index, mappingStart)
+    const pairEndPos = trimFlowPairEnd(source, pairRange.end.index, mappingEnd)
+
+    flowEdits.push({
+      startPos: pairStartPos,
+      endPos: pairEndPos,
+      insertedText: '',
+    })
+
+    const commaAfter = findNextFlowCommaIndex(source, pairRange.end.index, mappingEnd)
+    if (commaAfter !== null && !deletedCommaIndexes.has(commaAfter)) {
+      let commaEndPos = commaAfter + 1
+      while (commaEndPos < mappingEnd && isHorizontalWhitespace(source.charAt(commaEndPos))) {
+        commaEndPos += 1
+      }
+
+      if (commaEndPos < mappingEnd && source.charAt(commaEndPos) === '\r') {
+        if (commaEndPos + 1 < mappingEnd && source.charAt(commaEndPos + 1) === '\n') {
+          commaEndPos += 2
+        } else {
+          commaEndPos += 1
+        }
+      } else if (commaEndPos < mappingEnd && source.charAt(commaEndPos) === '\n') {
+        commaEndPos += 1
+      }
+
+      flowEdits.push({
+        startPos: commaAfter,
+        endPos: commaEndPos,
+        insertedText: '',
+      })
+      deletedCommaIndexes.add(commaAfter)
+      continue
+    }
+
+    const commaBefore = findPreviousFlowCommaIndex(source, pairRange.start.index - 1, mappingStart)
+    if (commaBefore !== null && !deletedCommaIndexes.has(commaBefore)) {
+      let commaStartPos = commaBefore
+      if (commaStartPos > mappingStart && source.charAt(commaStartPos - 1) === ' ') {
+        commaStartPos -= 1
+      }
+
+      flowEdits.push({
+        startPos: commaStartPos,
+        endPos: commaBefore + 1,
+        insertedText: '',
+      })
+      deletedCommaIndexes.add(commaBefore)
+    }
+  }
+
+  return mergeDeleteEdits(flowEdits)
 }
 
 function lineContainsCommentOutsideRanges(
@@ -222,10 +411,7 @@ const transform: Codemod<YAML> = async (root) => {
         if (remainingPairs.length === 0) {
           const topLevelMapping = topLevelPair.parent()
           if (topLevelMapping?.is('flow_mapping')) {
-            const remainingTopLevelPairs = getMappingPairs(topLevelMapping).filter(
-              (pair) => pair.id() !== topLevelPair.id(),
-            )
-            edits.push(topLevelMapping.replace(toFlowMappingText(remainingTopLevelPairs)))
+            edits.push(...removeFlowPairs(topLevelMapping, [topLevelPair], source))
           } else {
             edits.push(removeFullLineRange(topLevelPair, source))
           }
@@ -234,7 +420,7 @@ const transform: Codemod<YAML> = async (root) => {
           continue
         }
 
-        edits.push(catalogMapping.replace(toFlowMappingText(remainingPairs)))
+        edits.push(...removeFlowPairs(catalogMapping, targetPairs, source))
         continue
       }
 
