@@ -9,6 +9,12 @@ const asyncArrow = {
   deps: { conn: ref },
   factory: async ({ conn }) => conn.find({ type: 'gitlab', query: { url: getUrl() } }),
 };
+const renamed = {
+  deps: { connections: ref },
+  factory: function({ connections: conn }) {
+    conn.find({ type: 'github', query: { url: getUrl() } });
+  },
+};
 
 class Lookup {
   private readonly connections: Service;

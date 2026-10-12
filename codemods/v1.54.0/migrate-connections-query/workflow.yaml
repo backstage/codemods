@@ -12,6 +12,7 @@ nodes:
           js_file: scripts/codemod.ts
           language: 'tsx'
           semantic_analysis: file
+          base_path: '.'
           include:
             - '**/*.ts'
             - '**/*.tsx'

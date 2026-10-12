@@ -1,6 +1,7 @@
 import type { ConnectionsService } from '@backstage/connections';
 
 function lookup(connections: ConnectionsService, type: string, url: string, extra: object) {
+  const key = 'query';
   connections.find({ type: 'custom', url });
   connections.find({ type: 'aws', url });
   connections.find({ type, url });
@@ -11,6 +12,8 @@ function lookup(connections: ConnectionsService, type: string, url: string, extr
   connections.find({ type: 'github', url, query() { return { url }; } });
   connections.find({ type: 'github', url, 'query'() { return { url }; } });
   connections.find({ type: 'github', url, "query"() { return { url }; } });
+  connections.find({ type: 'github', url, [key]() { return { url }; } });
+  connections.find({ type: 'github', url, ['q u e r y']: { url } });
   connections.find({ type: 'github', url, url: 'duplicate' });
   connections.find({ type: 'github', url, query: { url } });
   connections.find({ type: 'github', url, query });

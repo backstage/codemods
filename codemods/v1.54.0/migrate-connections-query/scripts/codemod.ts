@@ -29,7 +29,9 @@ function property(node: Node, key: string): boolean {
     (name?.kind() === 'property_identifier' && name.text() === key) ||
     (name?.kind() === 'string' && (name.text() === `'${key}'` || name.text() === `"${key}"`)) ||
     (name?.kind() === 'computed_property_name' &&
-      (name.text().replaceAll(/\s/g, '') === `['${key}']` || name.text().replaceAll(/\s/g, '') === `["${key}"]`))
+      name
+        .children()
+        .some((child) => child.kind() === 'string' && (child.text() === `'${key}'` || child.text() === `"${key}"`)))
   )
 }
 
@@ -122,7 +124,9 @@ function receiverBindings(root: Node): Node[] {
       ...directPairs(config)
         .filter((pair) => property(pair, 'factory'))
         .map((pair) => pair.field('value'))
-        .filter((value): value is Node => value?.kind() === 'arrow_function'),
+        .filter(
+          (value): value is Node => value?.kind() === 'arrow_function' || value?.kind() === 'function_expression',
+        ),
     ]
     for (const factory of factories) {
       const first = factory
@@ -136,6 +140,11 @@ function receiverBindings(root: Node): Node[] {
       for (const name of pattern.children()) {
         if (name.kind() === 'shorthand_property_identifier_pattern' && dependencyNames.has(name.text())) {
           bindings.push(name)
+        } else if (name.kind() === 'pair_pattern' && dependencyNames.has(name.field('key')?.text() ?? '')) {
+          const local = name.field('value')
+          if (local?.kind() === 'identifier') {
+            bindings.push(local)
+          }
         }
       }
     }
@@ -248,7 +257,8 @@ const transform: Codemod<TSX> = async (root) => {
           (child) =>
             child.kind() === 'spread_element' ||
             (child.kind() === 'pair' && child.field('key')?.kind() === 'computed_property_name') ||
-            (child.kind() === 'method_definition' && property(child, 'url')),
+            (child.kind() === 'method_definition' &&
+              (property(child, 'url') || child.field('name')?.kind() === 'computed_property_name')),
         )
 
     if (safe) {

@@ -36,6 +36,13 @@ const unrelatedArrow = {
   deps: { conn: ref },
   factory: ({ other }: { other: { find: Function } }) => other.find({ type: 'github', url: 'not-backstage' }),
 };
+const shadowedRenamed = {
+  deps: { connections: ref },
+  factory: function({ connections: conn }) {
+    const nested = (conn: { find: Function }) => conn.find({ type: 'github', url: 'not-backstage' });
+    return nested(conn);
+  },
+};
 const shadowedArrow = {
   deps: { conn: ref },
   factory: ({ conn }) => {
