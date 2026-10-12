@@ -1,0 +1,11 @@
+{
+  "move-connections-config-imports": [
+    {
+      "cardinality": {
+        "action": "todo",
+        "kind": "dynamic-import"
+      },
+      "count": 1
+    }
+  ]
+}
