@@ -314,38 +314,186 @@ function getFirstCallArgument(argumentsNode: SgNode<TSX>): SgNode<TSX> | null {
   return null
 }
 
-function handleDynamicImports(rootNode: SgNode<TSX>, edits: Edit[], source: string): void {
-  if (source.includes(DYNAMIC_IMPORT_TODO)) {
-    return
+function isTypeContext(node: SgNode<TSX>): boolean {
+  let current: SgNode<TSX> | null = node
+
+  while (current) {
+    const kind = current.kind()
+    if (kind.includes('type') || kind === 'interface_declaration') {
+      return true
+    }
+
+    if (
+      kind === 'expression_statement' ||
+      kind === 'lexical_declaration' ||
+      kind === 'statement_block' ||
+      kind === 'return_statement' ||
+      kind === 'arguments' ||
+      kind === 'array' ||
+      kind === 'object' ||
+      kind === 'pair'
+    ) {
+      return false
+    }
+
+    current = current.parent()
   }
 
-  const hasDynamicImport = rootNode.findAll({ rule: { kind: 'call_expression' } }).some((callExpression) => {
-    const calleeNode = callExpression.field('function')
-    if (!calleeNode || !calleeNode.is('import')) {
-      return false
+  return false
+}
+
+function isIdentifierLikeNode(node: SgNode<TSX>): boolean {
+  return node.is('identifier') || node.is('property_identifier') || node.is('type_identifier')
+}
+
+function getDynamicImportMemberSymbol(callExpression: SgNode<TSX>): string | null {
+  let current: SgNode<TSX> = callExpression
+
+  for (;;) {
+    const parentNode: SgNode<TSX> = current.parent() as SgNode<TSX>
+
+    if (parentNode.kind() === 'member_expression') {
+      const objectNode = parentNode.field('object')
+      const propertyNode = parentNode.field('property')
+      if (objectNode?.id() === current.id() && propertyNode && isIdentifierLikeNode(propertyNode)) {
+        return propertyNode.text()
+      }
     }
 
-    const argumentsNode = callExpression.field('arguments')
-    if (!argumentsNode) {
-      return false
+    const argumentNode = parentNode.field('argument')
+    const qualifierNode = parentNode.field('qualifier')
+    if (argumentNode?.id() === current.id() && qualifierNode && isIdentifierLikeNode(qualifierNode)) {
+      return qualifierNode.text()
     }
 
-    const firstArgument = getFirstCallArgument(argumentsNode)
-    if (!firstArgument || !firstArgument.is('string')) {
-      return false
+    if (
+      parentNode.kind() === 'program' ||
+      parentNode.kind() === 'expression_statement' ||
+      parentNode.kind() === 'lexical_declaration' ||
+      parentNode.kind() === 'statement_block' ||
+      parentNode.kind() === 'return_statement' ||
+      parentNode.kind() === 'arguments' ||
+      parentNode.kind() === 'array' ||
+      parentNode.kind() === 'object' ||
+      parentNode.kind() === 'pair'
+    ) {
+      return null
     }
 
-    return (
-      firstArgument.find({
-        rule: {
-          kind: 'string_fragment',
-          regex: escapeRegex(ROOT_SOURCE),
-        },
-      }) !== null
-    )
+    current = parentNode
+  }
+}
+
+function isLikelyTsxGenericTypeArgument(callExpression: SgNode<TSX>): boolean {
+  const memberNode = callExpression.parent()
+  if (memberNode?.kind() !== 'member_expression') {
+    return false
+  }
+
+  const memberObject = memberNode.field('object')
+  if (!memberObject || memberObject.id() !== callExpression.id()) {
+    return false
+  }
+
+  const lessThanExpression = memberNode.parent()
+  if (lessThanExpression?.kind() !== 'binary_expression') {
+    return false
+  }
+
+  const lessThanRight = lessThanExpression.field('right')
+  if (!lessThanRight || lessThanRight.id() !== memberNode.id()) {
+    return false
+  }
+
+  const greaterThanExpression = lessThanExpression.parent()
+  if (greaterThanExpression?.kind() !== 'binary_expression') {
+    return false
+  }
+
+  const greaterThanLeft = greaterThanExpression.field('left')
+  if (!greaterThanLeft || greaterThanLeft.id() !== lessThanExpression.id()) {
+    return false
+  }
+
+  const greaterThanRight = greaterThanExpression.field('right')
+  if (!greaterThanRight) {
+    return false
+  }
+
+  return (
+    greaterThanRight.kind() === 'parenthesized_expression' ||
+    greaterThanRight.kind() === 'arguments' ||
+    greaterThanRight.text().startsWith('({')
+  )
+}
+
+function classifyDynamicImportCall(callExpression: SgNode<TSX>): {
+  action: 'ignore' | 'migrate' | 'todo'
+  sourceFragment?: SgNode<TSX>
+  symbol?: string
+} {
+  const calleeNode = callExpression.field('function')
+  if (!calleeNode || !calleeNode.is('import')) {
+    return { action: 'ignore' }
+  }
+
+  const argumentsNode = callExpression.field('arguments')
+  if (!argumentsNode) {
+    return { action: 'ignore' }
+  }
+
+  const firstArgument = getFirstCallArgument(argumentsNode)
+  if (!firstArgument || !firstArgument.is('string')) {
+    return { action: 'ignore' }
+  }
+
+  const sourceFragment = firstArgument.find({
+    rule: {
+      kind: 'string_fragment',
+      regex: escapeRegex(ROOT_SOURCE),
+    },
   })
 
-  if (!hasDynamicImport) {
+  if (!sourceFragment) {
+    return { action: 'ignore' }
+  }
+
+  const isTypeOnlyDynamicImport = isTypeContext(callExpression) || isLikelyTsxGenericTypeArgument(callExpression)
+  if (!isTypeOnlyDynamicImport) {
+    return { action: 'todo' }
+  }
+
+  const symbol = getDynamicImportMemberSymbol(callExpression)
+  if (symbol && MOVED_EXPORTS.has(symbol)) {
+    return { action: 'migrate', sourceFragment, symbol }
+  }
+
+  return { action: 'ignore' }
+}
+
+function handleDynamicImports(rootNode: SgNode<TSX>, edits: Edit[], source: string): void {
+  const hasTodoComment = source.includes(DYNAMIC_IMPORT_TODO)
+  let needsTodo = false
+
+  for (const callExpression of rootNode.findAll({ rule: { kind: 'call_expression' } })) {
+    const classification = classifyDynamicImportCall(callExpression)
+
+    if (classification.action === 'migrate' && classification.sourceFragment && classification.symbol) {
+      edits.push(classification.sourceFragment.replace(CONFIG_SOURCE))
+      migrationMetric.increment({
+        kind: 'dynamic-import-type',
+        action: 'migrated',
+        symbol: classification.symbol,
+      })
+      continue
+    }
+
+    if (classification.action === 'todo') {
+      needsTodo = true
+    }
+  }
+
+  if (!needsTodo || hasTodoComment) {
     return
   }
 
