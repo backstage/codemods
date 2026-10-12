@@ -110,7 +110,8 @@ function unambiguousBlueprintBinding(root: Node, declaration: Node, name: string
       }
       const binding =
         node.field('name') ?? node.field('pattern') ?? node.children().find((child) => child.is('identifier'))
-      if (binding?.is('identifier') && binding.text() === name) {
+      // Patterns can bind the receiver through destructuring; skip if its name occurs anywhere in a pattern.
+      if (binding?.text().includes(name)) {
         return false
       }
     }
