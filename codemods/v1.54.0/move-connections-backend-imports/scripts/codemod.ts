@@ -30,7 +30,17 @@ interface Destination {
 }
 
 function sourceOf(node: Statement): string | null {
-  return node.find({ rule: { kind: 'string_fragment' } })?.text() ?? null
+  return (
+    node
+      .field('source')
+      ?.find({ rule: { kind: 'string_fragment' } })
+      ?.text() ?? null
+  )
+}
+
+function hasTrailingComment(node: Statement, source: string): boolean {
+  const afterStatement = source.slice(node.range().end.index).split('\n', 1)[0]?.trimStart() ?? ''
+  return /^(\/\/|\/\*)/.test(afterStatement)
 }
 
 function specifiers(node: Statement): SgNode<TSX>[] {
@@ -51,12 +61,7 @@ function isTypeSpecifier(specifier: SgNode<TSX>): boolean {
 }
 
 function quoteOf(node: Statement): string {
-  return node
-    .find({ rule: { kind: 'string' } })
-    ?.text()
-    .startsWith('"')
-    ? '"'
-    : "'"
+  return node.field('source')?.text().startsWith('"') ? '"' : "'"
 }
 
 function statementText(
@@ -124,8 +129,7 @@ const transform: Codemod<TSX> = async (root) => {
     if (!moved.length && !removed) {
       continue
     }
-    const afterStatement = source.slice(node.range().end.index).split('\n', 1)[0]?.trimStart() ?? ''
-    if (node.findAll({ rule: { kind: 'comment' } }).length > 0 || /^(\/\/|\/\*)/.test(afterStatement)) {
+    if (node.findAll({ rule: { kind: 'comment' } }).length > 0 || hasTrailingComment(node, source)) {
       const comment = commentBefore(node, source, COMMENT_REVIEW)
       if (comment) {
         edits.push(node.replace(comment + node.text()))
@@ -168,7 +172,8 @@ const transform: Codemod<TSX> = async (root) => {
               candidate !== node &&
               (moving.every((spec) => spec.typeOnly) || !isTypeOnly(candidate)) &&
               candidate.find({ rule: { kind: 'namespace_import' } }) === null &&
-              candidate.find({ rule: { kind: 'comment' } }) === null,
+              candidate.find({ rule: { kind: 'comment' } }) === null &&
+              !hasTrailingComment(candidate, source),
           )
         : undefined
     if (destination) {
