@@ -154,8 +154,14 @@ function isSafeInputAlias(documentNode: SgNode<YAML>, inputValueNode: SgNode<YAM
   }
 
   return getDirectPairs(mapping).every((pair) => {
+    const keyText = pair.field('key')?.text().trim() ?? ''
+    // Only simple scalars have an unambiguous spelling here; YAML escapes can hide removed keys.
+    if (!/^(?:[A-Za-z_][A-Za-z0-9_-]*|'[A-Za-z_][A-Za-z0-9_-]*'|"[A-Za-z_][A-Za-z0-9_-]*")$/.test(keyText)) {
+      return false
+    }
+
     const key = getPairKey(pair)
-    return key !== null && key !== '<<' && !REMOVED_INPUT_KEYS.has(key)
+    return key !== null && !REMOVED_INPUT_KEYS.has(key)
   })
 }
 
