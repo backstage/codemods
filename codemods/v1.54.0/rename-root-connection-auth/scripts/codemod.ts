@@ -9,26 +9,27 @@ function isConnectionsStatement(node: SgNode<TSX>): boolean {
   return node.find({ rule: { kind: 'string_fragment' } })?.text() === SOURCE
 }
 
-function removeSpecifier(spec: SgNode<TSX>, siblings: SgNode<TSX>[]): Edit {
+function removeSpecifier(spec: SgNode<TSX>, siblings: SgNode<TSX>[], source: string): Edit {
   const index = siblings.findIndex((sibling) => sibling.id() === spec.id())
   const next = siblings[index + 1]
   const previous = siblings[index - 1]
-  if (next) {
-    return {
-      startPos: spec.range().start.index,
-      endPos: next.range().start.index,
-      insertedText: '',
-    }
-  }
-  if (!previous) {
+  const start = next ? spec.range().start.index : previous?.range().end.index
+  if (start === undefined) {
     throw new Error('Cannot remove the only specifier from a named import')
   }
-  // Select the adjacent separator along with the AST specifier; leave other specifiers intact.
-  return {
-    startPos: previous.range().end.index,
-    endPos: spec.range().end.index,
-    insertedText: '',
+  const end = next ? next.range().start.index : spec.range().end.index
+  const comma = spec
+    .parent()
+    ?.children()
+    .find((child) => child.text() === ',' && child.range().start.index >= start && child.range().end.index <= end)
+  if (!comma) {
+    throw new Error('Cannot locate the specifier separator')
   }
+  // Preserve comments between specifiers; remove only whitespace and the obsolete specifier.
+  const before = source.slice(next ? spec.range().end.index : start, comma.range().start.index)
+  const after = source.slice(comma.range().end.index, next ? end : spec.range().start.index)
+  const retained = before + after
+  return { startPos: start, endPos: end, insertedText: retained.trim() ? retained : '' }
 }
 
 const transform: Codemod<TSX> = async (root) => {
@@ -54,7 +55,7 @@ const transform: Codemod<TSX> = async (root) => {
       const unaliased = identifiers.length === 1
       if (unaliased && alreadyImported) {
         if (specs.length > 1) {
-          edits.push(removeSpecifier(spec, specs))
+          edits.push(removeSpecifier(spec, specs, tree.text()))
         } else {
           const clause = statement.find({ rule: { kind: 'import_clause' } })
           const defaultImport = clause?.children().find((child) => child.is('identifier'))
@@ -135,7 +136,7 @@ const transform: Codemod<TSX> = async (root) => {
         continue
       }
       if (ids.length === 1 && alreadyExported) {
-        edits.push(removeSpecifier(spec, specs))
+        edits.push(removeSpecifier(spec, specs, tree.text()))
       } else {
         edits.push(imported.replace(NEW))
       }
