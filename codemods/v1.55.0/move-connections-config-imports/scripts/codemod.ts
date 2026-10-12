@@ -302,33 +302,41 @@ function handleNamespaceImports(rootNode: SgNode<TSX>, edits: Edit[], filename: 
   }
 }
 
+function getFirstCallArgument(argumentsNode: SgNode<TSX>): SgNode<TSX> | null {
+  for (const child of argumentsNode.children()) {
+    if (child.text() === '(' || child.text() === ')' || child.text() === ',' || child.is('comment')) {
+      continue
+    }
+
+    return child
+  }
+
+  return null
+}
+
 function handleDynamicImports(rootNode: SgNode<TSX>, edits: Edit[], source: string): void {
   if (source.includes(DYNAMIC_IMPORT_TODO)) {
     return
   }
 
-  const dynamicImportCalls = rootNode.findAll({
-    rule: {
-      kind: 'call_expression',
-      has: {
-        kind: 'import',
-      },
-    },
-  })
+  const hasDynamicImport = rootNode.findAll({ rule: { kind: 'call_expression' } }).some((callExpression) => {
+    const calleeNode = callExpression.field('function')
+    if (!calleeNode || !calleeNode.is('import')) {
+      return false
+    }
 
-  const hasDynamicImport = dynamicImportCalls.some((callExpression) => {
-    const argumentsNode = callExpression.find({ rule: { kind: 'arguments' } })
+    const argumentsNode = callExpression.field('arguments')
     if (!argumentsNode) {
       return false
     }
 
-    const stringArgument = argumentsNode.children().find((child) => child.is('string'))
-    if (!stringArgument) {
+    const firstArgument = getFirstCallArgument(argumentsNode)
+    if (!firstArgument || !firstArgument.is('string')) {
       return false
     }
 
     return (
-      stringArgument.find({
+      firstArgument.find({
         rule: {
           kind: 'string_fragment',
           regex: escapeRegex(ROOT_SOURCE),
