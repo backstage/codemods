@@ -6,7 +6,27 @@ const OLD = 'RootConnectionAuth'
 const NEW = 'ConfiguredConnectionAuth'
 
 function isConnectionsStatement(node: SgNode<TSX>): boolean {
-  return node.find({ rule: { kind: 'string_fragment' } })?.text() === SOURCE
+  return (
+    node
+      .children()
+      .find((child) => child.is('string'))
+      ?.find({ rule: { kind: 'string_fragment' } })
+      ?.text() === SOURCE
+  )
+}
+
+function removeStatementPreservingComments(statement: SgNode<TSX>, source: string): Edit {
+  const comments = statement.findAll({ rule: { kind: 'comment' } }).map((comment) => comment.text())
+  if (comments.length) {
+    return statement.replace(comments.join('\n'))
+  }
+  const { start, end } = statement.range()
+  const lineStart = source.lastIndexOf('\n', start.index - 1) + 1
+  const lineEnd = source.slice(end.index).match(/^[ \t]*\r?\n/)
+  if (lineEnd && !source.slice(lineStart, start.index).trim()) {
+    return { startPos: lineStart, endPos: end.index + lineEnd[0].length, insertedText: '' }
+  }
+  return statement.replace('')
 }
 
 function removeSpecifier(spec: SgNode<TSX>, siblings: SgNode<TSX>[], source: string): Edit {
@@ -33,10 +53,14 @@ function removeSpecifier(spec: SgNode<TSX>, siblings: SgNode<TSX>[], source: str
 }
 
 const transform: Codemod<TSX> = async (root) => {
+  const source = root.source()
+  if (!source.includes(OLD) || !source.includes(SOURCE)) {
+    return null
+  }
   const tree = root.root()
   const edits: Edit[] = []
   const imports = tree.findAll({ rule: { kind: 'import_statement' } }).filter(isConnectionsStatement)
-  const alreadyImported = imports.some((statement) =>
+  let alreadyImported = imports.some((statement) =>
     statement.findAll({ rule: { kind: 'import_specifier' } }).some((spec) => {
       const ids = spec.children().filter((child) => child.is('identifier'))
       return ids.length === 1 && ids[0]?.text() === NEW
@@ -55,7 +79,7 @@ const transform: Codemod<TSX> = async (root) => {
       const unaliased = identifiers.length === 1
       if (unaliased && alreadyImported) {
         if (specs.length > 1) {
-          edits.push(removeSpecifier(spec, specs, tree.text()))
+          edits.push(removeSpecifier(spec, specs, source))
         } else {
           const clause = statement.find({ rule: { kind: 'import_clause' } })
           const defaultImport = clause?.children().find((child) => child.is('identifier'))
@@ -67,11 +91,14 @@ const transform: Codemod<TSX> = async (root) => {
                   endPos: named.range().end.index,
                   insertedText: '',
                 }
-              : statement.replace(''),
+              : removeStatementPreservingComments(statement, source),
           )
         }
       } else {
         edits.push(imported.replace(NEW))
+        if (unaliased) {
+          alreadyImported = true
+        }
       }
       // An explicit alias is the local binding; only the imported name changes.
       if (!unaliased) {
@@ -120,15 +147,15 @@ const transform: Codemod<TSX> = async (root) => {
     }
   }
 
-  for (const statement of tree.findAll({ rule: { kind: 'export_statement' } })) {
-    if (!isConnectionsStatement(statement)) {
-      continue
-    }
-    const specs = statement.findAll({ rule: { kind: 'export_specifier' } })
-    const alreadyExported = specs.some((spec) => {
+  const exports = tree.findAll({ rule: { kind: 'export_statement' } }).filter(isConnectionsStatement)
+  let alreadyExported = exports.some((statement) =>
+    statement.findAll({ rule: { kind: 'export_specifier' } }).some((spec) => {
       const ids = spec.children().filter((child) => child.is('identifier'))
       return ids.length === 1 && ids[0]?.text() === NEW
-    })
+    }),
+  )
+  for (const statement of exports) {
+    const specs = statement.findAll({ rule: { kind: 'export_specifier' } })
     for (const spec of specs) {
       const ids = spec.children().filter((child) => child.is('identifier'))
       const [imported] = ids
@@ -136,10 +163,50 @@ const transform: Codemod<TSX> = async (root) => {
         continue
       }
       if (ids.length === 1 && alreadyExported) {
-        edits.push(removeSpecifier(spec, specs, tree.text()))
+        edits.push(
+          specs.length > 1
+            ? removeSpecifier(spec, specs, source)
+            : removeStatementPreservingComments(statement, source),
+        )
       } else {
         edits.push(imported.replace(NEW))
+        if (ids.length === 1) {
+          alreadyExported = true
+        }
       }
+    }
+  }
+
+  for (const member of tree.findAll({ rule: { kind: 'member_expression' } })) {
+    const property = member.children().find((child) => child.is('property_identifier'))
+    const call = member.children().find((child) => child.is('call_expression'))
+    const args = call?.children().find((child) => child.is('arguments'))
+    if (
+      property?.text() !== OLD ||
+      !call?.children().some((child) => child.is('import')) ||
+      args
+        ?.children()
+        .find((child) => child.is('string'))
+        ?.find({ rule: { kind: 'string_fragment' } })
+        ?.text() !== SOURCE
+    ) {
+      continue
+    }
+    // Tree-sitter represents TS inline import types as member expressions (even before generic arguments).
+    let context = member.parent()
+    while (
+      context &&
+      context.kind() !== 'program' &&
+      context.kind() !== 'type_alias_declaration' &&
+      context.kind() !== 'type_annotation'
+    ) {
+      if (context.kind() === 'lexical_declaration' || context.kind() === 'expression_statement') {
+        break
+      }
+      context = context.parent()
+    }
+    if (context?.kind() === 'type_alias_declaration' || context?.kind() === 'type_annotation') {
+      edits.push(property.replace(NEW))
     }
   }
 
