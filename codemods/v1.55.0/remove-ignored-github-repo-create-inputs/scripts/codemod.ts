@@ -78,28 +78,42 @@ function getPairValueNode(pair: SgNode<YAML>): SgNode<YAML> | null {
   return pair.field('value')
 }
 
-function findMappingNode(node: SgNode<YAML> | null): SgNode<YAML> | null {
+function findDirectNode(
+  node: SgNode<YAML> | null,
+  isTargetNode: (candidate: SgNode<YAML>) => boolean,
+): SgNode<YAML> | null {
   if (!node) {
     return null
   }
 
-  if (isMapping(node)) {
+  if (isTargetNode(node)) {
     return node
   }
 
-  return node.find({ rule: { kind: 'block_mapping' } }) ?? node.find({ rule: { kind: 'flow_mapping' } })
+  for (const child of node.children()) {
+    if (isTargetNode(child)) {
+      return child
+    }
+
+    if (child.kind() !== 'block_node' && child.kind() !== 'flow_node') {
+      continue
+    }
+
+    const nestedTarget = child.children().find((grandchild) => isTargetNode(grandchild))
+    if (nestedTarget) {
+      return nestedTarget
+    }
+  }
+
+  return null
+}
+
+function findMappingNode(node: SgNode<YAML> | null): SgNode<YAML> | null {
+  return findDirectNode(node, isMapping)
 }
 
 function findSequenceNode(node: SgNode<YAML> | null): SgNode<YAML> | null {
-  if (!node) {
-    return null
-  }
-
-  if (isSequence(node)) {
-    return node
-  }
-
-  return node.find({ rule: { kind: 'block_sequence' } }) ?? node.find({ rule: { kind: 'flow_sequence' } })
+  return findDirectNode(node, isSequence)
 }
 
 function getDirectPairs(mappingNode: SgNode<YAML>): SgNode<YAML>[] {
@@ -120,6 +134,14 @@ function getDirectPairs(mappingNode: SgNode<YAML>): SgNode<YAML>[] {
 
 function findDirectPair(mappingNode: SgNode<YAML>, key: string): SgNode<YAML> | null {
   return getDirectPairs(mappingNode).find((pair) => getPairKey(pair) === key) ?? null
+}
+
+function hasDirectFlowComments(mappingNode: SgNode<YAML>): boolean {
+  if (mappingNode.kind() !== 'flow_mapping') {
+    return false
+  }
+
+  return mappingNode.children().some((child) => child.kind() === 'comment')
 }
 
 function getDirectStepItems(stepsSequence: SgNode<YAML>): SgNode<YAML>[] {
@@ -356,7 +378,7 @@ const transform: Codemod<YAML> = async (root) => {
       const inputLineText = getLineText(lines, inputLine)
       const inputValueNode = getPairValueNode(inputPair)
       const inputValueText = inputValueNode?.text().trim() ?? ''
-      const inputMapping = findMappingNode(inputValueNode ?? inputPair)
+      const inputMapping = findMappingNode(inputValueNode)
       const stepHasTodo = hasExistingTodo(stepMapping)
 
       const inputHasAnchor = /:\s*&[A-Za-z0-9_-]+/.test(inputLineText)
@@ -384,20 +406,26 @@ const transform: Codemod<YAML> = async (root) => {
 
         if (removablePairs.length > 0 && !inputHasAnchor && !hasMergePair) {
           if (inputMapping.kind() === 'flow_mapping') {
-            const remainingPairs = directPairs.filter(
-              (pair) => !removablePairs.some((removed) => removed.id() === pair.id()),
-            )
-            const replacement =
-              remainingPairs.length === 0 ? '{}' : `{ ${remainingPairs.map((pair) => pair.text().trim()).join(', ')} }`
+            if (hasDirectFlowComments(inputMapping)) {
+              shouldAddTodo = true
+            } else {
+              const remainingPairs = directPairs.filter(
+                (pair) => !removablePairs.some((removed) => removed.id() === pair.id()),
+              )
+              const replacement =
+                remainingPairs.length === 0
+                  ? '{}'
+                  : `{ ${remainingPairs.map((pair) => pair.text().trim()).join(', ')} }`
 
-            const valueRange = inputMapping.range()
-            edits.push({
-              start: valueRange.start.index,
-              end: valueRange.end.index,
-              replacement,
-            })
+              const valueRange = inputMapping.range()
+              edits.push({
+                start: valueRange.start.index,
+                end: valueRange.end.index,
+                replacement,
+              })
 
-            removedInStep += removablePairs.length
+              removedInStep += removablePairs.length
+            }
           } else {
             for (const removablePair of removablePairs) {
               edits.push(getBlockPairRemovalRange(removablePair, inputMapping, lines, lineStarts, sourceLength))
