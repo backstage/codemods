@@ -560,6 +560,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/remove-relations-compatibility-config@workspace:codemods/v1.55.0/remove-relations-compatibility-config":
+  version: 0.0.0-use.local
+  resolution: "@backstage/remove-relations-compatibility-config@workspace:codemods/v1.55.0/remove-relations-compatibility-config"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.3"
+    codemod: "npm:1.18.3"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/remove-stitching-strategy-mode@workspace:codemods/v1.52.0/remove-stitching-strategy-mode":
   version: 0.0.0-use.local
   resolution: "@backstage/remove-stitching-strategy-mode@workspace:codemods/v1.52.0/remove-stitching-strategy-mode"
