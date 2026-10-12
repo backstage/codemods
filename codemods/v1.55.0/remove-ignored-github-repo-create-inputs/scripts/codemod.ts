@@ -136,6 +136,29 @@ function findDirectPair(mappingNode: SgNode<YAML>, key: string): SgNode<YAML> | 
   return getDirectPairs(mappingNode).find((pair) => getPairKey(pair) === key) ?? null
 }
 
+function isSafeInputAlias(documentNode: SgNode<YAML>, inputValueNode: SgNode<YAML> | null): boolean {
+  const alias = inputValueNode?.find({ rule: { kind: 'alias' } })
+  if (!alias || inputValueNode?.text().trim() !== alias.text()) {
+    return false
+  }
+
+  const name = alias.text().slice(1)
+  const anchors = documentNode.findAll({ rule: { kind: 'anchor' } }).filter((anchor) => anchor.text().slice(1) === name)
+  if (anchors.length !== 1 || !anchors[0] || anchors[0].range().start.index >= alias.range().start.index) {
+    return false
+  }
+
+  const mapping = anchors[0].parent()?.children().find(isMapping)
+  if (!mapping || mapping.findAll({ rule: { kind: 'alias' } }).length > 0) {
+    return false
+  }
+
+  return getDirectPairs(mapping).every((pair) => {
+    const key = getPairKey(pair)
+    return key !== null && key !== '<<' && !REMOVED_INPUT_KEYS.has(key)
+  })
+}
+
 function hasDirectFlowComments(mappingNode: SgNode<YAML>): boolean {
   if (mappingNode.kind() !== 'flow_mapping') {
     return false
@@ -285,7 +308,12 @@ function getBlockPairRemovalRange(
   }
 }
 
-function getCommentedFlowPairRemovalRange(pair: SgNode<YAML>, source: string, lineStarts: number[]): TextEdit | null {
+function getCommentedFlowPairRemovalRange(
+  pair: SgNode<YAML>,
+  mappingNode: SgNode<YAML>,
+  source: string,
+  lineStarts: number[],
+): TextEdit | null {
   const range = pair.range()
   const lineStart = getLineStart(lineStarts, range.start.line, source.length)
   const nextLineStart = getLineStart(lineStarts, range.start.line + 1, source.length)
@@ -304,6 +332,11 @@ function getCommentedFlowPairRemovalRange(pair: SgNode<YAML>, source: string, li
   const followingComma = suffix.match(/^[ \t]*,[ \t]*/)
   if (followingComma) {
     return { start: pairStart, end: pairEnd + followingComma[0].length, replacement: '' }
+  }
+
+  const mappingEnd = utf8ByteOffsetToStringIndex(source, mappingNode.range().end.index)
+  if (/^[ \t]*\}$/u.test(source.slice(pairEnd, mappingEnd))) {
+    return { start: pairStart, end: mappingEnd - 1, replacement: '' }
   }
 
   return null
@@ -423,12 +456,13 @@ const transform: Codemod<YAML> = async (root) => {
 
       const inputHasAnchor = /:\s*&[A-Za-z0-9_-]+/.test(inputLineText)
       const inputIsAlias = inputValueText.startsWith('*')
+      const safeInputAlias = inputIsAlias && isSafeInputAlias(documentNode, inputValueNode)
 
-      let shouldAddTodo = (inputHasAnchor && !inputMapping) || inputIsAlias
+      let shouldAddTodo = (inputHasAnchor && !inputMapping) || (inputIsAlias && !safeInputAlias)
       let removedInStep = 0
 
       if (!inputMapping) {
-        if (inputValueText !== '' && inputValueText !== '{}' && inputValueText !== '{ }') {
+        if (inputValueText !== '' && inputValueText !== '{}' && inputValueText !== '{ }' && !safeInputAlias) {
           shouldAddTodo = true
         }
       } else {
@@ -451,7 +485,7 @@ const transform: Codemod<YAML> = async (root) => {
           if (inputMapping.kind() === 'flow_mapping') {
             if (hasDirectFlowComments(inputMapping)) {
               const commentEdits = removablePairs.map((pair) =>
-                getCommentedFlowPairRemovalRange(pair, source, lineStarts),
+                getCommentedFlowPairRemovalRange(pair, inputMapping, source, lineStarts),
               )
               if (commentEdits.every((edit): edit is TextEdit => edit !== null)) {
                 edits.push(...commentEdits)
@@ -530,11 +564,11 @@ const transform: Codemod<YAML> = async (root) => {
   let result = applyTextEdits(source, edits)
 
   if (sourceEndsWithNewline && !result.endsWith('\n')) {
-    result = `${result}\n`
+    result = `${result}${newline}`
   }
 
   if (!sourceEndsWithNewline && result.endsWith('\n')) {
-    result = result.slice(0, -1)
+    result = result.slice(0, result.endsWith('\r\n') ? -2 : -1)
   }
 
   if (result === source) {
