@@ -45,6 +45,8 @@ jobs:
 
   changeset-check:
     name: Changeset Check
+    # The generated Version Packages PR consumes changesets instead of adding them.
+    if: github.event.pull_request.user.login != 'github-actions[bot]' || github.event.pull_request.head.ref != 'changeset-release/main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
