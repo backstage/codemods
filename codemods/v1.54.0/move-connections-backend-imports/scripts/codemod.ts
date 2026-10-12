@@ -15,7 +15,7 @@ const REVIEW =
 const REMOVED_REVIEW =
   '// TODO(backstage-codemod): RootConnection/AnyRootConnection have no automatic replacement; review manually.\n'
 const COMMENT_REVIEW =
-  '// TODO(backstage-codemod): Review commented Connections specifiers before splitting this declaration.\n'
+  '// TODO(backstage-codemod): Review commented Connections declarations before splitting this declaration.\n'
 
 type Statement = SgNode<TSX, 'import_statement' | 'export_statement'>
 
@@ -124,10 +124,7 @@ const transform: Codemod<TSX> = async (root) => {
     if (!moved.length && !removed) {
       continue
     }
-    const namedClause = node.find({
-      rule: { kind: node.kind() === 'import_statement' ? 'named_imports' : 'export_clause' },
-    })
-    if (namedClause?.find({ rule: { kind: 'comment' } })) {
+    if (node.findAll({ rule: { kind: 'comment' } }).length > 0) {
       const comment = commentBefore(node, source, COMMENT_REVIEW)
       if (comment) {
         edits.push(node.replace(comment + node.text()))
@@ -170,7 +167,7 @@ const transform: Codemod<TSX> = async (root) => {
               candidate !== node &&
               (moving.every((spec) => spec.typeOnly) || !isTypeOnly(candidate)) &&
               candidate.find({ rule: { kind: 'namespace_import' } }) === null &&
-              candidate.find({ rule: { kind: 'named_imports' } })?.find({ rule: { kind: 'comment' } }) === null,
+              candidate.find({ rule: { kind: 'comment' } }) === null,
           )
         : undefined
     if (destination) {
