@@ -38,8 +38,8 @@ function escapeRegex(str: string): string {
 
 export const getSelector: GetSelector<TSX> = () => ({
   rule: {
-    kind: 'string_fragment',
-    regex: `^${escapeRegex(CONNECTIONS_SOURCE)}$`,
+    kind: 'string',
+    regex: `^['"]${escapeRegex(CONNECTIONS_SOURCE)}['"]$`,
     inside: {
       any: [{ kind: 'import_statement' }, { kind: 'export_statement' }],
     },
