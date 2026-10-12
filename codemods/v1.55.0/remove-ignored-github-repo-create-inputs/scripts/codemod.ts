@@ -294,14 +294,19 @@ function getCommentedFlowPairRemovalRange(pair: SgNode<YAML>, source: string, li
   const suffix = source.slice(pairEnd, nextLineStart)
 
   if (
-    range.end.line !== range.start.line ||
-    source.slice(lineStart, pairStart).trim() !== '' ||
-    !/^,?\s*(?:#.*)?\r?\n?$/.test(suffix)
+    range.end.line === range.start.line &&
+    source.slice(lineStart, pairStart).trim() === '' &&
+    /^,?\s*(?:#.*)?\r?\n?$/.test(suffix)
   ) {
-    return null
+    return { start: lineStart, end: nextLineStart, replacement: '' }
   }
 
-  return { start: lineStart, end: nextLineStart, replacement: '' }
+  const followingComma = suffix.match(/^[ \t]*,[ \t]*/)
+  if (followingComma) {
+    return { start: pairStart, end: pairEnd + followingComma[0].length, replacement: '' }
+  }
+
+  return null
 }
 
 function hasExistingTodo(stepNode: SgNode<YAML>): boolean {
