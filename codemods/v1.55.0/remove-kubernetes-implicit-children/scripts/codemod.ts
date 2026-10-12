@@ -5,6 +5,7 @@ import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
 
 const KUBERNETES_REACT = '@backstage/plugin-kubernetes-react'
+const REACT = 'react'
 const TARGET_COMPONENTS = new Set(['FixDialog', 'ContainerCard', 'PodLogs'])
 const TODO_COMMENT =
   '// TODO(backstage-codemod): Review effectful Kubernetes component children manually before removal.'
@@ -14,7 +15,19 @@ const migrationMetric = useMetricAtom('remove-kubernetes-implicit-children')
 
 interface ImportedComponents {
   localNames: Map<string, string>
+  localBindingNodes: Map<string, SgNode<TSX>>
   namespaceAliases: string[]
+  namespaceBindingNodes: Map<string, SgNode<TSX>>
+}
+
+interface ReactFragmentBindings {
+  fragmentBindingNodes: Map<string, SgNode<TSX>>
+  namespaceBindingNodes: Map<string, SgNode<TSX>>
+}
+
+interface InertAnalysisContext {
+  reactFragmentBindings: Map<string, Set<number> | null>
+  reactNamespaceBindings: Map<string, Set<number> | null>
 }
 
 interface InertAnalysis {
@@ -53,35 +66,123 @@ function findImportStatementsFrom(rootNode: SgNode<TSX, 'program'>, source: stri
 
 function collectImportedComponents(importStatements: SgNode<TSX, 'import_statement'>[]): ImportedComponents {
   const localNames = new Map<string, string>()
+  const localBindingNodes = new Map<string, SgNode<TSX>>()
   const namespaceAliases: string[] = []
+  const namespaceBindingNodes = new Map<string, SgNode<TSX>>()
 
   for (const imp of importStatements) {
     const nsImport = imp.find({ rule: { kind: 'namespace_import' } })
     if (nsImport) {
-      const aliasNode = nsImport.find({ rule: { kind: 'identifier' } })
+      const aliasNode = nsImport.find({ rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] } })
       if (aliasNode) {
         namespaceAliases.push(aliasNode.text())
+        namespaceBindingNodes.set(aliasNode.text(), aliasNode)
       }
       continue
     }
 
     for (const spec of imp.findAll({ rule: { kind: 'import_specifier' } })) {
-      const identifiers = spec.findAll({
-        rule: {
-          any: [{ kind: 'identifier' }, { kind: 'type_identifier' }],
-        },
-      })
-
-      const [importedNameNode, localNameNode] = identifiers
+      const importedNameNode = spec.field('name')
       if (!importedNameNode || !TARGET_COMPONENTS.has(importedNameNode.text())) {
         continue
       }
 
-      localNames.set((localNameNode ?? importedNameNode).text(), importedNameNode.text())
+      const localNameNode = spec.field('alias') ?? importedNameNode
+      const localName = localNameNode.text()
+      localNames.set(localName, importedNameNode.text())
+      localBindingNodes.set(localName, localNameNode)
     }
   }
 
-  return { localNames, namespaceAliases }
+  return { localNames, localBindingNodes, namespaceAliases, namespaceBindingNodes }
+}
+
+function collectReactFragmentBindings(importStatements: SgNode<TSX, 'import_statement'>[]): ReactFragmentBindings {
+  const fragmentBindingNodes = new Map<string, SgNode<TSX>>()
+  const namespaceBindingNodes = new Map<string, SgNode<TSX>>()
+
+  for (const imp of importStatements) {
+    const importClause = imp.find({ rule: { kind: 'import_clause' } })
+    if (importClause) {
+      const defaultBindingNode = importClause.children().find((child) => child.is('identifier'))
+      if (defaultBindingNode) {
+        namespaceBindingNodes.set(defaultBindingNode.text(), defaultBindingNode)
+      }
+    }
+
+    const namespaceImport = imp.find({ rule: { kind: 'namespace_import' } })
+    if (namespaceImport) {
+      const aliasNode = namespaceImport.find({
+        rule: {
+          any: [{ kind: 'identifier' }, { kind: 'type_identifier' }],
+        },
+      })
+      if (aliasNode) {
+        namespaceBindingNodes.set(aliasNode.text(), aliasNode)
+      }
+    }
+
+    for (const spec of imp.findAll({ rule: { kind: 'import_specifier' } })) {
+      const importedNameNode = spec.field('name')
+      if (importedNameNode?.text() !== 'Fragment') {
+        continue
+      }
+
+      const localNameNode = spec.field('alias') ?? importedNameNode
+      fragmentBindingNodes.set(localNameNode.text(), localNameNode)
+    }
+  }
+
+  return { fragmentBindingNodes, namespaceBindingNodes }
+}
+
+function collectBindingReferencesForFile(bindingNode: SgNode<TSX>, filename: string): Set<number> | null {
+  const references = new Set<number>()
+  let sawReferenceGroup = false
+
+  for (const refGroup of bindingNode.references()) {
+    sawReferenceGroup = true
+
+    if (refGroup.root.filename() !== filename) {
+      continue
+    }
+
+    for (const refNode of refGroup.nodes) {
+      references.add(refNode.id())
+    }
+  }
+
+  if (!sawReferenceGroup || references.size === 0) {
+    return null
+  }
+
+  return references
+}
+
+function collectBindingReferenceMap(
+  bindingNodes: Map<string, SgNode<TSX>>,
+  filename: string,
+): Map<string, Set<number> | null> {
+  const referencesByBinding = new Map<string, Set<number> | null>()
+
+  for (const [localName, bindingNode] of bindingNodes) {
+    referencesByBinding.set(localName, collectBindingReferencesForFile(bindingNode, filename))
+  }
+
+  return referencesByBinding
+}
+
+function isProvenBindingReference(
+  node: SgNode<TSX>,
+  localName: string,
+  referencesByBinding: Map<string, Set<number> | null>,
+): boolean {
+  const references = referencesByBinding.get(localName)
+  if (!references) {
+    return false
+  }
+
+  return references.has(node.id())
 }
 
 function getOpeningElement(el: SgNode<TSX>): SgNode<TSX> | null {
@@ -170,12 +271,18 @@ function getTargetComponentName(
   nameNode: SgNode<TSX>,
   localNames: Map<string, string>,
   namespaceAliases: string[],
+  localBindingReferences: Map<string, Set<number> | null>,
+  namespaceBindingReferences: Map<string, Set<number> | null>,
 ): string | null {
   if (nameNode.is('identifier')) {
     const localName = nameNode.text()
     const importedName = localNames.get(localName)
 
-    if (!importedName || hasShadowingAncestorBinding(nameNode, localName)) {
+    if (
+      !importedName ||
+      hasShadowingAncestorBinding(nameNode, localName) ||
+      !isProvenBindingReference(nameNode, localName, localBindingReferences)
+    ) {
       return null
     }
 
@@ -190,6 +297,7 @@ function getTargetComponentName(
       objNode?.is('identifier') === true &&
       namespaceAliases.includes(objNode.text()) &&
       !hasShadowingAncestorBinding(objNode, objNode.text()) &&
+      isProvenBindingReference(objNode, objNode.text(), namespaceBindingReferences) &&
       propNode !== null &&
       TARGET_COMPONENTS.has(propNode.text())
     ) {
@@ -204,6 +312,10 @@ function isWhitespaceJsxText(node: SgNode<TSX>): boolean {
   return node.is('jsx_text') && node.text().trim().length === 0
 }
 
+function isJsxTagNameNode(node: SgNode<TSX> | null | undefined): boolean {
+  return node?.is('identifier') === true || node?.is('member_expression') === true
+}
+
 function getJsxChildren(element: SgNode<TSX>): SgNode<TSX>[] {
   if (!element.is('jsx_element')) {
     return []
@@ -213,6 +325,23 @@ function getJsxChildren(element: SgNode<TSX>): SgNode<TSX>[] {
     return []
   }
   return children.slice(1, -1)
+}
+
+function isShorthandJsxFragment(node: SgNode<TSX>): boolean {
+  if (!node.is('jsx_element')) {
+    return false
+  }
+
+  const opening = getOpeningElement(node)
+  const closing = getClosingElement(node)
+  if (!opening || !closing) {
+    return false
+  }
+
+  const openingNameNode = getComponentNameNode(opening)
+  const closingNameNode = closing.child(1)
+
+  return !isJsxTagNameNode(openingNameNode) && !isJsxTagNameNode(closingNameNode)
 }
 
 function safeAnalysis(): InertAnalysis {
@@ -255,26 +384,32 @@ function inferExpressionReason(node: SgNode<TSX>): string {
   return 'computed expression'
 }
 
-function isInertJsxTagName(nameNode: SgNode<TSX>): boolean {
+function isInertJsxTagName(nameNode: SgNode<TSX>, context: InertAnalysisContext): boolean {
   if (nameNode.is('identifier')) {
     const name = nameNode.text()
-    if (name === 'Fragment') {
+    const first = name.charAt(0)
+    if (first.length > 0 && first === first.toLowerCase()) {
       return true
     }
-    const first = name.charAt(0)
-    return first.length > 0 && first === first.toLowerCase()
+
+    return isProvenBindingReference(nameNode, name, context.reactFragmentBindings)
   }
 
   if (nameNode.is('member_expression')) {
     const objectNode = nameNode.child(0)
     const propNode = nameNode.find({ rule: { kind: 'property_identifier' } })
-    return objectNode?.is('identifier') === true && objectNode.text() === 'React' && propNode?.text() === 'Fragment'
+
+    if (objectNode?.is('identifier') !== true || propNode?.text() !== 'Fragment') {
+      return false
+    }
+
+    return isProvenBindingReference(objectNode, objectNode.text(), context.reactNamespaceBindings)
   }
 
   return false
 }
 
-function analyzeExpressionContainer(expr: SgNode<TSX>): InertAnalysis {
+function analyzeExpressionContainer(expr: SgNode<TSX>, context: InertAnalysisContext): InertAnalysis {
   const meaningfulChildren = expr.children().filter((c) => c.kind() !== '{' && c.kind() !== '}')
 
   if (meaningfulChildren.length === 0) {
@@ -285,7 +420,7 @@ function analyzeExpressionContainer(expr: SgNode<TSX>): InertAnalysis {
     if (child.kind() === 'comment') {
       continue
     }
-    const analysis = analyzeInertNode(child)
+    const analysis = analyzeInertNode(child, context)
     if (!analysis.safe) {
       return analysis
     }
@@ -294,10 +429,10 @@ function analyzeExpressionContainer(expr: SgNode<TSX>): InertAnalysis {
   return safeAnalysis()
 }
 
-function analyzeAttributeValue(attr: SgNode<TSX>): InertAnalysis {
+function analyzeAttributeValue(attr: SgNode<TSX>, context: InertAnalysisContext): InertAnalysis {
   const expr = attr.find({ rule: { kind: 'jsx_expression' } })
   if (expr) {
-    return analyzeExpressionContainer(expr)
+    return analyzeExpressionContainer(expr, context)
   }
 
   const str = attr.find({ rule: { kind: 'string' } })
@@ -308,20 +443,45 @@ function analyzeAttributeValue(attr: SgNode<TSX>): InertAnalysis {
   return safeAnalysis()
 }
 
-function analyzeJsxRenderable(node: SgNode<TSX>): InertAnalysis {
+function analyzeJsxFragment(node: SgNode<TSX>, context: InertAnalysisContext): InertAnalysis {
+  const fragmentChildren = node.is('jsx_element')
+    ? getJsxChildren(node)
+    : node
+        .children()
+        .filter((child) => child.kind() !== 'jsx_opening_fragment' && child.kind() !== 'jsx_closing_fragment')
+
+  for (const child of fragmentChildren) {
+    if (isWhitespaceJsxText(child)) {
+      continue
+    }
+
+    const analysis = analyzeInertNode(child, context)
+    if (!analysis.safe) {
+      return analysis
+    }
+  }
+
+  return safeAnalysis()
+}
+
+function analyzeJsxRenderable(node: SgNode<TSX>, context: InertAnalysisContext): InertAnalysis {
+  if (isShorthandJsxFragment(node)) {
+    return analyzeJsxFragment(node, context)
+  }
+
   const opening = getOpeningElement(node)
   if (!opening) {
     return unsafeAnalysis('computed expression')
   }
 
   const nameNode = getComponentNameNode(opening)
-  if (!nameNode || !isInertJsxTagName(nameNode)) {
+  if (!nameNode || !isInertJsxTagName(nameNode, context)) {
     return unsafeAnalysis('unknown component initialization')
   }
 
   for (const child of opening.children()) {
     if (child.is('jsx_attribute')) {
-      const analysis = analyzeAttributeValue(child)
+      const analysis = analyzeAttributeValue(child, context)
       if (!analysis.safe) {
         return analysis
       }
@@ -338,7 +498,7 @@ function analyzeJsxRenderable(node: SgNode<TSX>): InertAnalysis {
       if (isWhitespaceJsxText(child)) {
         continue
       }
-      const analysis = analyzeInertNode(child)
+      const analysis = analyzeInertNode(child, context)
       if (!analysis.safe) {
         return analysis
       }
@@ -348,7 +508,7 @@ function analyzeJsxRenderable(node: SgNode<TSX>): InertAnalysis {
   return safeAnalysis()
 }
 
-function analyzeInertNode(node: SgNode<TSX>): InertAnalysis {
+function analyzeInertNode(node: SgNode<TSX>, context: InertAnalysisContext): InertAnalysis {
   const kind = node.kind()
 
   if (kind === 'comment' || kind === 'jsx_text') {
@@ -372,7 +532,7 @@ function analyzeInertNode(node: SgNode<TSX>): InertAnalysis {
       return safeAnalysis()
     }
     for (const child of meaningful) {
-      const analysis = analyzeInertNode(child)
+      const analysis = analyzeInertNode(child, context)
       if (!analysis.safe) {
         return analysis
       }
@@ -381,11 +541,15 @@ function analyzeInertNode(node: SgNode<TSX>): InertAnalysis {
   }
 
   if (kind === 'jsx_expression') {
-    return analyzeExpressionContainer(node)
+    return analyzeExpressionContainer(node, context)
   }
 
-  if (kind === 'jsx_fragment' || kind === 'jsx_element' || kind === 'jsx_self_closing_element') {
-    return analyzeJsxRenderable(node)
+  if (kind === 'jsx_fragment') {
+    return analyzeJsxFragment(node, context)
+  }
+
+  if (kind === 'jsx_element' || kind === 'jsx_self_closing_element') {
+    return analyzeJsxRenderable(node, context)
   }
 
   return unsafeAnalysis(inferExpressionReason(node))
@@ -676,9 +840,21 @@ const transform: Codemod<TSX> = async (root) => {
     return null
   }
 
-  const { localNames, namespaceAliases } = collectImportedComponents(kubernetesImports)
+  const { localNames, localBindingNodes, namespaceAliases, namespaceBindingNodes } =
+    collectImportedComponents(kubernetesImports)
   if (localNames.size === 0 && namespaceAliases.length === 0) {
     return null
+  }
+
+  const filename = root.filename()
+  const localBindingReferences = collectBindingReferenceMap(localBindingNodes, filename)
+  const namespaceBindingReferences = collectBindingReferenceMap(namespaceBindingNodes, filename)
+
+  const reactImports = findImportStatementsFrom(rootNode, REACT)
+  const reactFragmentBindings = collectReactFragmentBindings(reactImports)
+  const inertAnalysisContext: InertAnalysisContext = {
+    reactFragmentBindings: collectBindingReferenceMap(reactFragmentBindings.fragmentBindingNodes, filename),
+    reactNamespaceBindings: collectBindingReferenceMap(reactFragmentBindings.namespaceBindingNodes, filename),
   }
 
   const edits: Edit[] = []
@@ -704,7 +880,13 @@ const transform: Codemod<TSX> = async (root) => {
       continue
     }
 
-    const componentName = getTargetComponentName(nameNode, localNames, namespaceAliases)
+    const componentName = getTargetComponentName(
+      nameNode,
+      localNames,
+      namespaceAliases,
+      localBindingReferences,
+      namespaceBindingReferences,
+    )
     if (!componentName) {
       continue
     }
@@ -715,7 +897,7 @@ const transform: Codemod<TSX> = async (root) => {
     let unsafeReason: string | null = null
 
     if (childrenAttr) {
-      const analysis = analyzeAttributeValue(childrenAttr)
+      const analysis = analyzeAttributeValue(childrenAttr, inertAnalysisContext)
       if (!analysis.safe) {
         unsafeReason = analysis.reason ?? 'computed expression'
       } else {
@@ -728,7 +910,7 @@ const transform: Codemod<TSX> = async (root) => {
 
     if (!unsafeReason && meaningfulChildren.length > 0) {
       for (const child of meaningfulChildren) {
-        const analysis = analyzeInertNode(child)
+        const analysis = analyzeInertNode(child, inertAnalysisContext)
         if (!analysis.safe) {
           unsafeReason = analysis.reason ?? 'computed expression'
           break
