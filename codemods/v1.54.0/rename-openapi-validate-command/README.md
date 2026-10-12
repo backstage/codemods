@@ -2,7 +2,7 @@
 
 Renames executable `backstage-repo-tools repo schema openapi verify` to `... validate`. Only the command token changes; flags, quoting, environment assignments and shell operators remain. The removed `repo schema openapi test` command from 1.53 is unrelated.
 
-Targets: `package.json` script values (JSON AST), GitHub Actions `.github/workflows/*.yml` and `*.yaml` `run` scalars (YAML AST), and `.sh` files (bounded shell lexer). Historical text, comments, shell aliases, substitutions, concatenated words, here-documents, and unclear command construction stay unchanged; review those manually. The shell pass skips symlinks, `docs`, `.git`, `node_modules`, and generated directories. No AI fixup or extra file permissions are needed.
+Targets: `package.json` script values (JSON AST), GitHub Actions `.github/workflows/*.yml` and `*.yaml` `run` scalars (YAML AST), and `.sh` files (bounded shell lexer). Historical text, comments, shell aliases, substitutions, concatenated words, here-documents, and unclear command construction stay unchanged; review those manually. The shell pass skips symlinks, hard-linked `.sh` files (`nlink > 1`), `docs`, `.git`, `node_modules`, and generated directories. Hard-linked files must be updated manually after checking every link location: writing one link in place could mutate an outside-target file. No AI fixup or extra file permissions are needed.
 
 From a consumer repository containing a root `package.json`:
 

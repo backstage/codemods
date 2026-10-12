@@ -113,7 +113,11 @@ export function rewriteCommand(source) {
   }
   /** @type {{start: number, end: number, replacement: string}[]} */
   const edits = []
+  let shadowedByAlias = false
   for (const { words, unsafe } of wordsInSegment(source)) {
+    if (words[0]?.value === 'alias' && words.slice(1).some((word) => word.value.startsWith('backstage-repo-tools='))) {
+      shadowedByAlias = true
+    }
     if (unsafe) {
       continue
     }
@@ -128,18 +132,25 @@ export function rewriteCommand(source) {
       }
     }
     const runner = words[index]?.value
+    const npmExec = runner === 'npm' && words[index + 1]?.value === 'exec'
     if (['yarn', 'pnpm', 'npm', 'npx', 'bunx'].includes(runner ?? '')) {
       index++
       if (['yarn', 'pnpm', 'npm'].includes(runner ?? '') && words[index]?.value === 'exec') {
         index++
+        if (runner === 'npm' && words[index]?.value === '--') {
+          index++
+        }
       }
       // npm requires `exec`; `npm backstage-repo-tools` is not an executable call.
-      if (runner === 'npm' && words[index - 1]?.value !== 'exec') {
+      if (runner === 'npm' && !npmExec) {
         continue
       }
     }
     const executable = words[index]?.value
     if (executable !== 'backstage-repo-tools' && executable !== './node_modules/.bin/backstage-repo-tools') {
+      continue
+    }
+    if (shadowedByAlias && executable === 'backstage-repo-tools' && runner === executable) {
       continue
     }
     if (

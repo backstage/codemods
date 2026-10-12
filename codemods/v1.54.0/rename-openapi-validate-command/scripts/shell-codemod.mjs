@@ -32,6 +32,10 @@ async function main() {
           pending.push(file)
         }
       } else if (entry.isFile() && entry.name.endsWith('.sh')) {
+        // In-place writes would also mutate hard links outside the target.
+        if (statSync(file).nlink > 1) {
+          continue
+        }
         const before = readFileSync(file, 'utf8')
         if (!before.includes('openapi') || !before.includes('verify')) {
           continue
