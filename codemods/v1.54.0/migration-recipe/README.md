@@ -28,14 +28,7 @@ Once the recipe itself is published, replace `workflow run -w codemods/v1.54.0/m
 
 ## AI behavior and review
 
-The recipe passes no `aiFixup` parameter and runs AST-only. Only step 4 (#146) has an optional AI fixup. Recipe-level forwarding via `args: ['aiFixup']` has **not** been verified end-to-end with the current CLI and published nested codemod; workflow schema validation alone does not prove forwarding. If needed after the recipe, run #146 individually on a disposable worktree with an approved **openai work provider** (never `openai-codex`), then review all AI edits:
-
-```bash
-yarn dlx codemod@latest run @backstage/migrate-extension-config-schema \
-  --target /path/to/backstage-app --param aiFixup=true --agent openai
-```
-
-Run only after #146 is published. Check package-local Zod v4 availability, unresolved schema factories, and type checks. Do not silently change dependency versions. The other four steps have no AI fixup.
+The recipe passes no `aiFixup` parameter and runs AST-only. Only step 4 (#146) has an optional AI fixup. Recipe-level forwarding via `args: ['aiFixup']` has **not** been verified end-to-end with the current CLI and published nested codemod; workflow schema validation alone does not prove forwarding. Do not use the previously advertised `--agent openai` command: CLI 1.18.3 reports `Unknown agent 'openai' ... ignoring` and `Skipping AI step - no API key provided`; workflow exit 0 does **not** prove an AI fixup ran. After #146 is published, standalone AI use requires future approval of a supported OpenAI work provider and configured work credentials (never `openai-codex`), validation that the AI step actually runs, and review of all AI edits on a disposable worktree. Check package-local Zod v4 availability, unresolved schema factories, and type checks. Do not silently change dependency versions. The other four steps have no AI fixup.
 
 Search the migrated app for residual markers: `rg -F 'TODO(backstage-codemod)' /path/to/backstage-app`. Resolve each with context; the recipe does not guarantee every migration is mechanical. This package has no transform script or fixture tests of its own; `yarn test` validates its workflow schema. End-to-end tests, including mixed-import and schema-factory fixtures, must wait for all five registry packages.
 
