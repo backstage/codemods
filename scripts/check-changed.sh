@@ -20,6 +20,15 @@ while IFS= read -r f; do
   [ -n "$f" ] && ALL_FILES+=("$f")
 done < <(git diff --name-only --diff-filter=ACMR "$BASE"...HEAD)
 
+# oxfmt ignores shell scripts; passing only .sh files makes it exit 2 with no targets.
+FORMAT_FILES=()
+for f in "${ALL_FILES[@]}"; do
+  case "$f" in
+    *.sh) ;;
+    *) FORMAT_FILES+=("$f") ;;
+  esac
+done
+
 LINT_FILES=()
 while IFS= read -r f; do
   [ -n "$f" ] && LINT_FILES+=("$f")
@@ -37,15 +46,33 @@ done < <(
     sort -u
 )
 
-if [ "${#ALL_FILES[@]}" -gt 0 ]; then
+# Keep each Yarn invocation below the Windows command-line limit (8191 chars).
+# The 4000-char budget leaves room for Yarn, shell quoting, and executable paths.
+check_files_in_batches() {
+  local check="$1" file batch_length=0
+  local batch=()
+  shift
+  for file in "$@"; do
+    if [ "${#batch[@]}" -gt 0 ] && [ "$((batch_length + ${#file} + 3))" -gt 4000 ]; then
+      yarn "$check" "${batch[@]}"
+      batch=()
+      batch_length=0
+    fi
+    batch+=("$file")
+    batch_length=$((batch_length + ${#file} + 3))
+  done
+  [ "${#batch[@]}" -eq 0 ] || yarn "$check" "${batch[@]}"
+}
+
+if [ "${#FORMAT_FILES[@]}" -gt 0 ]; then
   echo "::group::Format check (changed files)"
-  yarn format:check "${ALL_FILES[@]}"
+  check_files_in_batches format:check "${FORMAT_FILES[@]}"
   echo "::endgroup::"
 fi
 
 if [ "${#LINT_FILES[@]}" -gt 0 ]; then
   echo "::group::Lint (changed files)"
-  yarn lint "${LINT_FILES[@]}"
+  check_files_in_batches lint "${LINT_FILES[@]}"
   echo "::endgroup::"
 fi
 
