@@ -6,7 +6,7 @@ Backstage 1.55.0 codemod: Removes deprecated `catalog.enableRelationsCompatibili
 
 - Scans `app-config*.yaml` and `app-config*.yml` files.
 - Removes `enableRelationsCompatibility` only when it is a direct child of `catalog`.
-- Removes an empty `catalog` block when that key was its only remaining setting.
+- Removes an empty `catalog` block when that key was its only remaining setting, except when preserving catalog comments (keeps `catalog: {}` with comments).
 
 ## What it does not do
 

@@ -300,18 +300,47 @@ function removeFlowPairs(flowMapping: SgNode<YAML>, pairsToRemove: SgNode<YAML>[
   return mergeDeleteEdits(flowEdits)
 }
 
+function findYamlCommentIndex(line: string): number {
+  let inSingleQuote = false
+  let inDoubleQuote = false
+
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line.charAt(index)
+
+    if (char === "'" && !inDoubleQuote) {
+      inSingleQuote = !inSingleQuote
+      continue
+    }
+
+    if (char === '"' && !inSingleQuote) {
+      inDoubleQuote = !inDoubleQuote
+      continue
+    }
+
+    if (char !== '#' || inSingleQuote || inDoubleQuote) {
+      continue
+    }
+
+    if (index === 0 || isWhitespace(line.charAt(index - 1))) {
+      return index
+    }
+  }
+
+  return -1
+}
+
 function lineContainsCommentOutsideRanges(
   source: string,
   lineStartPos: number,
   lineEndPos: number,
   excludedRanges: Pick<Edit, 'startPos' | 'endPos'>[],
 ): boolean {
-  const text = source.slice(lineStartPos, lineEndPos)
-  if (!text.trimStart().startsWith('#')) {
+  if (excludedRanges.some((range) => lineStartPos >= range.startPos && lineEndPos <= range.endPos)) {
     return false
   }
 
-  return !excludedRanges.some((range) => lineStartPos >= range.startPos && lineEndPos <= range.endPos)
+  const text = source.slice(lineStartPos, lineEndPos)
+  return findYamlCommentIndex(text) !== -1
 }
 
 function hasPreservableCommentLines(
@@ -320,7 +349,7 @@ function hasPreservableCommentLines(
   targetRanges: Pick<Edit, 'startPos' | 'endPos'>[],
 ): boolean {
   const pairRange = catalogPair.range()
-  const blockStart = lineEndWithNewline(source, pairRange.start.index)
+  const blockStart = lineStart(source, pairRange.start.index)
   const blockEnd = lineEndWithNewline(source, pairRange.end.index)
 
   let cursor = blockStart
