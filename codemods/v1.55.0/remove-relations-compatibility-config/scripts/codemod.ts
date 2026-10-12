@@ -220,7 +220,16 @@ const transform: Codemod<YAML> = async (root) => {
 
       if (catalogMapping.is('flow_mapping')) {
         if (remainingPairs.length === 0) {
-          edits.push(removeFullLineRange(topLevelPair, source))
+          const topLevelMapping = topLevelPair.parent()
+          if (topLevelMapping?.is('flow_mapping')) {
+            const remainingTopLevelPairs = getMappingPairs(topLevelMapping).filter(
+              (pair) => pair.id() !== topLevelPair.id(),
+            )
+            edits.push(topLevelMapping.replace(toFlowMappingText(remainingTopLevelPairs)))
+          } else {
+            edits.push(removeFullLineRange(topLevelPair, source))
+          }
+
           migrationMetric.increment({ action: 'empty-catalog-removed' })
           continue
         }
