@@ -23,8 +23,8 @@ function directPairs(object: Node): Node[] {
   return object.children().filter((child) => child.kind() === 'pair')
 }
 
-function property(pair: Node, key: string): boolean {
-  const name = pair.field('key')
+function property(node: Node, key: string): boolean {
+  const name = node.field(node.kind() === 'method_definition' ? 'name' : 'key')
   return (
     (name?.kind() === 'property_identifier' && name.text() === key) ||
     (name?.kind() === 'string' && (name.text() === `'${key}'` || name.text() === `"${key}"`)) ||
@@ -117,11 +117,15 @@ function receiverBindings(root: Node): Node[] {
     if (!dependencyNames.size) {
       continue
     }
-    for (const method of config.children().filter((child) => child.kind() === 'method_definition')) {
-      if (method.field('name')?.text() !== 'factory') {
-        continue
-      }
-      const first = method
+    const factories = [
+      ...config.children().filter((child) => child.kind() === 'method_definition' && property(child, 'factory')),
+      ...directPairs(config)
+        .filter((pair) => property(pair, 'factory'))
+        .map((pair) => pair.field('value'))
+        .filter((value): value is Node => value?.kind() === 'arrow_function'),
+    ]
+    for (const factory of factories) {
+      const first = factory
         .find({ rule: { kind: 'formal_parameters' } })
         ?.children()
         .find((child) => child.kind() === 'required_parameter')
@@ -139,11 +143,50 @@ function receiverBindings(root: Node): Node[] {
   return bindings
 }
 
+function typedClassField(receiver: Node, serviceTypes: Map<string, Node>): boolean {
+  if (receiver.kind() !== 'member_expression' || receiver.field('object')?.kind() !== 'this') {
+    return false
+  }
+  const name = receiver.field('property')?.text()
+  if (!name) {
+    return false
+  }
+  let ancestor = receiver.parent()
+  while (ancestor && ancestor.kind() !== 'class_declaration' && ancestor.kind() !== 'class') {
+    if (
+      ancestor.kind() === 'function_declaration' ||
+      ancestor.kind() === 'function_expression' ||
+      (ancestor.kind() === 'method_definition' &&
+        (ancestor.parent()?.kind() !== 'class_body' ||
+          ancestor.children().some((child) => child.kind() === 'static'))) ||
+      (ancestor.kind() === 'public_field_definition' && ancestor.children().some((child) => child.kind() === 'static'))
+    ) {
+      return false
+    }
+    ancestor = ancestor.parent()
+  }
+  const body = ancestor?.children().find((child) => child.kind() === 'class_body')
+  return (
+    body?.children().some((field) => {
+      if (field.kind() !== 'public_field_definition' || field.field('name')?.text() !== name) {
+        return false
+      }
+      const typeName = field
+        .field('type')
+        ?.children()
+        .find((child) => child.kind() === 'type_identifier')
+      const importedType = typeName && serviceTypes.get(typeName.text())
+      return !!(typeName && importedType && sameDefinition(typeName, importedType))
+    }) ?? false
+  )
+}
+
 const transform: Codemod<TSX> = async (root) => {
   const ast = root.root()
   const source = ast.text()
   const bindings = receiverBindings(ast)
-  if (!bindings.length) {
+  const serviceTypes = localImports(ast, '@backstage/connections', 'ConnectionsService')
+  if (!bindings.length && !serviceTypes.size) {
     return null
   }
   const edits: Edit[] = []
@@ -154,7 +197,13 @@ const transform: Codemod<TSX> = async (root) => {
       continue
     }
     const receiver = member.field('object')
-    if (receiver?.kind() !== 'identifier' || !bindings.some((binding) => sameDefinition(receiver, binding))) {
+    if (
+      !receiver ||
+      !(
+        (receiver.kind() === 'identifier' && bindings.some((binding) => sameDefinition(receiver, binding))) ||
+        typedClassField(receiver, serviceTypes)
+      )
+    ) {
       continue
     }
     const args =
@@ -174,7 +223,7 @@ const transform: Codemod<TSX> = async (root) => {
         .some(
           (child) =>
             (child.kind() === 'shorthand_property_identifier' && child.text() === 'query') ||
-            (child.kind() === 'method_definition' && child.field('name')?.text() === 'query'),
+            (child.kind() === 'method_definition' && property(child, 'query')),
         )
     ) {
       continue
@@ -199,7 +248,7 @@ const transform: Codemod<TSX> = async (root) => {
           (child) =>
             child.kind() === 'spread_element' ||
             (child.kind() === 'pair' && child.field('key')?.kind() === 'computed_property_name') ||
-            (child.kind() === 'method_definition' && child.field('name')?.text() === 'url'),
+            (child.kind() === 'method_definition' && property(child, 'url')),
         )
 
     if (safe) {

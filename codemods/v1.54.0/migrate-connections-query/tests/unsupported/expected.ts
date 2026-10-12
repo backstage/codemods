@@ -9,6 +9,8 @@ function lookup(connections: ConnectionsService, type: string, url: string, extr
   /* TODO(backstage-codemod): review ConnectionsService.find query for this connection type */ connections.find({ type: 'github', ['url']: url });
   connections.find({ type: 'github', url, ['query']: { url } });
   connections.find({ type: 'github', url, query() { return { url }; } });
+  connections.find({ type: 'github', url, 'query'() { return { url }; } });
+  connections.find({ type: 'github', url, "query"() { return { url }; } });
   /* TODO(backstage-codemod): review ConnectionsService.find query for this connection type */ connections.find({ type: 'github', url, url: 'duplicate' });
   connections.find({ type: 'github', url, query: { url } });
   connections.find({ type: 'github', url, query });

@@ -31,3 +31,27 @@ const factory = {
     connections.find({ type: 'github', url: 'not-backstage' });
   },
 };
+
+const unrelatedArrow = {
+  deps: { conn: ref },
+  factory: ({ other }: { other: { find: Function } }) => other.find({ type: 'github', url: 'not-backstage' }),
+};
+const shadowedArrow = {
+  deps: { conn: ref },
+  factory: ({ conn }) => {
+    const nested = (conn: { find: Function }) => conn.find({ type: 'github', url: 'not-backstage' });
+    return nested(conn);
+  },
+};
+class OtherLookup {
+  private readonly connections: OtherService;
+  find(url: string) {
+    return this.connections.find({ type: 'github', url });
+  }
+}
+class SameName {
+  private readonly connections: { find: Function };
+  find(url: string) {
+    return this.connections.find({ type: 'github', url });
+  }
+}
