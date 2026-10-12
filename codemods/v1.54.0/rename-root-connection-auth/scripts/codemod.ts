@@ -18,7 +18,9 @@ function isConnectionsStatement(node: SgNode<TSX>): boolean {
 function removeStatementPreservingComments(statement: SgNode<TSX>, source: string): Edit {
   const comments = statement.findAll({ rule: { kind: 'comment' } }).map((comment) => comment.text())
   if (comments.length) {
-    return statement.replace(comments.join('\n') + (comments.at(-1)?.startsWith('//') ? '\n' : ''))
+    const following = source.slice(statement.range().end.index)
+    const needsNewline = comments.at(-1)?.startsWith('//') && /\S/.test(following) && !/^[ \t]*\r?\n/.test(following)
+    return statement.replace(comments.join('\n') + (needsNewline ? '\n' : ''))
   }
   const { start, end } = statement.range()
   const lineStart = source.lastIndexOf('\n', start.index - 1) + 1
@@ -199,6 +201,8 @@ const transform: Codemod<TSX> = async (root) => {
       context.kind() !== 'program' &&
       context.kind() !== 'type_alias_declaration' &&
       context.kind() !== 'type_annotation' &&
+      context.kind() !== 'constraint' &&
+      context.kind() !== 'default_type' &&
       context.kind() !== 'as_expression' &&
       context.kind() !== 'satisfies_expression'
     ) {
@@ -207,7 +211,12 @@ const transform: Codemod<TSX> = async (root) => {
       }
       context = context.parent()
     }
-    if (context?.kind() === 'type_alias_declaration' || context?.kind() === 'type_annotation') {
+    if (
+      context?.kind() === 'type_alias_declaration' ||
+      context?.kind() === 'type_annotation' ||
+      context?.kind() === 'constraint' ||
+      context?.kind() === 'default_type'
+    ) {
       edits.push(property.replace(NEW))
     } else if (context?.kind() === 'as_expression' || context?.kind() === 'satisfies_expression') {
       const type =
