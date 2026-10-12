@@ -124,7 +124,8 @@ const transform: Codemod<TSX> = async (root) => {
     if (!moved.length && !removed) {
       continue
     }
-    if (node.findAll({ rule: { kind: 'comment' } }).length > 0) {
+    const afterStatement = source.slice(node.range().end.index).split('\n', 1)[0]?.trimStart() ?? ''
+    if (node.findAll({ rule: { kind: 'comment' } }).length > 0 || /^(\/\/|\/\*)/.test(afterStatement)) {
       const comment = commentBefore(node, source, COMMENT_REVIEW)
       if (comment) {
         edits.push(node.replace(comment + node.text()))
