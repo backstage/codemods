@@ -6,8 +6,6 @@ spec:
   steps:
     - id: create
       action: github:repo:create
-      # TODO(backstage-codemod): github:repo:create input may include removed keys via YAML merge/anchor/expression; review manually
       input: { repoUrl: github.com?repo=flow-comments&owner=team, # keep repo comment
         # keep interstitial comment
-        sourcePath: ./skeleton, # remove this key only
         description: keep this text }

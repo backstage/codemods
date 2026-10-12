@@ -2,7 +2,7 @@
   "remove-ignored-github-repo-create-inputs": [
     {
       "cardinality": {
-        "action": "todo-added"
+        "action": "input-key-removed"
       },
       "count": 1
     }

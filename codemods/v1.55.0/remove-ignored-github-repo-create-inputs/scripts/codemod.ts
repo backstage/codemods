@@ -285,8 +285,38 @@ function getBlockPairRemovalRange(
   }
 }
 
+function getCommentedFlowPairRemovalRange(pair: SgNode<YAML>, source: string, lineStarts: number[]): TextEdit | null {
+  const range = pair.range()
+  const lineStart = getLineStart(lineStarts, range.start.line, source.length)
+  const nextLineStart = getLineStart(lineStarts, range.start.line + 1, source.length)
+  const pairStart = utf8ByteOffsetToStringIndex(source, range.start.index)
+  const pairEnd = utf8ByteOffsetToStringIndex(source, range.end.index)
+  const suffix = source.slice(pairEnd, nextLineStart)
+
+  if (
+    range.end.line !== range.start.line ||
+    source.slice(lineStart, pairStart).trim() !== '' ||
+    !/^,?\s*(?:#.*)?\r?\n?$/.test(suffix)
+  ) {
+    return null
+  }
+
+  return { start: lineStart, end: nextLineStart, replacement: '' }
+}
+
 function hasExistingTodo(stepNode: SgNode<YAML>): boolean {
   return stepNode.text().includes(TODO_COMMENT)
+}
+
+function utf8ByteOffsetToStringIndex(source: string, offset: number): number {
+  let bytes = 0
+  let index = 0
+  while (bytes < offset && index < source.length) {
+    const codePoint = source.codePointAt(index) ?? 0
+    bytes += codePoint < 0x80 ? 1 : codePoint < 0x800 ? 2 : codePoint < 0x10000 ? 3 : 4
+    index += codePoint > 0xffff ? 2 : 1
+  }
+  return index
 }
 
 function applyTextEdits(source: string, edits: TextEdit[]): string {
@@ -355,6 +385,10 @@ const transform: Codemod<YAML> = async (root) => {
       continue
     }
 
+    const referencedAnchors = new Set(
+      documentNode.findAll({ rule: { kind: 'alias' } }).map((alias) => alias.text().slice(1)),
+    )
+
     for (const stepItem of getDirectStepItems(stepsSequence)) {
       const stepMapping = findMappingNode(stepItem)
       if (!stepMapping) {
@@ -379,7 +413,8 @@ const transform: Codemod<YAML> = async (root) => {
       const inputValueNode = getPairValueNode(inputPair)
       const inputValueText = inputValueNode?.text().trim() ?? ''
       const inputMapping = findMappingNode(inputValueNode)
-      const stepHasTodo = hasExistingTodo(stepMapping)
+      const stepHasTodo =
+        hasExistingTodo(stepMapping) || getLineText(lines, stepItem.range().start.line - 1).trim() === TODO_COMMENT
 
       const inputHasAnchor = /:\s*&[A-Za-z0-9_-]+/.test(inputLineText)
       const inputIsAlias = inputValueText.startsWith('*')
@@ -399,15 +434,26 @@ const transform: Codemod<YAML> = async (root) => {
         })
 
         const hasMergePair = directPairs.some((pair) => getPairKey(pair) === '<<')
+        const hasReferencedRemovedAnchor = removablePairs.some((pair) =>
+          pair.findAll({ rule: { kind: 'anchor' } }).some((anchor) => referencedAnchors.has(anchor.text().slice(1))),
+        )
 
-        if (hasMergePair || (inputHasAnchor && removablePairs.length > 0)) {
+        if (hasMergePair || hasReferencedRemovedAnchor || (inputHasAnchor && removablePairs.length > 0)) {
           shouldAddTodo = true
         }
 
-        if (removablePairs.length > 0 && !inputHasAnchor && !hasMergePair) {
+        if (removablePairs.length > 0 && !inputHasAnchor && !hasMergePair && !hasReferencedRemovedAnchor) {
           if (inputMapping.kind() === 'flow_mapping') {
             if (hasDirectFlowComments(inputMapping)) {
-              shouldAddTodo = true
+              const commentEdits = removablePairs.map((pair) =>
+                getCommentedFlowPairRemovalRange(pair, source, lineStarts),
+              )
+              if (commentEdits.every((edit): edit is TextEdit => edit !== null)) {
+                edits.push(...commentEdits)
+                removedInStep += removablePairs.length
+              } else {
+                shouldAddTodo = true
+              }
             } else {
               const remainingPairs = directPairs.filter(
                 (pair) => !removablePairs.some((removed) => removed.id() === pair.id()),
@@ -419,8 +465,8 @@ const transform: Codemod<YAML> = async (root) => {
 
               const valueRange = inputMapping.range()
               edits.push({
-                start: valueRange.start.index,
-                end: valueRange.end.index,
+                start: utf8ByteOffsetToStringIndex(source, valueRange.start.index),
+                end: utf8ByteOffsetToStringIndex(source, valueRange.end.index),
                 replacement,
               })
 
@@ -439,12 +485,16 @@ const transform: Codemod<YAML> = async (root) => {
             if (remainingNonRemovedPairs.length === 0) {
               const inputStart = getLineStart(lineStarts, inputLine, sourceLength)
               const inputEnd = getLineStart(lineStarts, inputLine + 1, sourceLength)
-              const inputPrefix = inputPair.text().trimStart().startsWith('- ') ? '- input: {}' : 'input: {}'
+              const keyText = inputPair.field('key')?.text() ?? 'input'
+              const keyStart = inputLineText.indexOf(keyText)
+              const headerEnd = inputLineText.indexOf(':', keyStart) + 1
+              const inputHeader = inputLineText.slice(0, headerEnd)
+              const inlineComment = inputLineText.slice(headerEnd).match(/\s+#.*$/)?.[0] ?? ''
 
               edits.push({
                 start: inputStart,
                 end: inputEnd,
-                replacement: `${inputIndent}${inputPrefix}${newline}`,
+                replacement: `${inputHeader} {}${inlineComment}${newline}`,
               })
             }
           }
@@ -460,7 +510,7 @@ const transform: Codemod<YAML> = async (root) => {
         edits.push({
           start: insertAt,
           end: insertAt,
-          replacement: `${inputIndent}${TODO_COMMENT}${newline}`,
+          replacement: `${stepMapping.kind() === 'flow_mapping' ? ' '.repeat(getIndentLength(inputLineText)) : inputIndent}${TODO_COMMENT}${newline}`,
         })
         migrationMetric.increment({ action: 'todo-added' })
       }
