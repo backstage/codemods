@@ -71,6 +71,7 @@ interface SpecifierInfo {
   importedName: string
   localName: string
   specText: string
+  hasInlineTypeModifier: boolean
 }
 
 function extractSpecifiers(node: SgNode<TSX>, kind: 'import_specifier' | 'export_specifier'): SpecifierInfo[] {
@@ -90,13 +91,15 @@ function extractSpecifiers(node: SgNode<TSX>, kind: 'import_specifier' | 'export
     }
 
     const localNameNode = identifiers[1] ?? importedNameNode
+    const specText = spec.text()
 
     result.push({
       specNode: spec,
       localNameNode,
       importedName: importedNameNode.text(),
       localName: localNameNode.text(),
-      specText: spec.text(),
+      specText,
+      hasInlineTypeModifier: /^type\s+/.test(specText),
     })
   }
 
@@ -109,6 +112,28 @@ function isTypeOnlyStatement(node: SgNode<TSX>): boolean {
 
 function isPureNamedStatement(node: SgNode<TSX>, keyword: 'import' | 'export'): boolean {
   return new RegExp(`^${keyword}\\s+(type\\s+)?\\{`, 'm').test(node.text())
+}
+
+function normalizeSpecifierTypeModifier(specText: string, statementTypeOnly: boolean): string {
+  if (!statementTypeOnly) {
+    return specText
+  }
+
+  return specText.replace(/^type\s+/, '')
+}
+
+function buildSpecifierText(
+  spec: SpecifierInfo,
+  importedName: string,
+  localName: string,
+  statementTypeOnly: boolean,
+): string {
+  const typeModifier = spec.hasInlineTypeModifier && !statementTypeOnly ? 'type ' : ''
+  if (importedName === localName) {
+    return `${typeModifier}${importedName}`
+  }
+
+  return `${typeModifier}${importedName} as ${localName}`
 }
 
 function buildNamedStatement(
@@ -245,6 +270,39 @@ interface BindingRename {
   newName: string
 }
 
+function collectImportLocalNames(statement: SgNode<TSX, 'import_statement'>): Set<string> {
+  const localNames = new Set<string>()
+
+  for (const spec of extractSpecifiers(statement, 'import_specifier')) {
+    localNames.add(spec.localName)
+  }
+
+  const importClause = statement.find({ rule: { kind: 'import_clause' } })
+  if (!importClause) {
+    return localNames
+  }
+
+  for (const child of importClause.children()) {
+    if (child.kind() === 'identifier' || child.kind() === 'type_identifier') {
+      localNames.add(child.text())
+      continue
+    }
+
+    if (child.kind() !== 'namespace_import') {
+      continue
+    }
+
+    const namespaceName = child
+      .children()
+      .find((namespaceChild) => namespaceChild.kind() === 'identifier' || namespaceChild.kind() === 'type_identifier')
+    if (namespaceName) {
+      localNames.add(namespaceName.text())
+    }
+  }
+
+  return localNames
+}
+
 function collectDeclaredLocalNames(rootNode: SgNode<TSX, 'program'>): Set<string> {
   const names = new Set<string>()
   const declarationNodes = rootNode.findAll({
@@ -281,6 +339,15 @@ function collectDeclaredLocalNames(rootNode: SgNode<TSX, 'program'>): Set<string
     names.add(nameNode.text())
   }
 
+  for (const importStatement of rootNode.findAll({ rule: { kind: 'import_statement' } }) as SgNode<
+    TSX,
+    'import_statement'
+  >[]) {
+    for (const localName of collectImportLocalNames(importStatement)) {
+      names.add(localName)
+    }
+  }
+
   return names
 }
 
@@ -293,6 +360,7 @@ function processImports(
   const importStatements = findStatementsFrom(rootNode, 'import_statement', CONNECTIONS_SOURCE)
   const connectionTypeDefinitionObjects: SgNode<TSX>[] = []
   const seenConnectionTypeObjectIds = new Set<number>()
+  const occupiedLocalNamesGlobal = new Set<string>(declaredLocalNames)
 
   for (const imp of importStatements) {
     const source = imp.find({ rule: { kind: 'string_fragment' } })?.text()
@@ -334,27 +402,29 @@ function processImports(
 
     const pendingRenames: BindingRename[] = []
     const outputById = new Map<number, string | null>()
+    const finalLocalNameBySpecifierId = new Map<number, string | null>()
     let statementChanged = false
 
-    const occupiedLocalNames = new Set<string>(declaredLocalNames)
+    const statementTypeOnly = isTypeOnlyStatement(imp)
+    const canRewriteWholeStatement = isPureNamedStatement(imp, 'import')
 
+    const occupiedLocalNames = new Set<string>(occupiedLocalNamesGlobal)
     for (const spec of specifiers) {
       const mappedName = mappedNameBySpecifierId.get(spec.specNode.id())
       const isAutoRenameCandidate = Boolean(mappedName && spec.localName === spec.importedName)
-      if (!isAutoRenameCandidate) {
-        occupiedLocalNames.add(spec.localName)
+      if (isAutoRenameCandidate) {
+        occupiedLocalNames.delete(spec.localName)
       }
     }
 
-    const canRewriteWholeStatement = isPureNamedStatement(imp, 'import')
-
     for (const spec of specifiers) {
       outputById.set(spec.specNode.id(), spec.specText)
+      finalLocalNameBySpecifierId.set(spec.specNode.id(), spec.localName)
 
       const mappedName = mappedNameBySpecifierId.get(spec.specNode.id())
       if (mappedName) {
         if (spec.localName !== spec.importedName) {
-          const nextText = `${mappedName} as ${spec.localName}`
+          const nextText = buildSpecifierText(spec, mappedName, spec.localName, statementTypeOnly)
           if (nextText !== spec.specText) {
             outputById.set(spec.specNode.id(), nextText)
             statementChanged = true
@@ -367,7 +437,8 @@ function processImports(
         const fallbackLocal = spec.localName
 
         if (!occupiedLocalNames.has(preferredLocal)) {
-          outputById.set(spec.specNode.id(), mappedName)
+          outputById.set(spec.specNode.id(), buildSpecifierText(spec, mappedName, mappedName, statementTypeOnly))
+          finalLocalNameBySpecifierId.set(spec.specNode.id(), mappedName)
           statementChanged = true
           occupiedLocalNames.add(preferredLocal)
           pendingRenames.push({ bindingNode: spec.localNameNode, oldName: spec.localName, newName: mappedName })
@@ -376,7 +447,7 @@ function processImports(
         }
 
         if (!occupiedLocalNames.has(fallbackLocal)) {
-          const nextText = `${mappedName} as ${fallbackLocal}`
+          const nextText = buildSpecifierText(spec, mappedName, fallbackLocal, statementTypeOnly)
           if (nextText !== spec.specText) {
             outputById.set(spec.specNode.id(), nextText)
             statementChanged = true
@@ -416,6 +487,7 @@ function processImports(
 
         if (canRewriteWholeStatement) {
           outputById.set(spec.specNode.id(), null)
+          finalLocalNameBySpecifierId.set(spec.specNode.id(), null)
           statementChanged = true
         } else {
           const nextText = addTodoToSpecifier(spec.specText, CONNECTION_AUTH_MATCH_TODO)
@@ -438,6 +510,15 @@ function processImports(
       }
     }
 
+    for (const spec of specifiers) {
+      occupiedLocalNamesGlobal.delete(spec.localName)
+    }
+    for (const finalLocalName of finalLocalNameBySpecifierId.values()) {
+      if (finalLocalName) {
+        occupiedLocalNamesGlobal.add(finalLocalName)
+      }
+    }
+
     for (const rename of pendingRenames) {
       for (const refNode of collectBodyReferences(rename.bindingNode, filename)) {
         edits.push(refNode.replace(rename.newName))
@@ -453,9 +534,10 @@ function processImports(
       const specTexts = specifiers
         .map((spec) => outputById.get(spec.specNode.id()))
         .filter((text): text is string => text !== null && text !== undefined && text.length > 0)
+        .map((text) => normalizeSpecifierTypeModifier(text, statementTypeOnly))
 
       const replacement =
-        specTexts.length > 0 ? buildNamedStatement('import', specTexts, source, isTypeOnlyStatement(imp)) : ''
+        specTexts.length > 0 ? buildNamedStatement('import', specTexts, source, statementTypeOnly) : ''
 
       edits.push(imp.replace(replacement))
       continue
@@ -473,8 +555,24 @@ function processImports(
   return connectionTypeDefinitionObjects
 }
 
-function processReexports(rootNode: SgNode<TSX, 'program'>, edits: Edit[]): void {
+function collectDeclaredReexportedNames(rootNode: SgNode<TSX, 'program'>): Set<string> {
+  const names = new Set<string>()
+
+  for (const exportStatement of rootNode.findAll({ rule: { kind: 'export_statement' } }) as SgNode<
+    TSX,
+    'export_statement'
+  >[]) {
+    for (const spec of extractSpecifiers(exportStatement, 'export_specifier')) {
+      names.add(spec.localName)
+    }
+  }
+
+  return names
+}
+
+function processReexports(rootNode: SgNode<TSX, 'program'>, edits: Edit[], declaredReexportedNames: Set<string>): void {
   const exportStatements = findStatementsFrom(rootNode, 'export_statement', CONNECTIONS_SOURCE)
+  const occupiedExportedNamesGlobal = new Set<string>(declaredReexportedNames)
 
   for (const exp of exportStatements) {
     const source = exp.find({ rule: { kind: 'string_fragment' } })?.text()
@@ -503,25 +601,29 @@ function processReexports(rootNode: SgNode<TSX, 'program'>, edits: Edit[]): void
     }
 
     const outputById = new Map<number, string>()
+    const finalExportedNameBySpecifierId = new Map<number, string>()
     let statementChanged = false
 
-    const occupiedExportedNames = new Set<string>()
+    const statementTypeOnly = isTypeOnlyStatement(exp)
+    const canRewriteWholeStatement = isPureNamedStatement(exp, 'export')
 
+    const occupiedExportedNames = new Set<string>(occupiedExportedNamesGlobal)
     for (const spec of specifiers) {
       const mappedName = mappedNameBySpecifierId.get(spec.specNode.id())
       const isAutoRenameCandidate = Boolean(mappedName && spec.localName === spec.importedName)
-      if (!isAutoRenameCandidate) {
-        occupiedExportedNames.add(spec.localName)
+      if (isAutoRenameCandidate) {
+        occupiedExportedNames.delete(spec.localName)
       }
     }
 
     for (const spec of specifiers) {
       outputById.set(spec.specNode.id(), spec.specText)
+      finalExportedNameBySpecifierId.set(spec.specNode.id(), spec.localName)
 
       const mappedName = mappedNameBySpecifierId.get(spec.specNode.id())
       if (mappedName) {
         if (spec.localName !== spec.importedName) {
-          const nextText = `${mappedName} as ${spec.localName}`
+          const nextText = buildSpecifierText(spec, mappedName, spec.localName, statementTypeOnly)
           if (nextText !== spec.specText) {
             outputById.set(spec.specNode.id(), nextText)
             statementChanged = true
@@ -534,7 +636,8 @@ function processReexports(rootNode: SgNode<TSX, 'program'>, edits: Edit[]): void
         const fallbackExportName = spec.localName
 
         if (!occupiedExportedNames.has(preferredExportName)) {
-          outputById.set(spec.specNode.id(), mappedName)
+          outputById.set(spec.specNode.id(), buildSpecifierText(spec, mappedName, mappedName, statementTypeOnly))
+          finalExportedNameBySpecifierId.set(spec.specNode.id(), mappedName)
           statementChanged = true
           occupiedExportedNames.add(preferredExportName)
           migrationMetric.increment({ action: 'reexport-renamed', from: spec.importedName, to: mappedName })
@@ -542,7 +645,7 @@ function processReexports(rootNode: SgNode<TSX, 'program'>, edits: Edit[]): void
         }
 
         if (!occupiedExportedNames.has(fallbackExportName)) {
-          const nextText = `${mappedName} as ${fallbackExportName}`
+          const nextText = buildSpecifierText(spec, mappedName, fallbackExportName, statementTypeOnly)
           if (nextText !== spec.specText) {
             outputById.set(spec.specNode.id(), nextText)
             statementChanged = true
@@ -581,11 +684,18 @@ function processReexports(rootNode: SgNode<TSX, 'program'>, edits: Edit[]): void
       }
     }
 
+    for (const spec of specifiers) {
+      occupiedExportedNamesGlobal.delete(spec.localName)
+    }
+    for (const exportedName of finalExportedNameBySpecifierId.values()) {
+      occupiedExportedNamesGlobal.add(exportedName)
+    }
+
     if (!statementChanged) {
       continue
     }
 
-    if (!isPureNamedStatement(exp, 'export')) {
+    if (!canRewriteWholeStatement) {
       for (const spec of specifiers) {
         const nextText = outputById.get(spec.specNode.id())
         if (!nextText || nextText === spec.specText) {
@@ -598,9 +708,11 @@ function processReexports(rootNode: SgNode<TSX, 'program'>, edits: Edit[]): void
 
     const replacement = buildNamedStatement(
       'export',
-      specifiers.map((spec) => outputById.get(spec.specNode.id()) ?? spec.specText),
+      specifiers
+        .map((spec) => outputById.get(spec.specNode.id()) ?? spec.specText)
+        .map((text) => normalizeSpecifierTypeModifier(text, statementTypeOnly)),
       source,
-      isTypeOnlyStatement(exp),
+      statementTypeOnly,
     )
 
     edits.push(exp.replace(replacement))
@@ -650,8 +762,9 @@ const transform: Codemod<TSX> = async (root) => {
 
   const filename = root.filename()
   const declaredLocalNames = collectDeclaredLocalNames(rootNode)
+  const declaredReexportedNames = collectDeclaredReexportedNames(rootNode)
   const connectionTypeDefinitionObjects = processImports(rootNode, edits, filename, declaredLocalNames)
-  processReexports(rootNode, edits)
+  processReexports(rootNode, edits, declaredReexportedNames)
   annotateRemovedConnectionTypeMembers(edits, connectionTypeDefinitionObjects)
 
   const result = await Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)

@@ -4,7 +4,7 @@ version: '1'
 
 nodes:
   - id: apply-transforms
-    name: Apply AST Transformations
+    name: 'Apply AST Transformations'
     type: automatic
     steps:
       - name: 'Rename public symbols from @backstage/connections for Backstage 1.55.0'
