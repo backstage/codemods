@@ -107,13 +107,79 @@ function getComponentNameNode(opening: SgNode<TSX>): SgNode<TSX> | null {
   return opening.child(1) ?? null
 }
 
+function isFunctionLike(node: SgNode<TSX>): boolean {
+  return (
+    node.is('function_declaration') ||
+    node.is('function_expression') ||
+    node.is('arrow_function') ||
+    node.is('method_definition')
+  )
+}
+
+function hasIdentifierText(node: SgNode<TSX> | null | undefined, identifier: string): boolean {
+  if (!node) {
+    return false
+  }
+
+  return (node.is('identifier') || node.is('type_identifier')) && node.text() === identifier
+}
+
+function hasShadowingAncestorBinding(referenceNode: SgNode<TSX>, localName: string): boolean {
+  const escapedName = escapeRegex(localName)
+  let current: SgNode<TSX> = referenceNode
+
+  for (;;) {
+    const parent = current.parent()
+    if (!parent || parent.is('program')) {
+      return false
+    }
+
+    if (isFunctionLike(parent)) {
+      if (hasIdentifierText(parent.field('name'), localName)) {
+        return true
+      }
+
+      const parametersNode = parent.children().find((child) => child.is('formal_parameters'))
+      if (
+        parametersNode?.find({
+          rule: {
+            any: [
+              { kind: 'identifier', regex: `^${escapedName}$` },
+              { kind: 'type_identifier', regex: `^${escapedName}$` },
+            ],
+          },
+        })
+      ) {
+        return true
+      }
+    }
+
+    if (parent.is('class_declaration') && hasIdentifierText(parent.field('name'), localName)) {
+      return true
+    }
+
+    if (parent.is('catch_clause') && hasIdentifierText(parent.field('parameter'), localName)) {
+      return true
+    }
+
+    current = parent
+  }
+}
+
 function getTargetComponentName(
   nameNode: SgNode<TSX>,
   localNames: Map<string, string>,
   namespaceAliases: string[],
 ): string | null {
   if (nameNode.is('identifier')) {
-    return localNames.get(nameNode.text()) ?? null
+    const localName = nameNode.text()
+    const importedName = localNames.get(localName)
+
+    if (!importedName || hasShadowingAncestorBinding(nameNode, localName)) {
+      return null
+    }
+
+    return importedName
   }
 
   if (nameNode.is('member_expression')) {
@@ -123,6 +189,7 @@ function getTargetComponentName(
     if (
       objNode?.is('identifier') === true &&
       namespaceAliases.includes(objNode.text()) &&
+      !hasShadowingAncestorBinding(objNode, objNode.text()) &&
       propNode !== null &&
       TARGET_COMPONENTS.has(propNode.text())
     ) {
