@@ -1,5 +1,11 @@
 # @backstage/migrate-permissioned-route
 
+## 0.3.4
+
+### Patch Changes
+
+- 9a9e903: Update codemod runtime and development dependencies
+
 ## 0.3.3
 
 ### Patch Changes

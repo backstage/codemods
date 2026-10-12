@@ -1,5 +1,11 @@
 # @backstage/migrate-mui-avatar-to-bui-avatar
 
+## 0.2.1
+
+### Patch Changes
+
+- 9a9e903: Update codemod runtime and development dependencies
+
 ## 0.2.0
 
 ### Minor Changes

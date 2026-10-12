@@ -1,5 +1,11 @@
 # @backstage/v1-50-0-migration-recipe
 
+## 0.3.7
+
+### Patch Changes
+
+- 9a9e903: Update codemod runtime and development dependencies
+
 ## 0.3.6
 
 ### Patch Changes

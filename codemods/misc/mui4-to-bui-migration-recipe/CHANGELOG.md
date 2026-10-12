@@ -1,5 +1,11 @@
 # @backstage/mui4-to-bui-migration-recipe
 
+## 0.3.1
+
+### Patch Changes
+
+- 9a9e903: Update codemod runtime and development dependencies
+
 ## 0.3.0
 
 ### Minor Changes
