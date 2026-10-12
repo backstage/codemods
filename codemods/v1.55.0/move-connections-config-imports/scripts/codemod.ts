@@ -39,6 +39,7 @@ function findStatementsFrom<K extends 'import_statement' | 'export_statement'>(
 interface SpecifierInfo {
   importedName: string
   specText: string
+  leadingComments: { text: string; ownLine: boolean }[]
   trailingComment?: string
 }
 
@@ -46,7 +47,7 @@ function extractSpecifiers(node: SgNode<TSX>, kind: 'import_specifier' | 'export
   const specifiers = node.findAll({ rule: { kind } })
   const result: SpecifierInfo[] = []
 
-  for (const spec of specifiers) {
+  for (const [index, spec] of specifiers.entries()) {
     const importedNameNode = spec
       .children()
       .find((child) => child.is('identifier') || child.is('type_identifier') || child.is('string'))
@@ -54,21 +55,51 @@ function extractSpecifiers(node: SgNode<TSX>, kind: 'import_specifier' | 'export
       continue
     }
 
-    const trailingComment = spec
-      .parent()
-      ?.children()
-      .find(
+    const previous = specifiers[index - 1]
+    const next = specifiers[index + 1]
+    const siblings = spec.parent()?.children() ?? []
+    const comments = siblings.filter((child) => child.is('comment'))
+    const trailingComment = comments.find((comment) => {
+      if (
+        comment.range().start.index <= spec.range().end.index ||
+        comment.range().start.line !== spec.range().end.line
+      ) {
+        return false
+      }
+      const comma = siblings.find(
         (child) =>
-          child.is('comment') &&
-          child.range().start.line === spec.range().end.line &&
-          child.range().start.index > spec.range().end.index,
+          child.text() === ',' &&
+          child.range().start.index > spec.range().end.index &&
+          child.range().start.index < comment.range().start.index,
       )
+      return (
+        (!comma || comment.text().startsWith('//')) && (!next || comment.range().start.index < next.range().start.index)
+      )
+    })
+    const leadingComments = comments
+      .filter(
+        (comment) =>
+          comment.range().end.index <= spec.range().start.index &&
+          (!previous || comment.range().start.index > previous.range().end.index) &&
+          !(previous && comment.range().start.line === previous.range().end.line && comment.text().startsWith('//')) &&
+          !(
+            previous &&
+            siblings.some(
+              (child) =>
+                child.text() === ',' &&
+                child.range().start.index > comment.range().end.index &&
+                child.range().start.index < spec.range().start.index,
+            )
+          ),
+      )
+      .map((comment) => ({ text: comment.text(), ownLine: comment.range().end.line < spec.range().start.line }))
 
     result.push({
       importedName: importedNameNode.is('string')
         ? (importedNameNode.find({ rule: { kind: 'string_fragment' } })?.text() ?? '')
         : importedNameNode.text(),
       specText: spec.text(),
+      leadingComments,
       trailingComment: trailingComment?.text(),
     })
   }
@@ -96,11 +127,26 @@ function getImportDefaultSpecifier(node: SgNode<TSX, 'import_statement'>): strin
 }
 
 function buildNamedSpecifiers(specifiers: SpecifierInfo[]): string {
-  if (specifiers.length <= 2 && specifiers.every((s) => !s.trailingComment?.startsWith('//'))) {
-    return `{ ${specifiers.map((s) => s.specText + (s.trailingComment ? ` ${s.trailingComment}` : '')).join(', ')} }`
+  const render = (specifier: SpecifierInfo, multiline: boolean): string => {
+    const leading = specifier.leadingComments
+      .map(
+        (comment) => `${comment.text}${multiline && (comment.ownLine || comment.text.startsWith('//')) ? '\n  ' : ' '}`,
+      )
+      .join('')
+    return `${leading}${specifier.specText}${multiline ? ',' : ''}${specifier.trailingComment ? ` ${specifier.trailingComment}` : ''}`
+  }
+  const multiline =
+    specifiers.length > 2 ||
+    specifiers.some(
+      (s) =>
+        (s.trailingComment?.startsWith('//') ?? false) ||
+        s.leadingComments.some((c) => c.ownLine || c.text.startsWith('//')),
+    )
+  if (!multiline) {
+    return `{ ${specifiers.map((s) => render(s, false)).join(', ')} }`
   }
 
-  return `{\n  ${specifiers.map((s) => `${s.specText},${s.trailingComment ? ` ${s.trailingComment}` : ''}`).join('\n  ')}\n}`
+  return `{\n  ${specifiers.map((s) => render(s, true)).join('\n  ')}\n}`
 }
 
 function buildImportStatement(
@@ -108,20 +154,22 @@ function buildImportStatement(
   source: string,
   isTypeOnly: boolean,
   defaultSpecifier: string | null,
+  attributes: string,
 ): string {
   const typeKeyword = isTypeOnly ? 'type ' : ''
+  const suffix = attributes ? ` ${attributes}` : ''
 
   if (specifiers.length === 0 && defaultSpecifier) {
-    return `import ${typeKeyword}${defaultSpecifier} from '${source}';`
+    return `import ${typeKeyword}${defaultSpecifier} from '${source}'${suffix};`
   }
 
   const namedSpecifiers = buildNamedSpecifiers(specifiers)
 
   if (defaultSpecifier) {
-    return `import ${typeKeyword}${defaultSpecifier}, ${namedSpecifiers} from '${source}';`
+    return `import ${typeKeyword}${defaultSpecifier}, ${namedSpecifiers} from '${source}'${suffix};`
   }
 
-  return `import ${typeKeyword}${namedSpecifiers} from '${source}';`
+  return `import ${typeKeyword}${namedSpecifiers} from '${source}'${suffix};`
 }
 
 function buildExportStatement(specifiers: SpecifierInfo[], source: string, isTypeOnly: boolean): string {
@@ -474,10 +522,55 @@ function isKnownUnmovedDynamicImportUsage(callExpression: SgNode<TSX>): boolean 
   )
 }
 
+function getDirectAwaitedDynamicImportSymbols(callExpression: SgNode<TSX>): string[] | null {
+  const awaited = callExpression.parent()
+  if (awaited?.kind() !== 'await_expression') {
+    return null
+  }
+
+  let valueNode = awaited
+  let parent = valueNode.parent()
+  while (parent?.kind() === 'parenthesized_expression') {
+    valueNode = parent
+    parent = valueNode.parent()
+  }
+
+  if (parent?.kind() === 'member_expression' && parent.field('object')?.id() === valueNode.id()) {
+    const property = parent.field('property')
+    return property && isIdentifierLikeNode(property) && MOVED_EXPORTS.has(property.text()) ? [property.text()] : null
+  }
+
+  if (parent?.kind() !== 'variable_declarator' || parent.field('value')?.id() !== valueNode.id()) {
+    return null
+  }
+
+  const pattern = parent.field('name')
+  if (!pattern?.is('object_pattern')) {
+    return null
+  }
+
+  const properties = pattern
+    .children()
+    .filter((child) => child.text() !== '{' && child.text() !== '}' && child.text() !== ',')
+  const names = properties.map((property) =>
+    property.is('shorthand_property_identifier_pattern')
+      ? property.text()
+      : property.is('pair_pattern')
+        ? property
+            .children()
+            .find((child) => child.is('property_identifier'))
+            ?.text()
+        : undefined,
+  )
+  return names.length > 0 && names.every((name) => name !== undefined && MOVED_EXPORTS.has(name))
+    ? (names as string[])
+    : null
+}
+
 function classifyDynamicImportCall(callExpression: SgNode<TSX>): {
   action: 'ignore' | 'migrate' | 'todo'
   sourceFragment?: SgNode<TSX>
-  symbol?: string
+  symbols?: string[]
 } {
   const calleeNode = callExpression.field('function')
   if (!calleeNode || !calleeNode.is('import')) {
@@ -507,12 +600,16 @@ function classifyDynamicImportCall(callExpression: SgNode<TSX>): {
 
   const isTypeOnlyDynamicImport = isTypeContext(callExpression) || isLikelyTsxGenericTypeArgument(callExpression)
   if (!isTypeOnlyDynamicImport) {
+    const symbols = getDirectAwaitedDynamicImportSymbols(callExpression)
+    if (symbols) {
+      return { action: 'migrate', sourceFragment, symbols }
+    }
     return { action: isKnownUnmovedDynamicImportUsage(callExpression) ? 'ignore' : 'todo' }
   }
 
   const symbol = getDynamicImportMemberSymbol(callExpression)
   if (symbol && MOVED_EXPORTS.has(symbol)) {
-    return { action: 'migrate', sourceFragment, symbol }
+    return { action: 'migrate', sourceFragment, symbols: [symbol] }
   }
 
   return { action: 'ignore' }
@@ -525,13 +622,18 @@ function handleDynamicImports(rootNode: SgNode<TSX>, edits: Edit[], source: stri
   for (const callExpression of rootNode.findAll({ rule: { kind: 'call_expression' } })) {
     const classification = classifyDynamicImportCall(callExpression)
 
-    if (classification.action === 'migrate' && classification.sourceFragment && classification.symbol) {
+    if (classification.action === 'migrate' && classification.sourceFragment && classification.symbols) {
       edits.push(classification.sourceFragment.replace(CONFIG_SOURCE))
-      migrationMetric.increment({
-        kind: 'dynamic-import-type',
-        action: 'migrated',
-        symbol: classification.symbol,
-      })
+      for (const symbol of classification.symbols) {
+        migrationMetric.increment({
+          kind:
+            isTypeContext(callExpression) || isLikelyTsxGenericTypeArgument(callExpression)
+              ? 'dynamic-import-type'
+              : 'dynamic-import',
+          action: 'migrated',
+          symbol,
+        })
+      }
       continue
     }
 
@@ -585,12 +687,17 @@ const transform: Codemod<TSX> = async (root) => {
     const remaining = specifiers.filter((s) => !MOVED_EXPORTS.has(s.importedName))
     const defaultSpecifier = getImportDefaultSpecifier(statement)
     const isTypeOnly = isTypeOnlyStatement(statement)
+    const attributes =
+      statement
+        .children()
+        .find((child) => child.is('import_attribute'))
+        ?.text() ?? ''
 
-    const movedImport = buildImportStatement(moved, CONFIG_SOURCE, isTypeOnly, null)
+    const movedImport = buildImportStatement(moved, CONFIG_SOURCE, isTypeOnly, null, attributes)
 
     const remainingImport =
       remaining.length > 0 || defaultSpecifier
-        ? buildImportStatement(remaining, ROOT_SOURCE, isTypeOnly, defaultSpecifier)
+        ? buildImportStatement(remaining, ROOT_SOURCE, isTypeOnly, defaultSpecifier, attributes)
         : ''
 
     const replacement = remainingImport ? `${remainingImport}\n${movedImport}` : movedImport
