@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+nodes:
+  - id: apply-recipe
+    name: 'Run every Backstage 1.55.0 codemod in order'
+    type: automatic
+    steps:
+      # --- BREAKING: connections API import/symbol changes
+      - name: 'Rename removed connections public API symbols'
+        codemod:
+          source: '@backstage/rename-connections-public-api'
+
+      - name: 'Move connections config imports to /config subpath'
+        codemod:
+          source: '@backstage/move-connections-config-imports'
+
+      # --- BREAKING: removed catalog compatibility config
+      - name: 'Remove catalog compatibility relations config'
+        codemod:
+          source: '@backstage/remove-relations-compatibility-config'
+
+      # --- BREAKING: removed BUI anchor render prop
+      - name: 'Remove BUI Anchor render props and mark manual follow-up'
+        codemod:
+          source: '@backstage/remove-bui-anchor-render-props'
+
+      # --- BREAKING: removed never-rendered Kubernetes children
+      - name: 'Remove implicit Kubernetes children and mark manual follow-up'
+        codemod:
+          source: '@backstage/remove-kubernetes-implicit-children'
+
+      # --- BREAKING: removed scaffolder GitHub action inputs
+      - name: 'Remove ignored GitHub repo create action inputs'
+        codemod:
+          source: '@backstage/remove-ignored-github-repo-create-inputs'
