@@ -48,15 +48,14 @@ jobs:
       # Creates or updates a Version Packages PR; a maintainer merges it manually.
       - name: Create Version Packages PR
         id: changesets
-        uses: changesets/action@6a0a831ff30acef54f2c6aa1cbbc1096b066edaf # v1.7.0
+        uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
         with:
-          version: yarn version-packages
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          version-script: yarn version-packages
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       # Only the merged version commit has no pending changesets.
       - name: Tag released versions
-        if: steps.changesets.outputs.hasChangesets == 'false'
+        if: steps.changesets.outputs['has-changesets'] == 'false'
         id: tag
         run: bash scripts/tag-and-publish.sh
 
