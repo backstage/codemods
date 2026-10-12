@@ -373,9 +373,11 @@ function emptyMappingLine(line: string): string {
 
   const keyPart = line.slice(0, colonIndex + 1)
   const afterColon = line.slice(colonIndex + 1).trimStart()
+  const commentIndex = findYamlCommentIndex(afterColon)
 
-  if (afterColon.startsWith('#')) {
-    return `${keyPart} {} ${afterColon}`
+  if (commentIndex !== -1) {
+    const comment = afterColon.slice(commentIndex).trimStart()
+    return `${keyPart} {} ${comment}`
   }
 
   return `${keyPart} {}`
@@ -438,6 +440,29 @@ const transform: Codemod<YAML> = async (root) => {
 
       if (catalogMapping.is('flow_mapping')) {
         if (remainingPairs.length === 0) {
+          const targetRanges = targetPairs.map((pair) => {
+            const pairRange = pair.range()
+            return {
+              startPos: pairRange.start.index,
+              endPos: pairRange.end.index,
+            }
+          })
+          const hasCommentsToKeep = hasPreservableCommentLines(source, topLevelPair, targetRanges)
+
+          if (hasCommentsToKeep) {
+            const topLevelPairRange = topLevelPair.range()
+            const isSingleLinePair = !source
+              .slice(topLevelPairRange.start.index, topLevelPairRange.end.index)
+              .includes('\n')
+
+            if (isSingleLinePair) {
+              edits.push(replaceWithEmptyMapping(topLevelPair, source))
+            } else {
+              edits.push(...removeFlowPairs(catalogMapping, targetPairs, source))
+            }
+            continue
+          }
+
           const topLevelMapping = topLevelPair.parent()
           if (topLevelMapping?.is('flow_mapping')) {
             edits.push(...removeFlowPairs(topLevelMapping, [topLevelPair], source))
