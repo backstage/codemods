@@ -1,4 +1,4 @@
-import type { Codemod } from 'codemod:ast-grep'
+import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
 import type YAML from 'codemod:ast-grep/langs/yaml'
 import { useMetricAtom } from 'codemod:metrics'
 
@@ -7,180 +7,272 @@ const migrationMetric = useMetricAtom('remove-relations-compatibility-config')
 const CATALOG_KEY = 'catalog'
 const TARGET_KEY = 'enableRelationsCompatibility'
 
-function normalizeSource(source: string): string {
-  return source.replaceAll('\r\n', '\n').replaceAll('\r', '\n')
+function normalizeKey(text: string): string {
+  const trimmed = text.trim()
+
+  if ((trimmed.startsWith("'") && trimmed.endsWith("'")) || (trimmed.startsWith('"') && trimmed.endsWith('"'))) {
+    return trimmed.slice(1, -1)
+  }
+
+  return trimmed
 }
 
-function getLineIndent(line: string): string {
-  const match = line.match(/^(\s*)/)
-  return match?.[1] ?? ''
+function isMappingPair(node: SgNode<YAML>): boolean {
+  return node.is('block_mapping_pair') || node.is('flow_pair')
 }
 
-function getIndentLength(line: string): number {
-  return getLineIndent(line).length
+function getMappingPairs(node: SgNode<YAML>): SgNode<YAML>[] {
+  return node.children().filter((child) => isMappingPair(child))
 }
 
-function isCommentLine(line: string): boolean {
-  return line.trim().startsWith('#')
-}
-
-function isBlankOrComment(line: string): boolean {
-  const trimmed = line.trim()
-  return trimmed === '' || trimmed.startsWith('#')
-}
-
-function parseKeyName(line: string): string | null {
-  const keyMatch = line.match(/^\s*(?:'([^']+)'|"([^"]+)"|([A-Za-z0-9_.-]+))\s*:/)
-  if (!keyMatch) {
+function findMappingNode(node: SgNode<YAML> | null): SgNode<YAML> | null {
+  if (!node) {
     return null
   }
 
-  return keyMatch[1] ?? keyMatch[2] ?? keyMatch[3] ?? null
+  if (node.is('block_mapping') || node.is('flow_mapping')) {
+    return node
+  }
+
+  for (const child of node.children()) {
+    if (child.is('block_mapping') || child.is('flow_mapping')) {
+      return child
+    }
+
+    if (child.is('block_node') || child.is('flow_node')) {
+      const mapping = findMappingNode(child)
+      if (mapping) {
+        return mapping
+      }
+    }
+  }
+
+  return null
 }
 
-function isKeyLine(line: string, key: string, expectedIndent: string): boolean {
-  if (isBlankOrComment(line)) {
+function getPairKeyName(pair: SgNode<YAML>): string | null {
+  const keyNode = pair.field('key')
+  if (!keyNode) {
+    return null
+  }
+
+  return normalizeKey(keyNode.text())
+}
+
+function lineStart(source: string, index: number): number {
+  let cursor = index
+  while (cursor > 0 && source[cursor - 1] !== '\n') {
+    cursor -= 1
+  }
+  return cursor
+}
+
+function lineEndWithoutNewline(source: string, index: number): number {
+  let cursor = index
+  while (cursor < source.length && source[cursor] !== '\n') {
+    cursor += 1
+  }
+
+  return cursor
+}
+
+function lineEndWithNewline(source: string, index: number): number {
+  const lineEnd = lineEndWithoutNewline(source, index)
+  if (lineEnd < source.length && source[lineEnd] === '\n') {
+    return lineEnd + 1
+  }
+
+  return lineEnd
+}
+
+function fullLineRange(node: SgNode<YAML>, source: string): Pick<Edit, 'startPos' | 'endPos'> {
+  const range = node.range()
+  const startPos = lineStart(source, range.start.index)
+  const endPos = lineEndWithNewline(source, range.end.index)
+
+  return {
+    startPos,
+    endPos,
+  }
+}
+
+function removeFullLineRange(node: SgNode<YAML>, source: string): Edit {
+  return {
+    ...fullLineRange(node, source),
+    insertedText: '',
+  }
+}
+
+function toFlowMappingText(pairs: SgNode<YAML>[]): string {
+  if (pairs.length === 0) {
+    return '{}'
+  }
+
+  return `{ ${pairs.map((pair) => pair.text().trim()).join(', ')} }`
+}
+
+function lineContainsCommentOutsideRanges(
+  source: string,
+  lineStartPos: number,
+  lineEndPos: number,
+  excludedRanges: Pick<Edit, 'startPos' | 'endPos'>[],
+): boolean {
+  const text = source.slice(lineStartPos, lineEndPos)
+  if (!text.trimStart().startsWith('#')) {
     return false
   }
 
-  if (getLineIndent(line) !== expectedIndent) {
-    return false
-  }
-
-  return parseKeyName(line) === key
+  return !excludedRanges.some((range) => lineStartPos >= range.startPos && lineEndPos <= range.endPos)
 }
 
-function findNextContentLine(lines: string[], startLine: number): number {
-  for (let lineIndex = startLine; lineIndex < lines.length; lineIndex += 1) {
-    if (!isBlankOrComment(lines[lineIndex] ?? '')) {
-      return lineIndex
-    }
-  }
+function hasPreservableCommentLines(
+  source: string,
+  catalogPair: SgNode<YAML>,
+  targetRanges: Pick<Edit, 'startPos' | 'endPos'>[],
+): boolean {
+  const pairRange = catalogPair.range()
+  const blockStart = lineEndWithNewline(source, pairRange.start.index)
+  const blockEnd = lineEndWithNewline(source, pairRange.end.index)
 
-  return lines.length
-}
-
-function findBlockEnd(lines: string[], keyLine: number): number {
-  const keyIndentLength = getIndentLength(lines[keyLine] ?? '')
-  let endLine = keyLine + 1
-
-  while (endLine < lines.length) {
-    const line = lines[endLine] ?? ''
-
-    if (line.trim() === '') {
-      const nextContentLine = findNextContentLine(lines, endLine + 1)
-      if (nextContentLine >= lines.length) {
-        endLine += 1
-        continue
-      }
-
-      const nextIndentLength = getIndentLength(lines[nextContentLine] ?? '')
-      if (nextIndentLength <= keyIndentLength) {
-        break
-      }
-
-      endLine += 1
-      continue
-    }
-
-    if (isCommentLine(line)) {
-      if (getIndentLength(line) <= keyIndentLength) {
-        break
-      }
-
-      endLine += 1
-      continue
-    }
-
-    if (getIndentLength(line) <= keyIndentLength) {
-      break
-    }
-
-    endLine += 1
-  }
-
-  return endLine
-}
-
-function hasCatalogChildren(lines: string[], catalogLine: number): boolean {
-  const catalogIndentLength = getIndentLength(lines[catalogLine] ?? '')
-  const catalogEnd = findBlockEnd(lines, catalogLine)
-
-  for (let lineIndex = catalogLine + 1; lineIndex < catalogEnd; lineIndex += 1) {
-    const line = lines[lineIndex] ?? ''
-    if (isBlankOrComment(line)) {
-      continue
-    }
-
-    if (getIndentLength(line) > catalogIndentLength) {
+  let cursor = blockStart
+  while (cursor < blockEnd) {
+    const lineEndPos = lineEndWithNewline(source, cursor)
+    if (lineContainsCommentOutsideRanges(source, cursor, lineEndPos, targetRanges)) {
       return true
     }
+
+    cursor = lineEndPos
   }
 
   return false
 }
 
+function emptyMappingLine(line: string): string {
+  const colonIndex = line.indexOf(':')
+  if (colonIndex === -1) {
+    return line
+  }
+
+  const keyPart = line.slice(0, colonIndex + 1)
+  const afterColon = line.slice(colonIndex + 1).trimStart()
+
+  if (afterColon.startsWith('#')) {
+    return `${keyPart} {} ${afterColon}`
+  }
+
+  return `${keyPart} {}`
+}
+
+function replaceWithEmptyMapping(pair: SgNode<YAML>, source: string): Edit {
+  const pairRange = pair.range()
+  const startPos = lineStart(source, pairRange.start.index)
+  const endPos = lineEndWithoutNewline(source, pairRange.start.index)
+  const line = source.slice(startPos, endPos)
+
+  return {
+    startPos,
+    endPos,
+    insertedText: emptyMappingLine(line),
+  }
+}
+
 const transform: Codemod<YAML> = async (root) => {
-  const source = normalizeSource(root.root().text())
-  const lines = source.split('\n')
-  let changed = false
+  const rootNode = root.root()
+  const source = rootNode.text()
+  const edits: Edit[] = []
 
-  for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
-    if (!isKeyLine(lines[lineIndex] ?? '', CATALOG_KEY, '')) {
+  const documents = rootNode.findAll({
+    rule: {
+      kind: 'document',
+    },
+  })
+
+  for (const documentNode of documents) {
+    const rootMapping = findMappingNode(documentNode)
+    if (!rootMapping) {
       continue
     }
 
-    const catalogLine = lineIndex
-    const catalogChildIndent = `${getLineIndent(lines[catalogLine] ?? '')}  `
-    const catalogEnd = findBlockEnd(lines, catalogLine)
-    const targetLines: number[] = []
-
-    for (let childLine = catalogLine + 1; childLine < catalogEnd; childLine += 1) {
-      if (isKeyLine(lines[childLine] ?? '', TARGET_KEY, catalogChildIndent)) {
-        targetLines.push(childLine)
-      }
-    }
-
-    if (targetLines.length === 0) {
-      lineIndex = catalogEnd - 1
-      continue
-    }
-
-    changed = true
-
-    for (let i = targetLines.length - 1; i >= 0; i -= 1) {
-      const targetLine = targetLines[i]
-      if (targetLine === undefined) {
+    for (const topLevelPair of getMappingPairs(rootMapping)) {
+      if (getPairKeyName(topLevelPair) !== CATALOG_KEY) {
         continue
       }
 
-      const targetEnd = findBlockEnd(lines, targetLine)
-      lines.splice(targetLine, targetEnd - targetLine)
-      migrationMetric.increment({ action: 'key-removed' })
-    }
+      const catalogValueNode = topLevelPair.field('value')
+      const catalogMapping = findMappingNode(catalogValueNode)
 
-    if (!hasCatalogChildren(lines, catalogLine)) {
-      const emptyCatalogEnd = findBlockEnd(lines, catalogLine)
-      lines.splice(catalogLine, emptyCatalogEnd - catalogLine)
-      migrationMetric.increment({ action: 'empty-catalog-removed' })
-      lineIndex = catalogLine - 1
-      continue
-    }
+      if (!catalogMapping) {
+        continue
+      }
 
-    lineIndex = findBlockEnd(lines, catalogLine) - 1
+      const catalogPairs = getMappingPairs(catalogMapping)
+      const targetPairs = catalogPairs.filter((pair) => getPairKeyName(pair) === TARGET_KEY)
+
+      if (targetPairs.length === 0) {
+        continue
+      }
+
+      const remainingPairs = catalogPairs.filter((pair) => getPairKeyName(pair) !== TARGET_KEY)
+
+      for (const _targetPair of targetPairs) {
+        migrationMetric.increment({ action: 'key-removed' })
+      }
+
+      if (catalogMapping.is('flow_mapping')) {
+        if (remainingPairs.length === 0) {
+          edits.push(removeFullLineRange(topLevelPair, source))
+          migrationMetric.increment({ action: 'empty-catalog-removed' })
+          continue
+        }
+
+        edits.push(catalogMapping.replace(toFlowMappingText(remainingPairs)))
+        continue
+      }
+
+      if (!catalogMapping.is('block_mapping')) {
+        continue
+      }
+
+      if (remainingPairs.length === 0) {
+        const targetRanges = targetPairs.map((pair) => fullLineRange(pair, source))
+        const hasCommentsToKeep = hasPreservableCommentLines(source, topLevelPair, targetRanges)
+
+        if (hasCommentsToKeep) {
+          for (const targetRange of targetRanges) {
+            edits.push({
+              ...targetRange,
+              insertedText: '',
+            })
+          }
+
+          edits.push(replaceWithEmptyMapping(topLevelPair, source))
+          continue
+        }
+
+        edits.push(removeFullLineRange(topLevelPair, source))
+        migrationMetric.increment({ action: 'empty-catalog-removed' })
+        continue
+      }
+
+      for (const targetPair of targetPairs) {
+        edits.push(removeFullLineRange(targetPair, source))
+      }
+    }
   }
 
-  if (!changed) {
+  if (edits.length === 0) {
     return null
   }
 
-  const result = lines.join('\n')
-  if (result === source) {
-    return null
-  }
+  const sortedEdits = [...edits].sort((left, right) => {
+    if (left.startPos === right.startPos) {
+      return right.endPos - left.endPos
+    }
+    return right.startPos - left.startPos
+  })
 
-  await Promise.resolve()
-  return result
+  const result = await Promise.resolve(rootNode.commitEdits(sortedEdits))
+  return result === source ? null : result
 }
 
 export default transform
