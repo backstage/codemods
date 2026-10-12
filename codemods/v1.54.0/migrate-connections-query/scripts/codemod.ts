@@ -35,6 +35,15 @@ function property(node: Node, key: string): boolean {
   )
 }
 
+function escapedKey(node: Node): boolean {
+  const name = node.field(node.kind() === 'method_definition' ? 'name' : 'key')
+  return (
+    ((name?.kind() === 'string' || name?.kind() === 'property_identifier') && name.text().includes('\\')) ||
+    (name?.kind() === 'computed_property_name' &&
+      name.children().some((child) => child.kind() === 'string' && child.text().includes('\\')))
+  )
+}
+
 function localImports(root: Node, source: string, imported: string): Map<string, Node> {
   const names = new Map<string, Node>()
   for (const statement of root.findAll({ rule: { kind: 'import_statement' } })) {
@@ -177,6 +186,31 @@ function typedClassField(receiver: Node, serviceTypes: Map<string, Node>): boole
   const body = ancestor?.children().find((child) => child.kind() === 'class_body')
   return (
     body?.children().some((field) => {
+      if (field.kind() === 'method_definition' && field.field('name')?.text() === 'constructor') {
+        return (
+          field
+            .children()
+            .find((child) => child.kind() === 'formal_parameters')
+            ?.children()
+            .some((parameter) => {
+              if (
+                parameter.kind() !== 'required_parameter' ||
+                parameter.field('pattern')?.text() !== name ||
+                !parameter
+                  .children()
+                  .some((child) => child.kind() === 'accessibility_modifier' || child.kind() === 'readonly')
+              ) {
+                return false
+              }
+              const typeName = parameter
+                .field('type')
+                ?.children()
+                .find((child) => child.kind() === 'type_identifier')
+              const importedType = typeName && serviceTypes.get(typeName.text())
+              return !!(typeName && importedType && sameDefinition(typeName, importedType))
+            }) ?? false
+        )
+      }
       if (field.kind() !== 'public_field_definition' || field.field('name')?.text() !== name) {
         return false
       }
@@ -241,7 +275,14 @@ const transform: Codemod<TSX> = async (root) => {
     const shorthandUrls = options
       .children()
       .filter((child) => child.kind() === 'shorthand_property_identifier' && child.text() === 'url')
-    if (urls.length + shorthandUrls.length === 0) {
+    const hasEscapedKey = options
+      .children()
+      .some(
+        (child) =>
+          ((child.kind() === 'pair' || child.kind() === 'method_definition') && escapedKey(child)) ||
+          (child.kind() === 'shorthand_property_identifier' && child.text().includes('\\')),
+      )
+    if (urls.length + shorthandUrls.length === 0 && !hasEscapedKey) {
       continue
     }
     const types = pairs.filter((pair) => property(pair, 'type'))
@@ -251,6 +292,7 @@ const transform: Codemod<TSX> = async (root) => {
       types.length === 1 &&
       URL_TYPES.has(literalType ?? '') &&
       urls.length + shorthandUrls.length === 1 &&
+      !hasEscapedKey &&
       !options
         .children()
         .some(
