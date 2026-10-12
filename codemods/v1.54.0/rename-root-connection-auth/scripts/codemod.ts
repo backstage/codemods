@@ -18,7 +18,7 @@ function isConnectionsStatement(node: SgNode<TSX>): boolean {
 function removeStatementPreservingComments(statement: SgNode<TSX>, source: string): Edit {
   const comments = statement.findAll({ rule: { kind: 'comment' } }).map((comment) => comment.text())
   if (comments.length) {
-    return statement.replace(comments.join('\n'))
+    return statement.replace(comments.join('\n') + (comments.at(-1)?.startsWith('//') ? '\n' : ''))
   }
   const { start, end } = statement.range()
   const lineStart = source.lastIndexOf('\n', start.index - 1) + 1
@@ -63,7 +63,7 @@ const transform: Codemod<TSX> = async (root) => {
   let alreadyImported = imports.some((statement) =>
     statement.findAll({ rule: { kind: 'import_specifier' } }).some((spec) => {
       const ids = spec.children().filter((child) => child.is('identifier'))
-      return ids.length === 1 && ids[0]?.text() === NEW
+      return (ids[0]?.text() === OLD || ids[0]?.text() === NEW) && ids.at(-1)?.text() === NEW
     }),
   )
 
@@ -151,7 +151,7 @@ const transform: Codemod<TSX> = async (root) => {
   let alreadyExported = exports.some((statement) =>
     statement.findAll({ rule: { kind: 'export_specifier' } }).some((spec) => {
       const ids = spec.children().filter((child) => child.is('identifier'))
-      return ids.length === 1 && ids[0]?.text() === NEW
+      return (ids[0]?.text() === OLD || ids[0]?.text() === NEW) && ids.at(-1)?.text() === NEW
     }),
   )
   for (const statement of exports) {
@@ -198,7 +198,9 @@ const transform: Codemod<TSX> = async (root) => {
       context &&
       context.kind() !== 'program' &&
       context.kind() !== 'type_alias_declaration' &&
-      context.kind() !== 'type_annotation'
+      context.kind() !== 'type_annotation' &&
+      context.kind() !== 'as_expression' &&
+      context.kind() !== 'satisfies_expression'
     ) {
       if (context.kind() === 'lexical_declaration' || context.kind() === 'expression_statement') {
         break
@@ -207,6 +209,16 @@ const transform: Codemod<TSX> = async (root) => {
     }
     if (context?.kind() === 'type_alias_declaration' || context?.kind() === 'type_annotation') {
       edits.push(property.replace(NEW))
+    } else if (context?.kind() === 'as_expression' || context?.kind() === 'satisfies_expression') {
+      const type =
+        context.field('type') ??
+        context
+          .children()
+          .reverse()
+          .find((child) => child.isNamed())
+      if (type && member.range().start.index >= type.range().start.index) {
+        edits.push(property.replace(NEW))
+      }
     }
   }
 
