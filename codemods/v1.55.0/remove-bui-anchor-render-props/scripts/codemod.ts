@@ -40,21 +40,51 @@ function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode
   }) as SgNode<TSX, 'import_statement'>[]
 }
 
-interface ImportedComponents {
-  localNames: Map<string, string>
-  namespaceAliases: string[]
+interface ImportedComponentBinding {
+  originalName: string
+  referenceIds: Set<string>
 }
 
-function collectImportedComponents(importStatements: SgNode<TSX, 'import_statement'>[]): ImportedComponents {
-  const localNames = new Map<string, string>()
-  const namespaceAliases: string[] = []
+interface ImportedComponents {
+  localBindings: Map<string, ImportedComponentBinding>
+  namespaceBindings: Map<string, Set<string>>
+}
+
+function getNodeId(node: SgNode<TSX>): string {
+  return String(node.id())
+}
+
+function collectReferenceIds(bindingNode: SgNode<TSX>, filename: string): Set<string> {
+  const referenceIds = new Set<string>()
+
+  for (const refGroup of bindingNode.references()) {
+    // Defend against `codemod@1.7.15`'s `.references()` returning cross-file
+    // references for file-scoped semantic analysis.
+    if (refGroup.root.filename() !== filename) {
+      continue
+    }
+
+    for (const refNode of refGroup.nodes) {
+      referenceIds.add(getNodeId(refNode))
+    }
+  }
+
+  return referenceIds
+}
+
+function collectImportedComponents(
+  importStatements: SgNode<TSX, 'import_statement'>[],
+  filename: string,
+): ImportedComponents {
+  const localBindings = new Map<string, ImportedComponentBinding>()
+  const namespaceBindings = new Map<string, Set<string>>()
 
   for (const imp of importStatements) {
     const nsImport = imp.find({ rule: { kind: 'namespace_import' } })
     if (nsImport) {
       const aliasNode = nsImport.find({ rule: { kind: 'identifier' } })
       if (aliasNode) {
-        namespaceAliases.push(aliasNode.text())
+        namespaceBindings.set(aliasNode.text(), collectReferenceIds(aliasNode, filename))
       }
       continue
     }
@@ -72,11 +102,14 @@ function collectImportedComponents(importStatements: SgNode<TSX, 'import_stateme
       }
 
       const localNameNode = maybeLocalNameNode ?? importedNameNode
-      localNames.set(localNameNode.text(), importedNameNode.text())
+      localBindings.set(localNameNode.text(), {
+        originalName: importedNameNode.text(),
+        referenceIds: collectReferenceIds(localNameNode, filename),
+      })
     }
   }
 
-  return { localNames, namespaceAliases }
+  return { localBindings, namespaceBindings }
 }
 
 function getOpeningElement(el: SgNode<TSX>): SgNode<TSX> | null {
@@ -96,24 +129,31 @@ function getComponentNameNode(opening: SgNode<TSX>): SgNode<TSX> | null {
 
 function getOriginalComponentName(
   nameNode: SgNode<TSX>,
-  localNames: Map<string, string>,
-  namespaceAliases: string[],
+  localBindings: Map<string, ImportedComponentBinding>,
+  namespaceBindings: Map<string, Set<string>>,
 ): string | null {
   if (nameNode.is('identifier')) {
-    return localNames.get(nameNode.text()) ?? null
+    const binding = localBindings.get(nameNode.text())
+    if (!binding || !binding.referenceIds.has(getNodeId(nameNode))) {
+      return null
+    }
+
+    return binding.originalName
   }
 
   if (nameNode.is('member_expression')) {
     const objNode = nameNode.child(0)
     const propNode = nameNode.find({ rule: { kind: 'property_identifier' } })
-    if (
-      objNode?.is('identifier') === true &&
-      namespaceAliases.includes(objNode.text()) &&
-      propNode !== null &&
-      TARGET_COMPONENTS.has(propNode.text())
-    ) {
-      return propNode.text()
+    if (!objNode?.is('identifier') || !propNode || !TARGET_COMPONENTS.has(propNode.text())) {
+      return null
     }
+
+    const namespaceReferenceIds = namespaceBindings.get(objNode.text())
+    if (!namespaceReferenceIds || !namespaceReferenceIds.has(getNodeId(objNode))) {
+      return null
+    }
+
+    return propNode.text()
   }
 
   return null
@@ -252,8 +292,8 @@ const transform: Codemod<TSX> = async (root) => {
     return null
   }
 
-  const { localNames, namespaceAliases } = collectImportedComponents(uiImports)
-  if (localNames.size === 0 && namespaceAliases.length === 0) {
+  const { localBindings, namespaceBindings } = collectImportedComponents(uiImports, root.filename())
+  if (localBindings.size === 0 && namespaceBindings.size === 0) {
     return null
   }
 
@@ -274,7 +314,7 @@ const transform: Codemod<TSX> = async (root) => {
       continue
     }
 
-    const originalName = getOriginalComponentName(nameNode, localNames, namespaceAliases)
+    const originalName = getOriginalComponentName(nameNode, localBindings, namespaceBindings)
     if (!originalName) {
       continue
     }
