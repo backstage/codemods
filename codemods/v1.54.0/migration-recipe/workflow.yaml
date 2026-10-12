@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+nodes:
+  - id: apply-recipe
+    name: 'Run every Backstage 1.54.0 codemod in order'
+    type: automatic
+    steps:
+      - name: 'Move Connections backend-only imports'
+        codemod:
+          source: '@backstage/move-connections-backend-imports'
+
+      - name: 'Move Connections URL lookups into query objects'
+        codemod:
+          source: '@backstage/migrate-connections-query'
+
+      - name: 'Rename RootConnectionAuth to ConfiguredConnectionAuth'
+        codemod:
+          source: '@backstage/rename-root-connection-auth'
+
+      - name: 'Migrate extension config schemas to Standard Schema values'
+        codemod:
+          source: '@backstage/migrate-extension-config-schema'
+
+      - name: 'Rename the OpenAPI verify command to validate'
+        codemod:
+          source: '@backstage/rename-openapi-validate-command'
