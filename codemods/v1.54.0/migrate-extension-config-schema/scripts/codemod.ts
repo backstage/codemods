@@ -97,6 +97,24 @@ function shadowed(root: Node): Set<string> {
   return names
 }
 
+function bindsName(pattern: Node, name: string): boolean {
+  if (pattern.is('identifier') || pattern.is('shorthand_property_identifier_pattern')) {
+    return pattern.text() === name
+  }
+  if (pattern.is('object_pattern') || pattern.is('array_pattern')) {
+    return pattern.children().some((child) => bindsName(child, name))
+  }
+  if (pattern.is('pair_pattern') || pattern.is('rest_pattern')) {
+    const value = pattern.children().at(-1)
+    return !!value && bindsName(value, name)
+  }
+  if (pattern.is('assignment_pattern') || pattern.is('object_assignment_pattern')) {
+    const [target] = pattern.children()
+    return !!target && bindsName(target, name)
+  }
+  return false
+}
+
 function unambiguousBlueprintBinding(root: Node, declaration: Node, name: string): boolean {
   for (const kind of [
     'variable_declarator',
@@ -110,8 +128,7 @@ function unambiguousBlueprintBinding(root: Node, declaration: Node, name: string
       }
       const binding =
         node.field('name') ?? node.field('pattern') ?? node.children().find((child) => child.is('identifier'))
-      // Patterns can bind the receiver through destructuring; skip if its name occurs anywhere in a pattern.
-      if (binding?.text().includes(name)) {
+      if (binding && bindsName(binding, name)) {
         return false
       }
     }
