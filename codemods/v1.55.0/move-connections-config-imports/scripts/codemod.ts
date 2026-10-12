@@ -7,7 +7,11 @@ const migrationMetric = useMetricAtom('move-connections-config-imports')
 const ROOT_SOURCE = '@backstage/connections'
 const CONFIG_SOURCE = '@backstage/connections/config'
 
-const MOVED_EXPORTS = new Set(['buildConnectionsFromConfig', 'ConfiguredConnection', 'ConfiguredConnectionAuth'])
+const MOVED_EXPORT_LIST = ['buildConnectionsFromConfig', 'ConfiguredConnection', 'ConfiguredConnectionAuth']
+const MOVED_EXPORTS = new Set(MOVED_EXPORT_LIST)
+
+const DYNAMIC_IMPORT_TODO =
+  "// TODO(backstage-codemod): Review dynamic import from '@backstage/connections' — move configuration exports to '@backstage/connections/config' when provenance is clear."
 
 function escapeRegex(str: string): string {
   return `^${str.replaceAll(/[.*+?^${}()|[\]\\/]/g, '\\$&')}$`
@@ -116,13 +120,224 @@ function buildExportStatement(specTexts: string[], source: string, isTypeOnly: b
   return `export ${typeKeyword}${namedSpecifiers} from '${source}';`
 }
 
+function withPreservedInlineComments(statement: SgNode<TSX>, replacement: string): string {
+  const comments = statement.findAll({ rule: { kind: 'comment' } }).map((c) => c.text())
+  if (comments.length === 0) {
+    return replacement
+  }
+
+  const missingComments = comments.filter((comment) => !replacement.includes(comment))
+  if (missingComments.length === 0) {
+    return replacement
+  }
+
+  return `${missingComments.join('\n')}\n${replacement}`
+}
+
+function collectLocalReferences(aliasNode: SgNode<TSX>, filename: string): SgNode<TSX>[] {
+  const refs: SgNode<TSX>[] = []
+
+  for (const refGroup of aliasNode.references()) {
+    if (refGroup.root.filename() !== filename) {
+      continue
+    }
+
+    for (const refNode of refGroup.nodes) {
+      if (refNode.id() === aliasNode.id()) {
+        continue
+      }
+      refs.push(refNode)
+    }
+  }
+
+  return refs
+}
+
+function classifyNamespaceUsage(refNode: SgNode<TSX>): { outcome: 'moved' | 'non-moved' | 'unknown'; symbol?: string } {
+  const parent = refNode.parent()
+  if (!parent) {
+    return { outcome: 'unknown' }
+  }
+
+  if (parent.kind() === 'member_expression') {
+    const objectNode = parent.field('object')
+    if (!objectNode || objectNode.id() !== refNode.id()) {
+      return { outcome: 'unknown' }
+    }
+
+    const nestedMember = parent.parent()
+    if (nestedMember?.kind() === 'member_expression') {
+      const nestedObject = nestedMember.field('object')
+      if (nestedObject && nestedObject.id() === parent.id()) {
+        return { outcome: 'unknown' }
+      }
+    }
+
+    const propertyNode = parent.field('property')
+    if (!propertyNode) {
+      return { outcome: 'unknown' }
+    }
+
+    const propertyName = propertyNode.text()
+    if (MOVED_EXPORTS.has(propertyName)) {
+      return { outcome: 'moved', symbol: propertyName }
+    }
+
+    if (propertyNode.is('property_identifier') || propertyNode.is('identifier')) {
+      return { outcome: 'non-moved', symbol: propertyName }
+    }
+
+    return { outcome: 'unknown' }
+  }
+
+  if (parent.kind() === 'nested_type_identifier') {
+    const segments = parent.children().filter((c) => c.is('identifier') || c.is('type_identifier'))
+
+    if (segments.length !== 2) {
+      return { outcome: 'unknown' }
+    }
+
+    const [namespaceNode, typeNode] = segments
+    if (!namespaceNode || !typeNode || namespaceNode.id() !== refNode.id()) {
+      return { outcome: 'unknown' }
+    }
+
+    const symbol = typeNode.text()
+    if (MOVED_EXPORTS.has(symbol)) {
+      return { outcome: 'moved', symbol }
+    }
+
+    return { outcome: 'non-moved', symbol }
+  }
+
+  return { outcome: 'unknown' }
+}
+
+function handleNamespaceImports(rootNode: SgNode<TSX>, edits: Edit[], filename: string, source: string): void {
+  const rootImports = findStatementsFrom(rootNode, 'import_statement', ROOT_SOURCE)
+
+  for (const statement of rootImports) {
+    const namespaceImport = statement.find({ rule: { kind: 'namespace_import' } })
+    if (!namespaceImport) {
+      continue
+    }
+
+    const aliasNode = namespaceImport.find({ rule: { kind: 'identifier' } })
+    if (!aliasNode) {
+      continue
+    }
+
+    const alias = aliasNode.text()
+    const defaultSpecifier = getImportDefaultSpecifier(statement)
+
+    const movedSymbols = new Set<string>()
+    const nonMovedSymbols = new Set<string>()
+    let unknownUsage = false
+
+    for (const refNode of collectLocalReferences(aliasNode, filename)) {
+      const usage = classifyNamespaceUsage(refNode)
+      if (usage.outcome === 'moved' && usage.symbol) {
+        movedSymbols.add(usage.symbol)
+      } else if (usage.outcome === 'non-moved' && usage.symbol) {
+        nonMovedSymbols.add(usage.symbol)
+      } else {
+        unknownUsage = true
+      }
+    }
+
+    const canMigrateSafely =
+      movedSymbols.size > 0 && nonMovedSymbols.size === 0 && !unknownUsage && defaultSpecifier === null
+
+    if (canMigrateSafely) {
+      const sourceFragment = statement.find({
+        rule: {
+          kind: 'string_fragment',
+          regex: escapeRegex(ROOT_SOURCE),
+        },
+      })
+
+      if (sourceFragment) {
+        edits.push(sourceFragment.replace(CONFIG_SOURCE))
+      }
+
+      for (const symbol of movedSymbols) {
+        migrationMetric.increment({
+          kind: 'namespace-import',
+          action: 'migrated',
+          alias,
+          symbol,
+        })
+      }
+
+      continue
+    }
+
+    const needsTodo = movedSymbols.size > 0 || unknownUsage
+    if (!needsTodo) {
+      continue
+    }
+
+    const reasons: string[] = []
+    if (defaultSpecifier) {
+      reasons.push('default-specifier')
+    }
+    if (nonMovedSymbols.size > 0) {
+      reasons.push('mixed-members')
+    }
+    if (unknownUsage) {
+      reasons.push('dynamic-or-ambiguous-usage')
+    }
+
+    const reasonSuffix = reasons.length > 0 ? ` (${reasons.join(', ')})` : ''
+    const todoComment = `// TODO(backstage-codemod): Review namespace import '${alias}' from '${ROOT_SOURCE}'${reasonSuffix}. Move configuration exports to '${CONFIG_SOURCE}' when provenance is clear.`
+
+    if (!source.includes(todoComment)) {
+      edits.push(statement.replace(`${statement.text()}\n${todoComment}`))
+      migrationMetric.increment({
+        kind: 'namespace-import',
+        action: 'todo',
+        alias,
+      })
+    }
+  }
+}
+
+function handleDynamicImports(rootNode: SgNode<TSX>, edits: Edit[], source: string): void {
+  if (source.includes(DYNAMIC_IMPORT_TODO)) {
+    return
+  }
+
+  const hasDynamicImport = /\bimport\s*\(\s*['"]@backstage\/connections['"]\s*\)/.test(source)
+  if (!hasDynamicImport) {
+    return
+  }
+
+  edits.push({
+    startPos: 0,
+    endPos: 0,
+    insertedText: `${DYNAMIC_IMPORT_TODO}\n`,
+  })
+
+  migrationMetric.increment({
+    kind: 'dynamic-import',
+    action: 'todo',
+  })
+}
+
 const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
+  const source = rootNode.text()
+  const filename = root.filename()
 
   const rootImports = findStatementsFrom(rootNode, 'import_statement', ROOT_SOURCE)
 
   for (const statement of rootImports) {
+    const namespaceImport = statement.find({ rule: { kind: 'namespace_import' } })
+    if (namespaceImport) {
+      continue
+    }
+
     const specifiers = extractSpecifiers(statement, 'import_specifier')
 
     if (specifiers.length === 0) {
@@ -157,7 +372,7 @@ const transform: Codemod<TSX> = async (root) => {
 
     const replacement = remainingImport ? `${remainingImport}\n${movedImport}` : movedImport
 
-    edits.push(statement.replace(replacement))
+    edits.push(statement.replace(withPreservedInlineComments(statement, replacement)))
 
     for (const specifier of moved) {
       migrationMetric.increment({
@@ -201,7 +416,7 @@ const transform: Codemod<TSX> = async (root) => {
 
     const replacement = remainingExport ? `${remainingExport}\n${movedExport}` : movedExport
 
-    edits.push(statement.replace(replacement))
+    edits.push(statement.replace(withPreservedInlineComments(statement, replacement)))
 
     for (const specifier of moved) {
       migrationMetric.increment({
@@ -210,6 +425,9 @@ const transform: Codemod<TSX> = async (root) => {
       })
     }
   }
+
+  handleNamespaceImports(rootNode, edits, filename, source)
+  handleDynamicImports(rootNode, edits, source)
 
   if (edits.length === 0) {
     return null
