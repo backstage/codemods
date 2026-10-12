@@ -1,0 +1,19 @@
+{
+  "remove-kubernetes-implicit-children": [
+    {
+      "cardinality": {
+        "action": "nested-children-removed",
+        "component": "PodLogs"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "todo-added",
+        "component": "PodLogs",
+        "reason": "unknown component initialization"
+      },
+      "count": 1
+    }
+  ]
+}

@@ -7,6 +7,7 @@ import { useMetricAtom } from 'codemod:metrics'
 const KUBERNETES_REACT = '@backstage/plugin-kubernetes-react'
 const REACT = 'react'
 const TARGET_COMPONENTS = new Set(['FixDialog', 'ContainerCard', 'PodLogs'])
+const ASCII_LOWERCASE_JSX_TAG_PREFIX = /^[a-z]/
 const TODO_COMMENT =
   '// TODO(backstage-codemod): Review effectful Kubernetes component children manually before removal.'
 const TSX_LANG = 'tsx'
@@ -61,7 +62,7 @@ function findImportStatementsFrom(rootNode: SgNode<TSX, 'program'>, source: stri
         },
       },
     },
-  }) as SgNode<TSX, 'import_statement'>[]
+  })
 }
 
 function collectImportedComponents(importStatements: SgNode<TSX, 'import_statement'>[]): ImportedComponents {
@@ -385,14 +386,12 @@ function inferExpressionReason(node: SgNode<TSX>): string {
 }
 
 function isInertJsxTagName(nameNode: SgNode<TSX>, context: InertAnalysisContext): boolean {
-  if (nameNode.is('identifier')) {
-    const name = nameNode.text()
-    const first = name.charAt(0)
-    if (first.length > 0 && first === first.toLowerCase()) {
-      return true
-    }
+  if (!nameNode.is('member_expression') && ASCII_LOWERCASE_JSX_TAG_PREFIX.test(nameNode.text())) {
+    return true
+  }
 
-    return isProvenBindingReference(nameNode, name, context.reactFragmentBindings)
+  if (nameNode.is('identifier')) {
+    return isProvenBindingReference(nameNode, nameNode.text(), context.reactFragmentBindings)
   }
 
   if (nameNode.is('member_expression')) {
@@ -729,7 +728,7 @@ function hasUsageOutsideImports(
   return false
 }
 
-function getImportSource(statement: SgNode<TSX, 'import_statement'>): string | null {
+function getImportSource(statement: SgNode<TSX>): string | null {
   const source = statement.field('source')
   if (!source) {
     return null
@@ -751,7 +750,7 @@ function findUnusedCandidateImportRemoval(
     rule: {
       kind: 'import_statement',
     },
-  }) as SgNode<TSX, 'import_statement'>[]
+  })
 
   for (const statement of importStatements) {
     const source = getImportSource(statement)
