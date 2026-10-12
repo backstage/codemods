@@ -4,14 +4,14 @@ One-shot migration recipe for upgrading a Backstage app to 1.55.0. Chains every 
 
 ## What it runs
 
-| #   | Registry package                                                                                                                              | Scope                                               |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| 1   | [`@backstage/rename-connections-public-api`](https://go.codemod.com/registry?q=backstage+rename-connections-public-api)                       | Import-bound symbol renames and collisions          |
-| 2   | [`@backstage/move-connections-config-imports`](https://go.codemod.com/registry?q=backstage+move-connections-config-imports)                   | `@backstage/connections/config` subpath move        |
-| 3   | [`@backstage/remove-relations-compatibility-config`](https://go.codemod.com/registry?q=backstage+remove-relations-compatibility-config)       | Removed catalog compatibility config key            |
-| 4   | [`@backstage/remove-bui-anchor-render-props`](https://go.codemod.com/registry?q=backstage+remove-bui-anchor-render-props)                     | Removed BUI anchor `render` prop                    |
-| 5   | [`@backstage/remove-kubernetes-implicit-children`](https://go.codemod.com/registry?q=backstage+remove-kubernetes-implicit-children)           | Removed never-rendered Kubernetes children          |
-| 6   | [`@backstage/remove-ignored-github-repo-create-inputs`](https://go.codemod.com/registry?q=backstage+remove-ignored-github-repo-create-inputs) | Removed scaffolder GitHub repo-create action inputs |
+| #   | Registry package                                                                                                                        | Scope                                               |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| 1   | [`@backstage/rename-connections-public-api`](https://go.codemod.com/registry?q=backstage+rename-connections-public-api)                 | Import-bound symbol renames and collisions          |
+| 2   | [`@backstage/move-connections-config-imports`](https://go.codemod.com/registry?q=backstage+move-connections-config-imports)             | `@backstage/connections/config` subpath move        |
+| 3   | [`@backstage/remove-relations-compatibility-config`](https://go.codemod.com/registry?q=backstage+remove-relations-compatibility-config) | Removed catalog compatibility config key            |
+| 4   | [`@backstage/remove-bui-anchor-render-props`](https://go.codemod.com/registry?q=backstage+remove-bui-anchor-render-props)               | Removed BUI anchor `render` prop                    |
+| 5   | [`@backstage/remove-kubernetes-implicit-children`](https://go.codemod.com/registry?q=backstage+remove-kubernetes-implicit-children)     | Removed never-rendered Kubernetes children          |
+| 6   | [`@backstage/remove-ignored-repo-create-inputs`](https://go.codemod.com/registry?q=backstage+remove-ignored-repo-create-inputs)         | Removed scaffolder GitHub repo-create action inputs |
 
 ## Usage
 

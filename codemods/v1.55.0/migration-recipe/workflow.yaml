@@ -34,4 +34,4 @@ nodes:
       # --- BREAKING: removed scaffolder GitHub action inputs
       - name: 'Remove ignored GitHub repo create action inputs'
         codemod:
-          source: '@backstage/remove-ignored-github-repo-create-inputs'
+          source: '@backstage/remove-ignored-repo-create-inputs'
