@@ -13,8 +13,20 @@ function keyText(pair: YamlNode): string | null {
   if (text === undefined) {
     return null
   }
-  if ((text.startsWith("'") && text.endsWith("'")) || (text.startsWith('"') && text.endsWith('"'))) {
-    return text.slice(1, -1)
+  if (text.startsWith('"') && text.endsWith('"')) {
+    try {
+      const jsonText = text
+        .replaceAll(/\\x([0-9a-fA-F]{2})/g, '\\u00$1')
+        .replaceAll(/\\U([0-9a-fA-F]{8})/g, (_, hex: string) =>
+          JSON.stringify(String.fromCodePoint(Number.parseInt(hex, 16))).slice(1, -1),
+        )
+      return JSON.parse(jsonText) as string
+    } catch {
+      return null
+    }
+  }
+  if (text.startsWith("'") && text.endsWith("'")) {
+    return text.slice(1, -1).replaceAll("''", "'")
   }
   return text
 }
@@ -52,7 +64,8 @@ const transform: Codemod<YAML> = async (root) => {
           continue
         }
         if (!hasStableKey) {
-          edits.push(key.replace(key.text().replace(OLD_KEY, NEW_KEY)))
+          const [quote] = key.text()
+          edits.push(key.replace(quote === '"' || quote === "'" ? `${quote}${NEW_KEY}${quote}` : NEW_KEY))
           continue
         }
 
