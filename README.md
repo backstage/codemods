@@ -10,6 +10,12 @@ See the [Codemod docs](https://docs.codemod.com) for more on building and runnin
 
 <!-- CODEMODS_START -->
 
+### v1.55.0
+
+| Codemod                                                                           | Description                       |
+| --------------------------------------------------------------------------------- | --------------------------------- |
+| [rename-connections-public-api](./codemods/v1.55.0/rename-connections-public-api) | Rename Connections public symbols |
+
 ### v1.52.0
 
 Run the [`migration-recipe`](./codemods/v1.52.0/migration-recipe) to apply every codemod below in one pass, or run any individual codemod on its own.
@@ -21,22 +27,6 @@ Run the [`migration-recipe`](./codemods/v1.52.0/migration-recipe) to apply every
 | [migration-recipe](./codemods/v1.52.0/migration-recipe)                                   | Migration recipe that runs every @backstage v1.52.0 codemod from the registry in a safe order. |
 | [remove-stitching-strategy-mode](./codemods/v1.52.0/remove-stitching-strategy-mode)       | Remove deprecated catalog.stitchingStrategy.mode from app-config                               |
 | [rename-bui-css-tokens-v1-52](./codemods/v1.52.0/rename-bui-css-tokens-v1-52)             | Rename deprecated BUI semantic color tokens                                                    |
-
-### v1.51.0
-
-Run the [`migration-recipe`](./codemods/v1.51.0/migration-recipe) to apply every codemod below in one pass, or run any individual codemod on its own.
-
-| Codemod                                                                                             | Description                                                                                            |
-| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| [experimental-form-decorators-to-stable](./codemods/v1.51.0/experimental-form-decorators-to-stable) | Rename EXPERIMENTAL_formDecorators to formDecorators in Backstage template specs for 1.51.0            |
-| [loading-to-is-pending](./codemods/v1.51.0/loading-to-is-pending)                                   | Rename deprecated loading prop to isPending in @backstage/ui and data-loading to data-ispending in CSS |
-| [migrate-nav-item-to-page](./codemods/v1.51.0/migrate-nav-item-to-page)                             | Migrate NavItemBlueprint to PageBlueprint title/icon params for Backstage 1.51.0                       |
-| [migrate-policy-query-user](./codemods/v1.51.0/migrate-policy-query-user)                           | Migrate PolicyQueryUser off removed token, expiresInSeconds, and identity fields                       |
-| [migration-recipe](./codemods/v1.51.0/migration-recipe)                                             | Migration recipe that runs every @backstage v1.51.0 codemod from the registry in a safe order.         |
-| [portable-schema-method-call](./codemods/v1.51.0/portable-schema-method-call)                       | Call PortableSchema.schema() as a method instead of property access                                    |
-| [remove-immediate-stitching-mode](./codemods/v1.51.0/remove-immediate-stitching-mode)               | Migrate catalog.stitchingStrategy.mode from immediate to deferred                                      |
-| [rename-header-main-class](./codemods/v1.51.0/rename-header-main-class)                             | Rename removed .bui-Header to .bui-HeaderContent and classNames.root to classNames.content             |
-| [render-test-app-nav-migration](./codemods/v1.51.0/render-test-app-nav-migration)                   | Migrate renderInTestApp nav-item tests to renderTestApp for Backstage 1.51.0                           |
 
 Older versions are available in the [`codemods/`](./codemods) directory.
 

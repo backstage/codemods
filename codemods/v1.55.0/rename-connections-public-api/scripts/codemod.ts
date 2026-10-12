@@ -1,4 +1,4 @@
-import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
+import type { Codemod, Edit, GetSelector, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
 
@@ -22,6 +22,8 @@ const CONNECTION_AUTH_MATCH_TODO =
   '/* TODO(backstage-codemod): ConnectionAuthMatch was removed in @backstage/connections@0.4.0; inline as { plugins: string[] } manually. */'
 const CONNECTION_AUTH_METHOD_KEY_TODO =
   '/* TODO(backstage-codemod): ConnectionAuthMethodKey was removed in @backstage/connections@0.4.0; inline or replace this usage manually. */'
+const LOCAL_COLLISION_TODO =
+  '/* TODO(backstage-codemod): local-name collision while renaming @backstage/connections symbols; resolve this specifier manually. */'
 
 const REMOVED_CONNECTION_TYPE_MEMBER_TODOS: Record<string, string> = {
   matchAuth:
@@ -33,6 +35,16 @@ const REMOVED_CONNECTION_TYPE_MEMBER_TODOS: Record<string, string> = {
 function escapeRegex(str: string): string {
   return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
+
+export const getSelector: GetSelector<TSX> = () => ({
+  rule: {
+    kind: 'string_fragment',
+    regex: `^${escapeRegex(CONNECTIONS_SOURCE)}$`,
+    inside: {
+      any: [{ kind: 'import_statement' }, { kind: 'export_statement' }],
+    },
+  },
+})
 
 function findStatementsFrom<K extends 'import_statement' | 'export_statement'>(
   rootNode: SgNode<TSX>,
@@ -131,8 +143,31 @@ function collectBodyReferences(bindingNode: SgNode<TSX>, filename: string): SgNo
   return refs
 }
 
+function isUnsafeConnectionAuthMatchHeritageRef(refNode: SgNode<TSX>): boolean {
+  const parent = refNode.parent()
+  if (!parent) {
+    return false
+  }
+
+  if (parent.kind() === 'extends_type_clause' || parent.kind() === 'implements_clause') {
+    return true
+  }
+
+  if (parent.kind() !== 'generic_type') {
+    return false
+  }
+
+  const grandparent = parent.parent()
+  if (!grandparent || (grandparent.kind() !== 'extends_type_clause' && grandparent.kind() !== 'implements_clause')) {
+    return false
+  }
+
+  const [headNode] = parent.children()
+  return headNode?.id() === refNode.id()
+}
+
 function isSafeConnectionAuthMatchTypeRef(refNode: SgNode<TSX>): boolean {
-  return refNode.kind() === 'type_identifier'
+  return refNode.kind() === 'type_identifier' && !isUnsafeConnectionAuthMatchHeritageRef(refNode)
 }
 
 function addTodoToSpecifier(specText: string, todo: string): string {
@@ -142,32 +177,122 @@ function addTodoToSpecifier(specText: string, todo: string): string {
   return `${specText} ${todo}`
 }
 
+function getTypeAnnotatedObjectLiteral(refNode: SgNode<TSX>): SgNode<TSX> | null {
+  const typeAnnotation = refNode.ancestors().find((a) => a.kind() === 'type_annotation')
+  if (!typeAnnotation) {
+    return null
+  }
+
+  const owner = typeAnnotation.parent()
+  if (owner?.kind() !== 'variable_declarator') {
+    return null
+  }
+
+  const valueNode = owner.field('value')
+  if (valueNode?.kind() !== 'object') {
+    return null
+  }
+
+  return valueNode
+}
+
+function collectConnectionTypeDefinitionObjectLiterals(bindingNode: SgNode<TSX>, filename: string): SgNode<TSX>[] {
+  const objectNodes: SgNode<TSX>[] = []
+  const seen = new Set<number>()
+
+  for (const refNode of collectBodyReferences(bindingNode, filename)) {
+    const objectNode = getTypeAnnotatedObjectLiteral(refNode)
+    if (!objectNode || seen.has(objectNode.id())) {
+      continue
+    }
+    seen.add(objectNode.id())
+    objectNodes.push(objectNode)
+  }
+
+  return objectNodes
+}
+
+function shouldMapConnectionTypeImport(
+  statementImportedNames: Set<string>,
+  hasDefinitionObjectLiteral: boolean,
+): boolean {
+  if (statementImportedNames.has('ConnectionTypeKey')) {
+    return true
+  }
+
+  if (statementImportedNames.has('ConnectionTypeDefinition')) {
+    return false
+  }
+
+  return hasDefinitionObjectLiteral
+}
+
+function shouldMapConnectionTypeReexport(statementImportedNames: Set<string>): boolean {
+  if (statementImportedNames.has('ConnectionTypeKey')) {
+    return true
+  }
+
+  if (statementImportedNames.has('ConnectionTypeDefinition')) {
+    return false
+  }
+
+  return false
+}
+
 interface BindingRename {
   bindingNode: SgNode<TSX>
   oldName: string
   newName: string
 }
 
-function getMappedName(importedName: string, statementImportedNames: Set<string>): string | undefined {
-  const mapped = RENAME_MAP[importedName]
-  if (!mapped) {
-    return undefined
+function collectDeclaredLocalNames(rootNode: SgNode<TSX, 'program'>): Set<string> {
+  const names = new Set<string>()
+  const declarationNodes = rootNode.findAll({
+    rule: {
+      any: [
+        { kind: 'type_alias_declaration' },
+        { kind: 'interface_declaration' },
+        { kind: 'class_declaration' },
+        { kind: 'function_declaration' },
+        { kind: 'enum_declaration' },
+        { kind: 'variable_declarator' },
+      ],
+    },
+  })
+
+  for (const declarationNode of declarationNodes) {
+    let nameNode: SgNode<TSX> | null = null
+
+    if (declarationNode.kind() === 'variable_declarator') {
+      const fieldNameNode = declarationNode.field('name')
+      if (fieldNameNode && (fieldNameNode.kind() === 'identifier' || fieldNameNode.kind() === 'type_identifier')) {
+        nameNode = fieldNameNode
+      }
+    }
+
+    nameNode ??=
+      declarationNode.children().find((child) => child.kind() === 'identifier' || child.kind() === 'type_identifier') ??
+      null
+
+    if (!nameNode) {
+      continue
+    }
+
+    names.add(nameNode.text())
   }
 
-  if (importedName !== 'ConnectionType') {
-    return mapped
-  }
-
-  if (statementImportedNames.has('ConnectionTypeDefinition') && !statementImportedNames.has('ConnectionTypeKey')) {
-    return undefined
-  }
-
-  return mapped
+  return names
 }
 
-function processImports(rootNode: SgNode<TSX, 'program'>, edits: Edit[], filename: string): boolean {
-  let shouldAnnotateRemovedMembers = false
+function processImports(
+  rootNode: SgNode<TSX, 'program'>,
+  edits: Edit[],
+  filename: string,
+  declaredLocalNames: Set<string>,
+): SgNode<TSX>[] {
   const importStatements = findStatementsFrom(rootNode, 'import_statement', CONNECTIONS_SOURCE)
+  const connectionTypeDefinitionObjects: SgNode<TSX>[] = []
+  const seenConnectionTypeObjectIds = new Set<number>()
 
   for (const imp of importStatements) {
     const source = imp.find({ rule: { kind: 'string_fragment' } })?.text()
@@ -180,29 +305,45 @@ function processImports(rootNode: SgNode<TSX, 'program'>, edits: Edit[], filenam
       continue
     }
 
+    const statementImportedNames = new Set(specifiers.map((spec) => spec.importedName))
+    const mappedNameBySpecifierId = new Map<number, string | undefined>()
+
+    for (const spec of specifiers) {
+      const mappedName = RENAME_MAP[spec.importedName]
+      if (spec.importedName !== 'ConnectionType') {
+        mappedNameBySpecifierId.set(spec.specNode.id(), mappedName)
+        continue
+      }
+
+      const definitionObjects = collectConnectionTypeDefinitionObjectLiterals(spec.localNameNode, filename)
+      const shouldMap = shouldMapConnectionTypeImport(statementImportedNames, definitionObjects.length > 0)
+      mappedNameBySpecifierId.set(spec.specNode.id(), shouldMap ? mappedName : undefined)
+
+      if (!shouldMap) {
+        continue
+      }
+
+      for (const objectNode of definitionObjects) {
+        if (seenConnectionTypeObjectIds.has(objectNode.id())) {
+          continue
+        }
+        seenConnectionTypeObjectIds.add(objectNode.id())
+        connectionTypeDefinitionObjects.push(objectNode)
+      }
+    }
+
     const pendingRenames: BindingRename[] = []
     const outputById = new Map<number, string | null>()
     let statementChanged = false
 
-    const statementImportedNames = new Set(specifiers.map((spec) => spec.importedName))
-
-    const predictedLocalCounts = new Map<string, number>()
-    const predictedImportedCounts = new Map<string, number>()
+    const occupiedLocalNames = new Set<string>(declaredLocalNames)
 
     for (const spec of specifiers) {
-      let predictedImported = spec.importedName
-      let predictedLocal = spec.localName
-
-      const mappedName = getMappedName(spec.importedName, statementImportedNames)
-      if (mappedName) {
-        predictedImported = mappedName
-        if (spec.localName === spec.importedName) {
-          predictedLocal = mappedName
-        }
+      const mappedName = mappedNameBySpecifierId.get(spec.specNode.id())
+      const isAutoRenameCandidate = Boolean(mappedName && spec.localName === spec.importedName)
+      if (!isAutoRenameCandidate) {
+        occupiedLocalNames.add(spec.localName)
       }
-
-      predictedLocalCounts.set(predictedLocal, (predictedLocalCounts.get(predictedLocal) ?? 0) + 1)
-      predictedImportedCounts.set(predictedImported, (predictedImportedCounts.get(predictedImported) ?? 0) + 1)
     }
 
     const canRewriteWholeStatement = isPureNamedStatement(imp, 'import')
@@ -210,12 +351,8 @@ function processImports(rootNode: SgNode<TSX, 'program'>, edits: Edit[], filenam
     for (const spec of specifiers) {
       outputById.set(spec.specNode.id(), spec.specText)
 
-      const mappedName = getMappedName(spec.importedName, statementImportedNames)
+      const mappedName = mappedNameBySpecifierId.get(spec.specNode.id())
       if (mappedName) {
-        if (spec.importedName === 'ConnectionType') {
-          shouldAnnotateRemovedMembers = true
-        }
-
         if (spec.localName !== spec.importedName) {
           const nextText = `${mappedName} as ${spec.localName}`
           if (nextText !== spec.specText) {
@@ -226,23 +363,35 @@ function processImports(rootNode: SgNode<TSX, 'program'>, edits: Edit[], filenam
           continue
         }
 
-        const localCollision = (predictedLocalCounts.get(mappedName) ?? 0) > 1
-        const importedCollision = (predictedImportedCounts.get(mappedName) ?? 0) > 1
+        const preferredLocal = mappedName
+        const fallbackLocal = spec.localName
 
-        if (localCollision || importedCollision) {
-          const nextText = `${mappedName} as ${spec.localName}`
-          if (nextText !== spec.specText) {
-            outputById.set(spec.specNode.id(), nextText)
-            statementChanged = true
-            migrationMetric.increment({ action: 'collision-aliased', from: spec.importedName, to: mappedName })
-          }
+        if (!occupiedLocalNames.has(preferredLocal)) {
+          outputById.set(spec.specNode.id(), mappedName)
+          statementChanged = true
+          occupiedLocalNames.add(preferredLocal)
+          pendingRenames.push({ bindingNode: spec.localNameNode, oldName: spec.localName, newName: mappedName })
+          migrationMetric.increment({ action: 'import-renamed', from: spec.importedName, to: mappedName })
           continue
         }
 
-        outputById.set(spec.specNode.id(), mappedName)
-        statementChanged = true
-        pendingRenames.push({ bindingNode: spec.localNameNode, oldName: spec.localName, newName: mappedName })
-        migrationMetric.increment({ action: 'import-renamed', from: spec.importedName, to: mappedName })
+        if (!occupiedLocalNames.has(fallbackLocal)) {
+          const nextText = `${mappedName} as ${fallbackLocal}`
+          if (nextText !== spec.specText) {
+            outputById.set(spec.specNode.id(), nextText)
+            statementChanged = true
+          }
+          occupiedLocalNames.add(fallbackLocal)
+          migrationMetric.increment({ action: 'collision-aliased', from: spec.importedName, to: mappedName })
+          continue
+        }
+
+        const nextText = addTodoToSpecifier(spec.specText, LOCAL_COLLISION_TODO)
+        if (nextText !== spec.specText) {
+          outputById.set(spec.specNode.id(), nextText)
+          statementChanged = true
+        }
+        migrationMetric.increment({ action: 'todo-added', name: spec.importedName, reason: 'local-collision' })
         continue
       }
 
@@ -321,7 +470,7 @@ function processImports(rootNode: SgNode<TSX, 'program'>, edits: Edit[], filenam
     }
   }
 
-  return shouldAnnotateRemovedMembers
+  return connectionTypeDefinitionObjects
 }
 
 function processReexports(rootNode: SgNode<TSX, 'program'>, edits: Edit[]): void {
@@ -338,23 +487,38 @@ function processReexports(rootNode: SgNode<TSX, 'program'>, edits: Edit[]): void
       continue
     }
 
+    const statementImportedNames = new Set(specifiers.map((spec) => spec.importedName))
+    const mappedNameBySpecifierId = new Map<number, string | undefined>()
+
+    for (const spec of specifiers) {
+      if (spec.importedName !== 'ConnectionType') {
+        mappedNameBySpecifierId.set(spec.specNode.id(), RENAME_MAP[spec.importedName])
+        continue
+      }
+
+      mappedNameBySpecifierId.set(
+        spec.specNode.id(),
+        shouldMapConnectionTypeReexport(statementImportedNames) ? RENAME_MAP.ConnectionType : undefined,
+      )
+    }
+
     const outputById = new Map<number, string>()
     let statementChanged = false
 
-    const statementImportedNames = new Set(specifiers.map((spec) => spec.importedName))
-
-    const predictedExportedCounts = new Map<string, number>()
+    const occupiedExportedNames = new Set<string>()
 
     for (const spec of specifiers) {
-      const mappedName = getMappedName(spec.importedName, statementImportedNames)
-      const predictedExported = mappedName && spec.localName === spec.importedName ? mappedName : spec.localName
-      predictedExportedCounts.set(predictedExported, (predictedExportedCounts.get(predictedExported) ?? 0) + 1)
+      const mappedName = mappedNameBySpecifierId.get(spec.specNode.id())
+      const isAutoRenameCandidate = Boolean(mappedName && spec.localName === spec.importedName)
+      if (!isAutoRenameCandidate) {
+        occupiedExportedNames.add(spec.localName)
+      }
     }
 
     for (const spec of specifiers) {
       outputById.set(spec.specNode.id(), spec.specText)
 
-      const mappedName = getMappedName(spec.importedName, statementImportedNames)
+      const mappedName = mappedNameBySpecifierId.get(spec.specNode.id())
       if (mappedName) {
         if (spec.localName !== spec.importedName) {
           const nextText = `${mappedName} as ${spec.localName}`
@@ -366,22 +530,34 @@ function processReexports(rootNode: SgNode<TSX, 'program'>, edits: Edit[]): void
           continue
         }
 
-        const exportedCollision = (predictedExportedCounts.get(mappedName) ?? 0) > 1
-        if (exportedCollision) {
-          const nextText = `${mappedName} as ${spec.localName}`
+        const preferredExportName = mappedName
+        const fallbackExportName = spec.localName
+
+        if (!occupiedExportedNames.has(preferredExportName)) {
+          outputById.set(spec.specNode.id(), mappedName)
+          statementChanged = true
+          occupiedExportedNames.add(preferredExportName)
+          migrationMetric.increment({ action: 'reexport-renamed', from: spec.importedName, to: mappedName })
+          continue
+        }
+
+        if (!occupiedExportedNames.has(fallbackExportName)) {
+          const nextText = `${mappedName} as ${fallbackExportName}`
           if (nextText !== spec.specText) {
             outputById.set(spec.specNode.id(), nextText)
             statementChanged = true
           }
+          occupiedExportedNames.add(fallbackExportName)
           migrationMetric.increment({ action: 'collision-aliased', from: spec.importedName, to: mappedName })
           continue
         }
 
-        if (mappedName !== spec.specText) {
-          outputById.set(spec.specNode.id(), mappedName)
+        const nextText = addTodoToSpecifier(spec.specText, LOCAL_COLLISION_TODO)
+        if (nextText !== spec.specText) {
+          outputById.set(spec.specNode.id(), nextText)
           statementChanged = true
         }
-        migrationMetric.increment({ action: 'reexport-renamed', from: spec.importedName, to: mappedName })
+        migrationMetric.increment({ action: 'todo-added', name: spec.importedName, reason: 'local-collision' })
         continue
       }
 
@@ -431,42 +607,52 @@ function processReexports(rootNode: SgNode<TSX, 'program'>, edits: Edit[]): void
   }
 }
 
-function annotateRemovedConnectionTypeMembers(rootNode: SgNode<TSX, 'program'>, edits: Edit[]): void {
-  const memberNodes = rootNode.findAll({
-    rule: {
-      kind: 'property_identifier',
-      regex: '^(matchAuth|validate)$',
-    },
-  })
+function annotateRemovedConnectionTypeMembers(edits: Edit[], connectionTypeDefinitionObjects: SgNode<TSX>[]): void {
+  const seenPropertyIds = new Set<number>()
 
-  for (const memberNode of memberNodes) {
-    const memberName = memberNode.text()
-    const todo = REMOVED_CONNECTION_TYPE_MEMBER_TODOS[memberName]
-    if (!todo) {
-      continue
+  for (const objectNode of connectionTypeDefinitionObjects) {
+    for (const memberNode of objectNode.findAll({
+      rule: { kind: 'property_identifier', regex: '^(matchAuth|validate)$' },
+    })) {
+      const propertyParent = memberNode.parent()
+      if (!propertyParent || propertyParent.parent()?.id() !== objectNode.id()) {
+        continue
+      }
+
+      if (seenPropertyIds.has(memberNode.id())) {
+        continue
+      }
+      seenPropertyIds.add(memberNode.id())
+
+      const memberName = memberNode.text()
+      const todo = REMOVED_CONNECTION_TYPE_MEMBER_TODOS[memberName]
+      if (!todo) {
+        continue
+      }
+
+      if (propertyParent.text().includes('TODO(backstage-codemod):')) {
+        continue
+      }
+
+      edits.push(memberNode.replace(`${memberName} ${todo}`))
+      migrationMetric.increment({ action: 'todo-added', name: memberName, reason: 'removed-connection-type-member' })
     }
-
-    const parentText = memberNode.parent()?.text() ?? ''
-    if (parentText.includes('TODO(backstage-codemod):')) {
-      continue
-    }
-
-    edits.push(memberNode.replace(`${memberName} ${todo}`))
-    migrationMetric.increment({ action: 'todo-added', name: memberName, reason: 'removed-connection-type-member' })
   }
 }
 
 const transform: Codemod<TSX> = async (root) => {
+  if (!root.source().includes(CONNECTIONS_SOURCE)) {
+    return null
+  }
+
   const rootNode = root.root()
   const edits: Edit[] = []
 
   const filename = root.filename()
-  const shouldAnnotateRemovedMembers = processImports(rootNode, edits, filename)
+  const declaredLocalNames = collectDeclaredLocalNames(rootNode)
+  const connectionTypeDefinitionObjects = processImports(rootNode, edits, filename, declaredLocalNames)
   processReexports(rootNode, edits)
-
-  if (shouldAnnotateRemovedMembers) {
-    annotateRemovedConnectionTypeMembers(rootNode, edits)
-  }
+  annotateRemovedConnectionTypeMembers(edits, connectionTypeDefinitionObjects)
 
   const result = await Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
   return result
