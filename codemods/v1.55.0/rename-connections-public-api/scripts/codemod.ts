@@ -303,6 +303,64 @@ function collectImportLocalNames(statement: SgNode<TSX, 'import_statement'>): Se
   return localNames
 }
 
+function isTopLevelVariableDeclarator(declarator: SgNode<TSX, 'variable_declarator'>): boolean {
+  let declarationNode: SgNode<TSX> | null = declarator.parent()
+  while (declarationNode?.kind() === 'variable_declaration') {
+    declarationNode = declarationNode.parent()
+  }
+
+  if (!declarationNode) {
+    return false
+  }
+
+  let statementNode = declarationNode.parent()
+  if (statementNode?.kind() === 'export_statement') {
+    statementNode = statementNode.parent()
+  }
+
+  return statementNode?.kind() === 'program'
+}
+
+function collectBindingNamesFromPattern(patternNode: SgNode<TSX>, names: Set<string>): void {
+  const kind = patternNode.kind()
+
+  if (kind === 'identifier' || kind === 'type_identifier' || kind === 'shorthand_property_identifier_pattern') {
+    names.add(patternNode.text())
+    return
+  }
+
+  if (kind === 'pair_pattern') {
+    const valueNode = patternNode.field('value')
+    if (valueNode) {
+      collectBindingNamesFromPattern(valueNode, names)
+    }
+    return
+  }
+
+  if (kind === 'assignment_pattern') {
+    const leftNode = patternNode.field('left')
+    if (leftNode) {
+      collectBindingNamesFromPattern(leftNode, names)
+      return
+    }
+  }
+
+  if (kind === 'rest_pattern') {
+    const argumentNode = patternNode.field('argument')
+    if (argumentNode) {
+      collectBindingNamesFromPattern(argumentNode, names)
+      return
+    }
+  }
+
+  for (const child of patternNode.children()) {
+    if (!child.isNamed()) {
+      continue
+    }
+    collectBindingNamesFromPattern(child, names)
+  }
+}
+
 function collectDeclaredLocalNames(rootNode: SgNode<TSX, 'program'>): Set<string> {
   const names = new Set<string>()
   const declarationNodes = rootNode.findAll({
@@ -319,16 +377,24 @@ function collectDeclaredLocalNames(rootNode: SgNode<TSX, 'program'>): Set<string
   })
 
   for (const declarationNode of declarationNodes) {
-    let nameNode: SgNode<TSX> | null = null
-
     if (declarationNode.kind() === 'variable_declarator') {
       const fieldNameNode = declarationNode.field('name')
-      if (fieldNameNode && (fieldNameNode.kind() === 'identifier' || fieldNameNode.kind() === 'type_identifier')) {
-        nameNode = fieldNameNode
+      if (!fieldNameNode) {
+        continue
       }
+
+      if (fieldNameNode.kind() === 'identifier' || fieldNameNode.kind() === 'type_identifier') {
+        names.add(fieldNameNode.text())
+        continue
+      }
+
+      if (isTopLevelVariableDeclarator(declarationNode as SgNode<TSX, 'variable_declarator'>)) {
+        collectBindingNamesFromPattern(fieldNameNode, names)
+      }
+      continue
     }
 
-    nameNode ??=
+    const nameNode =
       declarationNode.children().find((child) => child.kind() === 'identifier' || child.kind() === 'type_identifier') ??
       null
 
