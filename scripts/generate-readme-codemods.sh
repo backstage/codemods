@@ -10,6 +10,10 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# Yarn on Windows gives Bash a Windows-style cwd; awk needs a POSIX path.
+case "$REPO_ROOT" in
+  [A-Za-z]:*) REPO_ROOT="$(cygpath -u "$REPO_ROOT")" ;;
+esac
 README="$REPO_ROOT/README.md"
 CODEMODS_DIR="$REPO_ROOT/codemods"
 

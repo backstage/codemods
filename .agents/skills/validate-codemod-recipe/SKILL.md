@@ -113,7 +113,7 @@ The codemod modifies code it should not touch. Root causes:
   consider a param like `skipWorkspaceMembers` to let users choose.
 - **Workflow glob paths shift with `--target`**: A workflow that excludes
   `packages/**/package.json` works with `--target .` but not `--target
-packages`, because `include`/`exclude` resolve relative to the target
+  packages`, because `include`/`exclude` resolve relative to the target
   root. Transforms that should only hit the repo root need guards in the
   transform code itself, not just workflow globs.
 

@@ -7,6 +7,6 @@
     "test": "bash scripts/validate-workflows.sh"
   },
   "devDependencies": {
-    "codemod": "1.12.13"
+    "codemod": "1.18.3"
   }
 }
