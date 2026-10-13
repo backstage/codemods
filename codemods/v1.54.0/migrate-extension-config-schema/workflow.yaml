@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+version: '1'
+params:
+  schema:
+    aiFixup:
+      type: boolean
+      default: false
+      description: 'Review unresolved extension config schema factories and migrate only provably equivalent Standard Schema values.'
+nodes:
+  - id: apply-transforms
+    name: Migrate inline extension schema factories
+    type: automatic
+    steps:
+      - name: 'Index direct package-local Zod v4 dependencies'
+        js-ast-grep:
+          js_file: scripts/index-zod-packages.ts
+          language: 'json'
+          base_path: '.'
+          include:
+            - '**/package.json'
+          exclude:
+            - '**/node_modules/**'
+      - name: 'Lift safe Zod v4 factories to configSchema'
+        js-ast-grep:
+          js_file: scripts/codemod.ts
+          language: 'tsx'
+          base_path: '.'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+  - id: ai-fixup
+    name: Review unresolved schema factories
+    type: automatic
+    depends_on: [apply-transforms]
+    steps:
+      - name: 'Resolve only provably equivalent residual factories'
+        if: params.aiFixup == true
+        ai:
+          prompt: |
+            Inspect only residual config.schema and TODO(backstage-codemod) in extension
+            options passed to createExtension, createExtensionBlueprint, makeWithOverrides,
+            and override from @backstage/frontend-plugin-api. The AST step already lifts
+            safe inline Zod v4 factories and flags unsupported cases. Preserve validation,
+            defaults, optionality, comments, and config factory usage. Confirm the target
+            package directly declares compatible Zod v4 before using zod/v4. Resolve
+            referenced factories only when the Standard Schema value is clearly equivalent;
+            leave uncertainty marked for human review. Do not modify unrelated .schema or
+            dependency versions. Type-check changed packages and review the diff.
+          max_steps: 30
