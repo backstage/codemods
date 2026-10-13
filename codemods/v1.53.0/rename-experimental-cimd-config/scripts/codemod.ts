@@ -38,6 +38,7 @@ function mappingOf(node: YamlNode | null): YamlNode | undefined {
 const transform: Codemod<YAML> = async (root) => {
   const source = root.source()
   const newline = source.includes('\r\n') ? '\r\n' : '\n'
+  const lines = source.split('\n')
   const edits: Edit[] = []
 
   for (const document of root
@@ -69,30 +70,26 @@ const transform: Codemod<YAML> = async (root) => {
           continue
         }
 
-        const start = key.range().start.index
-        const lineStart = source.lastIndexOf('\n', start - 1) + 1
-        const prefix = source.slice(lineStart, start)
-        const precedingLine = source.slice(0, lineStart).split('\n').at(-2)?.trim()
+        // AST offsets count UTF-8 bytes; source slices use JavaScript character positions.
+        const { index: start, line, column } = key.range().start
+        const precedingLine = lines[line - 1]?.trim()
         if (precedingLine === COLLISION_COMMENT) {
           continue
         }
 
+        const prefix = (lines[line] ?? '').slice(0, column)
         if (/^[ \t]*$/.test(prefix)) {
           edits.push({
-            startPos: lineStart,
-            endPos: lineStart,
-            insertedText: `${prefix}${COLLISION_COMMENT}${newline}`,
+            startPos: start,
+            endPos: start,
+            insertedText: `${COLLISION_COMMENT}${newline}${prefix}`,
           })
         } else {
           // A flow pair shares a line with `{` or a sibling: break before its key so the TODO stays adjacent.
-          const authLineStart = source.lastIndexOf('\n', auth.range().start.index - 1) + 1
-          const authIndent = source.slice(authLineStart, auth.range().start.index).match(/^[ \t]*/)?.[0] ?? ''
-          let insertionStart = start
-          while (insertionStart > lineStart && /[ \t]/.test(source[insertionStart - 1] ?? '')) {
-            insertionStart--
-          }
+          const authIndent = lines[auth.range().start.line]?.match(/^[ \t]*/)?.[0] ?? ''
+          const precedingWhitespace = prefix.match(/[ \t]*$/)?.[0] ?? ''
           edits.push({
-            startPos: insertionStart,
+            startPos: start - precedingWhitespace.length,
             endPos: start,
             insertedText: `${newline}${authIndent}  ${COLLISION_COMMENT}${newline}${authIndent}  `,
           })

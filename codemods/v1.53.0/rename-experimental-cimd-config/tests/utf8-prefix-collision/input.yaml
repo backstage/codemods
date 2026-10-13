@@ -1,0 +1,9 @@
+# ✨
+scaffolder:
+  environment: ${NODE_ENV}
+
+auth:
+  experimentalClientIdMetadataDocuments:
+    enabled: false
+  clientIdMetadataDocuments:
+    enabled: true
