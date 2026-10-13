@@ -1,6 +1,6 @@
 {
   "name": "@backstage/rename-root-connection-auth",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Backstage 1.54.0: Rename RootConnectionAuth to ConfiguredConnectionAuth",
   "type": "module",
   "scripts": {

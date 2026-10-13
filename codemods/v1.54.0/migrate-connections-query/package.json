@@ -1,6 +1,6 @@
 {
   "name": "@backstage/migrate-connections-query",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Backstage 1.54.0: Move Connections URL lookups into query objects",
   "type": "module",
   "scripts": {

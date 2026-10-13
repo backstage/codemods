@@ -1,6 +1,6 @@
 {
   "name": "@backstage/rename-openapi-validate-command",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Backstage 1.54.0: Rename OpenAPI verify commands in package scripts, shell and CI",
   "type": "module",
   "scripts": {

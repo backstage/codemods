@@ -1,5 +1,11 @@
 # @backstage/move-connections-config-imports
 
+## 0.2.0
+
+### Minor Changes
+
+- c7324d3: Move Connections configuration imports for Backstage 1.55.0
+
 ## 0.1.0
 
 ### Minor Changes
