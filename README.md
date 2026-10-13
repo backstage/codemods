@@ -12,9 +12,9 @@ See the [Codemod docs](https://docs.codemod.com) for more on building and runnin
 
 ### v1.54.0
 
-| Codemod                                                                   | Description                                     |
-| ------------------------------------------------------------------------- | ----------------------------------------------- |
-| [migrate-connections-query](./codemods/v1.54.0/migrate-connections-query) | Move Connections URL lookups into query objects |
+| Codemod                                                                       | Description                                           |
+| ----------------------------------------------------------------------------- | ----------------------------------------------------- |
+| [rename-root-connection-auth](./codemods/v1.54.0/rename-root-connection-auth) | Rename RootConnectionAuth to ConfiguredConnectionAuth |
 
 ### v1.52.0
 
