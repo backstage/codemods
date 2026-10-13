@@ -42,6 +42,9 @@ jobs:
       - name: Test changed-file checks
         run: bash scripts/test-check-changed.sh
 
+      - name: Test manual README sync
+        run: bash scripts/test-sync-readme-pr.sh
+
       # Shared with local husky pre-push (scripts/check-changed.sh) so gates cannot drift.
       - name: Check changed files
         run: bash scripts/check-changed.sh origin/main
