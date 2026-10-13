@@ -20,24 +20,23 @@ function deferMixedDeclarationWithDirective(
   kind: 'import' | 'export',
 ): boolean {
   const comments = rootNode.children().filter((child) => child.is('comment'))
-  const directive = comments.find(
-    (comment) =>
-      comment.range().end.line === statement.range().start.line - 1 &&
-      /^\s*(?:\/\/|\/\*)\s*@ts-(?:expect-error|ignore)\b/.test(comment.text()),
+  const isDirective = (comment: SgNode<TSX>) => /^\s*(?:\/\/|\/\*)\s*@ts-(?:expect-error|ignore)\b/.test(comment.text())
+  const precedingDirective = comments.find(
+    (comment) => comment.range().end.line === statement.range().start.line - 1 && isDirective(comment),
   )
-  if (!directive) {
+  const inlineDirective = statement.findAll({ rule: { kind: 'comment' } }).find(isDirective)
+  if (!precedingDirective && !inlineDirective) {
     return false
   }
 
+  const anchor = precedingDirective ?? statement
   const todo = `// TODO(backstage-codemod): Review mixed ${kind} from '${ROOT_SOURCE}' with next-line diagnostic directive; move configuration exports to '${CONFIG_SOURCE}' manually.`
   if (
-    !comments.some(
-      (comment) => comment.range().end.line === directive.range().start.line - 1 && comment.text() === todo,
-    )
+    !comments.some((comment) => comment.range().end.line === anchor.range().start.line - 1 && comment.text() === todo)
   ) {
     edits.push({
-      startPos: directive.range().start.index,
-      endPos: directive.range().start.index,
+      startPos: anchor.range().start.index,
+      endPos: anchor.range().start.index,
       insertedText: `${todo}\n`,
     })
     migrationMetric.increment({ kind, action: 'todo' })
