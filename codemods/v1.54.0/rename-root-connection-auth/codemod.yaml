@@ -1,0 +1,20 @@
+schema_version: '1.0'
+
+name: '@backstage/rename-root-connection-auth'
+version: '0.1.0'
+description: 'Backstage 1.54.0: Rename RootConnectionAuth to ConfiguredConnectionAuth'
+author: 'Paul Schultz<pschultz@redhat.com>'
+license: 'Apache-2.0'
+repository: 'https://github.com/backstage/codemods'
+workflow: 'workflow.yaml'
+
+targets:
+  languages: ['ts', 'tsx']
+
+keywords: ['backstage', 'connections', 'authentication', '1.54.0']
+
+registry:
+  access: 'public'
+  visibility: 'public'
+
+capabilities: []

@@ -12,9 +12,9 @@ See the [Codemod docs](https://docs.codemod.com) for more on building and runnin
 
 ### v1.54.0
 
-| Codemod                                                                                 | Description                                                     |
-| --------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| [move-connections-backend-imports](./codemods/v1.54.0/move-connections-backend-imports) | Move Connections backend APIs to @backstage/connections-backend |
+| Codemod                                                                       | Description                                           |
+| ----------------------------------------------------------------------------- | ----------------------------------------------------- |
+| [rename-root-connection-auth](./codemods/v1.54.0/rename-root-connection-auth) | Rename RootConnectionAuth to ConfiguredConnectionAuth |
 
 ### v1.52.0
 
