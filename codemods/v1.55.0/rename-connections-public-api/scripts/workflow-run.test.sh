@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Git hooks export the caller's repository location; -C alone cannot override it.
+unset $(git rev-parse --local-env-vars)
+
 workflow_path="workflow.yaml"
 codemod_cli="../../../node_modules/codemod/codemod"
 
@@ -83,7 +86,26 @@ EOF
   fi
 }
 
-assert_positive_case
-assert_noop_case
+if [[ -z "${RENAME_CONNECTIONS_HOSTILE_CHILD:-}" ]]; then
+  repo_root="$(git rev-parse --show-toplevel)"
+  git_dir="$(git rev-parse --absolute-git-dir)"
+  head_before="$(git rev-parse HEAD)"
+  index_before="$(git hash-object "$git_dir/index")"
+
+  result=0
+  GIT_DIR="$git_dir" GIT_WORK_TREE="$repo_root" GIT_INDEX_FILE="$git_dir/index" \
+    RENAME_CONNECTIONS_HOSTILE_CHILD=1 bash "$0" || result=$?
+
+  if [[ "$(git rev-parse HEAD)" != "$head_before" || "$(git hash-object "$git_dir/index")" != "$index_before" ]]; then
+    echo 'hostile Git environment changed the caller HEAD or index' >&2
+    exit 1
+  fi
+  if [[ "$result" -ne 0 ]]; then
+    exit "$result"
+  fi
+else
+  assert_positive_case
+  assert_noop_case
+fi
 
 echo 'workflow-run.test: pass'
