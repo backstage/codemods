@@ -13,6 +13,38 @@ const MOVED_EXPORTS = new Set(MOVED_EXPORT_LIST)
 const DYNAMIC_IMPORT_TODO =
   "// TODO(backstage-codemod): Review dynamic import from '@backstage/connections' — move configuration exports to '@backstage/connections/config' when provenance is clear."
 
+function deferMixedDeclarationWithDirective(
+  rootNode: SgNode<TSX>,
+  statement: SgNode<TSX, 'import_statement' | 'export_statement'>,
+  edits: Edit[],
+  kind: 'import' | 'export',
+): boolean {
+  const comments = rootNode.children().filter((child) => child.is('comment'))
+  const directive = comments.find(
+    (comment) =>
+      comment.range().end.line === statement.range().start.line - 1 &&
+      /^\s*(?:\/\/|\/\*)\s*@ts-(?:expect-error|ignore)\b/.test(comment.text()),
+  )
+  if (!directive) {
+    return false
+  }
+
+  const todo = `// TODO(backstage-codemod): Review mixed ${kind} from '${ROOT_SOURCE}' with next-line diagnostic directive; move configuration exports to '${CONFIG_SOURCE}' manually.`
+  if (
+    !comments.some(
+      (comment) => comment.range().end.line === directive.range().start.line - 1 && comment.text() === todo,
+    )
+  ) {
+    edits.push({
+      startPos: directive.range().start.index,
+      endPos: directive.range().start.index,
+      insertedText: `${todo}\n`,
+    })
+    migrationMetric.increment({ kind, action: 'todo' })
+  }
+  return true
+}
+
 function escapeRegex(str: string): string {
   return `^${str.replaceAll(/[.*+?^${}()|[\]\\/]/g, '\\$&')}$`
 }
@@ -686,6 +718,12 @@ const transform: Codemod<TSX> = async (root) => {
 
     const remaining = specifiers.filter((s) => !MOVED_EXPORTS.has(s.importedName))
     const defaultSpecifier = getImportDefaultSpecifier(statement)
+    if (
+      (remaining.length > 0 || defaultSpecifier) &&
+      deferMixedDeclarationWithDirective(rootNode, statement, edits, 'import')
+    ) {
+      continue
+    }
     const isTypeOnly = isTypeOnlyStatement(statement)
     const attributes =
       statement
@@ -727,6 +765,9 @@ const transform: Codemod<TSX> = async (root) => {
     }
 
     const remaining = specifiers.filter((s) => !MOVED_EXPORTS.has(s.importedName))
+    if (remaining.length > 0 && deferMixedDeclarationWithDirective(rootNode, statement, edits, 'export')) {
+      continue
+    }
     const isTypeOnly = isTypeOnlyStatement(statement)
 
     const movedExport = buildExportStatement(moved, CONFIG_SOURCE, isTypeOnly)
