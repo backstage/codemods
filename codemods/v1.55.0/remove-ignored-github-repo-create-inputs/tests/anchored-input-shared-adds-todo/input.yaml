@@ -1,0 +1,9 @@
+kind: Template
+spec:
+  steps:
+    - action: github:repo:create
+      input: &shared
+        repoUrl: github.com?repo=test&owner=team
+        sourcePath: ./skeleton
+    - action: other:action
+      input: *shared

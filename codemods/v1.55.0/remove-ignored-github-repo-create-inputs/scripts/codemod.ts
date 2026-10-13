@@ -234,7 +234,9 @@ function actionMayBeTarget(documentNode: SgNode<YAML>, valueNode: SgNode<YAML>):
     return anchoredValue ? actionMayBeTarget(documentNode, anchoredValue) : true
   }
 
-  const scalar = valueNode.children().find((child) => child.kind() === 'plain_scalar')
+  const scalar = valueNode
+    .children()
+    .find((child) => ['plain_scalar', 'single_quote_scalar', 'double_quote_scalar'].includes(child.kind()))
   if (scalar) {
     return parseScalarText(scalar.text()) === TARGET_ACTION
   }
@@ -521,7 +523,7 @@ const transform: Codemod<YAML> = async (root) => {
           (actionValue === null ||
             actionMayBeTarget(documentNode, actionValueNode) ||
             (actionValueNode.find({ rule: { kind: 'block_scalar' } }) &&
-              actionValueNode.text().includes(TARGET_ACTION)))
+              /(?:^|[^A-Za-z0-9:_-])github:repo:create(?=$|[^A-Za-z0-9:_-])/u.test(actionValueNode.text())))
         if (actionIsAmbiguous) {
           const possibleInput = findDirectPair(stepMapping, 'input')
           const possibleInputValue = possibleInput ? getPairValueNode(possibleInput) : null
@@ -565,11 +567,14 @@ const transform: Codemod<YAML> = async (root) => {
       const stepHasTodo =
         hasExistingTodo(stepMapping) || getLineText(lines, stepItem.range().start.line - 1).trim() === TODO_COMMENT
 
-      const inputHasAnchor = inputValueNode?.children().some((child) => child.kind() === 'anchor') ?? false
+      const inputHasReferencedAnchor =
+        inputValueNode
+          ?.children()
+          .some((child) => child.kind() === 'anchor' && referencedAnchors.has(child.text().slice(1))) ?? false
       const inputIsAlias = inputValueNode?.children().some((child) => child.kind() === 'alias') ?? false
       const safeInputAlias = inputIsAlias && isSafeInputAlias(documentNode, inputValueNode)
 
-      let shouldAddTodo = (inputHasAnchor && !inputMapping) || (inputIsAlias && !safeInputAlias)
+      let shouldAddTodo = (inputHasReferencedAnchor && !inputMapping) || (inputIsAlias && !safeInputAlias)
       let removedInStep = 0
 
       if (!inputMapping) {
@@ -592,11 +597,11 @@ const transform: Codemod<YAML> = async (root) => {
           pair.findAll({ rule: { kind: 'anchor' } }).some((anchor) => referencedAnchors.has(anchor.text().slice(1))),
         )
 
-        if (hasMergePair || hasReferencedRemovedAnchor || (inputHasAnchor && removablePairs.length > 0)) {
+        if (hasMergePair || hasReferencedRemovedAnchor || (inputHasReferencedAnchor && removablePairs.length > 0)) {
           shouldAddTodo = true
         }
 
-        if (removablePairs.length > 0 && !inputHasAnchor && !hasMergePair && !hasReferencedRemovedAnchor) {
+        if (removablePairs.length > 0 && !inputHasReferencedAnchor && !hasMergePair && !hasReferencedRemovedAnchor) {
           if (inputMapping.kind() === 'flow_mapping') {
             if (hasDirectFlowComments(inputMapping)) {
               const commentEdits = removablePairs.map((pair) =>
