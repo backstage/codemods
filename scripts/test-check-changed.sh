@@ -53,7 +53,6 @@ for ((i = 1; i <= $(cat calls/count); i++)); do
     format:check) sed '1,2d' "calls/$i" >> actual-format ;;
     lint) sed '1,2d' "calls/$i" >> actual-lint ;;
     test) [ "$(sed -n '2p' "calls/$i")" = "$fixture/codemods/misc/fixture" ] ;;
-    readme) [ "$(sed -n '2p' "calls/$i")" = "$fixture" ] ;;
     *) echo "unexpected gate: $command" >&2; exit 1 ;;
   esac
 done
@@ -63,7 +62,6 @@ grep -E '\.(ts|js|mts|mjs|tsx|jsx)$' expected-all > expected-lint
 cmp expected-format actual-format
 cmp expected-lint actual-lint
 [ "$(grep -l '^test$' calls/[0-9]* | wc -l)" -eq 1 ]
-[ "$(grep -l '^readme$' calls/[0-9]* | wc -l)" -eq 1 ]
 
 rm -f calls/*
 set +e
@@ -88,9 +86,9 @@ git add codemods
 git -c user.name=Fixture -c user.email=fixture@example.invalid commit -qm ignored-only
 rm -f calls/*
 bash "$script" > /dev/null
-[ "$(cat calls/count)" -eq 3 ] # Lint, package tests, and README still run.
+[ "$(cat calls/count)" -eq 2 ] # Lint and package tests still run; README does not.
 [ "$(sed -n '1p' calls/1)" = lint ]
 [ "$(sed -n '3p' calls/1)" = codemods/misc/fixture/tests/nested/input.ts ]
 [ "$(sed -n '1p' calls/2)" = test ]
-[ "$(sed -n '1p' calls/3)" = readme ]
+! grep -l '^readme$' calls/[0-9]* >/dev/null
 echo 'check-changed batching regression passed'
