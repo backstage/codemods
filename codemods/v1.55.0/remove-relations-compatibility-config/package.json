@@ -1,6 +1,6 @@
 {
   "name": "@backstage/remove-relations-compatibility-config",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Backstage 1.55.0: Remove deprecated catalog.enableRelationsCompatibility config",
   "type": "module",
   "scripts": {

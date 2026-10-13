@@ -1,7 +1,7 @@
 schema_version: '1.0'
 
 name: '@backstage/remove-bui-anchor-render-props'
-version: '0.1.0'
+version: '0.2.0'
 description: 'Backstage 1.55.0: Remove obsolete BUI anchor render props'
 author: 'Paul Schultz<pschultz@redhat.com>'
 license: 'Apache-2.0'
