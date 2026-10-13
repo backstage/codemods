@@ -380,8 +380,27 @@ function handleNamespaceImports(rootNode: SgNode<TSX>, edits: Edit[], filename: 
     const reasonSuffix = reasons.length > 0 ? ` (${reasons.join(', ')})` : ''
     const todoComment = `// TODO(backstage-codemod): Review namespace import '${alias}' from '${ROOT_SOURCE}'${reasonSuffix}. Move configuration exports to '${CONFIG_SOURCE}' when provenance is clear.`
 
-    if (!source.includes(todoComment)) {
-      edits.push(statement.replace(`${statement.text()}\n${todoComment}`))
+    const hasAdjacentTodo = statement
+      .parent()
+      ?.children()
+      .some(
+        (child) =>
+          child.is('comment') &&
+          child.range().start.line === statement.range().end.line + 1 &&
+          child.text() === todoComment,
+      )
+    if (!hasAdjacentTodo) {
+      const prefix = source.slice(
+        source.lastIndexOf('\n', statement.range().start.index - 1) + 1,
+        statement.range().start.index,
+      )
+      const lineEnd = source.indexOf('\n', statement.range().end.index)
+      const insertPos = lineEnd === -1 ? source.length : lineEnd + 1
+      edits.push({
+        startPos: insertPos,
+        endPos: insertPos,
+        insertedText: `${lineEnd === -1 ? '\n' : ''}${/^[ \t]*$/.test(prefix) ? prefix : ''}${todoComment}${lineEnd === -1 ? '' : '\n'}`,
+      })
       migrationMetric.increment({
         kind: 'namespace-import',
         action: 'todo',
