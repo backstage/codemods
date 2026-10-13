@@ -1,0 +1,4 @@
+catalog: {}
+  # retain this catalog note
+app:
+  title: Backstage
