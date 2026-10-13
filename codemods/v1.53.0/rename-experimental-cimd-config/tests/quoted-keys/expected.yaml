@@ -1,6 +1,0 @@
-"auth":
-  'clientIdMetadataDocuments': &cimd
-    enabled: true
-other:
-  auth:
-    experimentalClientIdMetadataDocuments: false

@@ -1,4 +1,0 @@
-catalog:
-  # Keep this comment and sibling key
-  rules:
-    - allow: [Component]

@@ -1,4 +1,0 @@
-'catalog':
-  "enableRelationsCompatibility": true
-  rules:
-    - allow: [Component]

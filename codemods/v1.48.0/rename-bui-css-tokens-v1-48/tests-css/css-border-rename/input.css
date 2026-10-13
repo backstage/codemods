@@ -1,7 +1,0 @@
-.container {
-  border: 1px solid var(--bui-border);
-}
-
-.interactive:hover {
-  border-color: var(--bui-border-hover);
-}

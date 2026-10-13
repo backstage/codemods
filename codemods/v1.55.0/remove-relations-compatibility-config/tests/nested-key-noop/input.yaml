@@ -1,5 +1,0 @@
-catalog:
-  processing:
-    enableRelationsCompatibility: true
-  rules:
-    - allow: [Component]

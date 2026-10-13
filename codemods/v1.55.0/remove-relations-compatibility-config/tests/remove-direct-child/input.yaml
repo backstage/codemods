@@ -1,5 +1,0 @@
-catalog:
-  enableRelationsCompatibility: true
-  # Keep this comment and sibling key
-  rules:
-    - allow: [Component]

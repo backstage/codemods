@@ -1,6 +1,0 @@
-app:
-  title: Example App
-  packages: none
-  experimental:
-    packages: all
-    otherSetting: true

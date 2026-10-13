@@ -1,4 +1,0 @@
-catalog:
-  stitchingStrategy:
-    mode: immediate
-    debounceDelayMs: 100

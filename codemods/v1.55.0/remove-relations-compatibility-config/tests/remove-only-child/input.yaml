@@ -1,6 +1,0 @@
-app:
-  title: Backstage
-catalog:
-  enableRelationsCompatibility: false
-permission:
-  enabled: true

@@ -1,5 +1,0 @@
-import { Button } from '@backstage/ui';
-
-const MyComponent = () => (
-  <Button variant="tertiary" size="medium" onPress={onCancel}>Cancel</Button>
-);

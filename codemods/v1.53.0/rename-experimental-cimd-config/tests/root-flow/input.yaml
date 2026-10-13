@@ -1,3 +1,0 @@
-{auth: {experimentalClientIdMetadataDocuments: false}, other: {experimentalClientIdMetadataDocuments: true}}
----
-{auth: {experimentalClientIdMetadataDocuments: false, clientIdMetadataDocuments: true}}

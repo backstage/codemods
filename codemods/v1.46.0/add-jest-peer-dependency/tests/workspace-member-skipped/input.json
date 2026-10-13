@@ -1,7 +1,0 @@
-{
-  "name": "@backstage/plugin-catalog",
-  "devDependencies": {
-    "@backstage/cli": "^0.35.0",
-    "typescript": "^5.0.0"
-  }
-}

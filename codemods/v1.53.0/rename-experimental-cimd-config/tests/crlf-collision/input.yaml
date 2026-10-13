@@ -1,3 +1,0 @@
-auth:
-  experimentalClientIdMetadataDocuments: false
-  clientIdMetadataDocuments: true

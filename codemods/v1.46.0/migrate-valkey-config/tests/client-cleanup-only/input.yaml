@@ -1,7 +1,0 @@
-backend:
-  cache:
-    store: valkey
-    connection: redis://localhost:6379
-    client:
-      clearBatchSize: 1000
-      useUnlink: false

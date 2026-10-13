@@ -1,5 +1,0 @@
-catalog:
-  stitchingStrategy:
-    pollingInterval: { minutes: 5 }
-  rules:
-    - allow: [Component]

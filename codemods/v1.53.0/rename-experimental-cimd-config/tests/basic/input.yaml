@@ -1,9 +1,0 @@
-auth:
-  providers:
-    guest: {}
-  # keep this comment
-  experimentalClientIdMetadataDocuments: # keep inline comment
-    enabled: true
-    endpoint: ${CIMD_ENDPOINT}
-  dynamicClientRegistration:
-    enabled: true

@@ -1,5 +1,0 @@
-catalog:
-  stitchingStrategy:
-    mode: deferred
-  rules:
-    - allow: [Component]

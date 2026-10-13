@@ -1,9 +1,0 @@
-# shared header
-catalog:
-  enableRelationsCompatibility: true
-  # keep this note for operators
----
-catalog:
-  enableRelationsCompatibility: false
-  rules:
-    - allow: [Component]

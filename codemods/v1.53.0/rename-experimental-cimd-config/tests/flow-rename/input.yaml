@@ -1,6 +1,0 @@
-auth: {experimentalClientIdMetadataDocuments: {enabled: true}, providers: {guest: {}}} # keep
----
-auth: {
-  experimentalClientIdMetadataDocuments: false, # keep inline comment
-  dynamicClientRegistration: {enabled: true}
-}

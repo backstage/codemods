@@ -1,6 +1,0 @@
-backend:
-  cache:
-    store: valkey
-    connection: redis://localhost:6379
-    client:
-      namespace: 'my-app'
