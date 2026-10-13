@@ -1,0 +1,20 @@
+{
+  "remove-bui-anchor-render-props": [
+    {
+      "cardinality": {
+        "action": "todo-manual-review",
+        "component": "Link",
+        "reason": "custom-render-prop"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "todo-manual-review",
+        "component": "MenuItem",
+        "reason": "custom-render-prop"
+      },
+      "count": 1
+    }
+  ]
+}
