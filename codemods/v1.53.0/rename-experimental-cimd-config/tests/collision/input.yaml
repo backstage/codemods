@@ -1,0 +1,10 @@
+auth:
+  providers: {}
+  experimentalClientIdMetadataDocuments: # do not remove
+    enabled: false
+  clientIdMetadataDocuments:
+    enabled: true
+---
+auth:
+  clientIdMetadataDocuments: true
+  experimentalClientIdMetadataDocuments: false

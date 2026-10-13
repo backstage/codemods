@@ -10,11 +10,11 @@ See the [Codemod docs](https://docs.codemod.com) for more on building and runnin
 
 <!-- CODEMODS_START -->
 
-### v1.55.0
+### v1.54.0
 
-| Codemod                                                                                           | Description                                                   |
-| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| [remove-relations-compatibility-config](./codemods/v1.55.0/remove-relations-compatibility-config) | Remove deprecated catalog.enableRelationsCompatibility config |
+| Codemod                                                                       | Description                                           |
+| ----------------------------------------------------------------------------- | ----------------------------------------------------- |
+| [rename-root-connection-auth](./codemods/v1.54.0/rename-root-connection-auth) | Rename RootConnectionAuth to ConfiguredConnectionAuth |
 
 ### v1.52.0
 
