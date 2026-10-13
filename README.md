@@ -10,11 +10,11 @@ See the [Codemod docs](https://docs.codemod.com) for more on building and runnin
 
 <!-- CODEMODS_START -->
 
-### v1.55.0
+### v1.54.0
 
-| Codemod                                                                             | Description                             |
-| ----------------------------------------------------------------------------------- | --------------------------------------- |
-| [remove-bui-anchor-render-props](./codemods/v1.55.0/remove-bui-anchor-render-props) | Remove obsolete BUI anchor render props |
+| Codemod                                                                       | Description                                           |
+| ----------------------------------------------------------------------------- | ----------------------------------------------------- |
+| [rename-root-connection-auth](./codemods/v1.54.0/rename-root-connection-auth) | Rename RootConnectionAuth to ConfiguredConnectionAuth |
 
 ### v1.52.0
 

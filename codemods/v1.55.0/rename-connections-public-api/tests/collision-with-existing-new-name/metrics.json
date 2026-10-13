@@ -1,0 +1,12 @@
+{
+  "rename-connections-public-api": [
+    {
+      "cardinality": {
+        "action": "collision-aliased",
+        "from": "ConnectionAuthValue",
+        "to": "ConnectionAuth"
+      },
+      "count": 1
+    }
+  ]
+}

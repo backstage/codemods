@@ -1,0 +1,15 @@
+# initial document
+---
+auth:
+  clientIdMetadataDocuments: { enabled: false }
+---
+other:
+  experimentalClientIdMetadataDocuments: true
+auth:
+  clientIdMetadataDocuments:
+    enabled: true
+---
+# final document
+auth:
+  clientIdMetadataDocuments:
+    enabled: true
