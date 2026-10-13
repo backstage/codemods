@@ -13,11 +13,12 @@ const MOVED_EXPORTS = new Set(MOVED_EXPORT_LIST)
 const DYNAMIC_IMPORT_TODO =
   "// TODO(backstage-codemod): Review dynamic import from '@backstage/connections' — move configuration exports to '@backstage/connections/config' when provenance is clear."
 
-function deferMixedDeclarationWithDirective(
+function deferDeclarationWithDirective(
   rootNode: SgNode<TSX>,
   statement: SgNode<TSX, 'import_statement' | 'export_statement'>,
   edits: Edit[],
   kind: 'import' | 'export',
+  mixed: boolean,
 ): boolean {
   const comments =
     statement
@@ -34,7 +35,7 @@ function deferMixedDeclarationWithDirective(
   }
 
   const anchor = precedingDirective ?? statement
-  const todo = `// TODO(backstage-codemod): Review mixed ${kind} from '${ROOT_SOURCE}' with next-line diagnostic directive; move configuration exports to '${CONFIG_SOURCE}' manually.`
+  const todo = `// TODO(backstage-codemod): Review ${mixed ? 'mixed ' : ''}${kind} from '${ROOT_SOURCE}' with next-line diagnostic directive; move configuration exports to '${CONFIG_SOURCE}' manually.`
   if (
     !comments.some((comment) => comment.range().end.line === anchor.range().start.line - 1 && comment.text() === todo)
   ) {
@@ -725,8 +726,7 @@ const transform: Codemod<TSX> = async (root) => {
     const remaining = specifiers.filter((s) => !MOVED_EXPORTS.has(s.importedName))
     const defaultSpecifier = getImportDefaultSpecifier(statement)
     if (
-      (remaining.length > 0 || defaultSpecifier) &&
-      deferMixedDeclarationWithDirective(rootNode, statement, edits, 'import')
+      deferDeclarationWithDirective(rootNode, statement, edits, 'import', remaining.length > 0 || !!defaultSpecifier)
     ) {
       continue
     }
@@ -771,7 +771,7 @@ const transform: Codemod<TSX> = async (root) => {
     }
 
     const remaining = specifiers.filter((s) => !MOVED_EXPORTS.has(s.importedName))
-    if (remaining.length > 0 && deferMixedDeclarationWithDirective(rootNode, statement, edits, 'export')) {
+    if (deferDeclarationWithDirective(rootNode, statement, edits, 'export', remaining.length > 0)) {
       continue
     }
     const isTypeOnly = isTypeOnlyStatement(statement)
