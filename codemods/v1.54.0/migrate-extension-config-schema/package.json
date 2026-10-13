@@ -1,0 +1,16 @@
+{
+  "name": "@backstage/migrate-extension-config-schema",
+  "version": "0.1.0",
+  "description": "Backstage 1.54.0: Migrate extension config.schema to Standard Schema values",
+  "type": "module",
+  "scripts": {
+    "test": "bash ./scripts/assert-fixtures.sh && yarn exec tsc -p tests/typed-extension/tsconfig.json && yarn exec codemod workflow validate -w workflow.yaml"
+  },
+  "devDependencies": {
+    "@backstage/frontend-plugin-api": "0.18.1",
+    "@codemod.com/jssg-types": "1.6.3",
+    "codemod": "1.18.3",
+    "typescript": "^7.0.2",
+    "zod": "^4.1.0"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "remove-relations-compatibility-config": [
+    {
+      "cardinality": {
+        "action": "key-removed"
+      },
+      "count": 2
+    }
+  ]
+}
