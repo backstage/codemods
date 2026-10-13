@@ -19,7 +19,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: '.nvmrc'
 
@@ -39,8 +39,12 @@ jobs:
 
       - run: yarn install --immutable
 
-      - name: Test changed-file checks
-        run: bash scripts/test-check-changed.sh
+      - name: Test shell scripts
+        run: |
+          export LC_ALL=C
+          for script in scripts/test-*.sh; do
+            bash "$script" || exit $?
+          done
 
       # Shared with local husky pre-push (scripts/check-changed.sh) so gates cannot drift.
       - name: Check changed files
@@ -57,7 +61,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: '.nvmrc'
 
