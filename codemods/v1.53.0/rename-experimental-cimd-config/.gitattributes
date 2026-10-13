@@ -1,1 +1,2 @@
 tests/crlf-collision/*.yaml -text whitespace=cr-at-eol
+tests/utf8-prefix-collision/*.yaml -text whitespace=cr-at-eol
