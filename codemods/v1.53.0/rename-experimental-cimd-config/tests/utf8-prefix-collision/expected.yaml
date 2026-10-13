@@ -1,0 +1,10 @@
+# ✨
+scaffolder:
+  environment: ${NODE_ENV}
+
+auth:
+  # TODO(backstage-codemod): reconcile experimentalClientIdMetadataDocuments with clientIdMetadataDocuments
+  experimentalClientIdMetadataDocuments:
+    enabled: false
+  clientIdMetadataDocuments:
+    enabled: true
