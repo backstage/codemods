@@ -1,0 +1,12 @@
+name: 'backstage-repo-tools repo schema openapi verify'
+on: push
+jobs:
+  validate:
+    steps:
+      - name: 'Verify schema'
+        run: 'CI=1 yarn backstage-repo-tools repo schema openapi verify --strict'
+      - run: |
+          backstage-repo-tools repo schema openapi verify --flag
+          echo done
+      - run: backstage-repo-tools repo schema openapi verify && echo ok
+      - run: "npx backstage-repo-tools repo schema openapi verify --strict"

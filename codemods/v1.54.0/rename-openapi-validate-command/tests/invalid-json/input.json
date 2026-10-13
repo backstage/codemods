@@ -1,0 +1,1 @@
+{"scripts": {"check": "backstage-repo-tools repo schema openapi verify",}}

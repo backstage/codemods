@@ -1,0 +1,8 @@
+# experimentalClientIdMetadataDocuments: false
+experimentalClientIdMetadataDocuments: true
+auth.experimentalClientIdMetadataDocuments: false
+other:
+  experimentalClientIdMetadataDocuments: true
+auth:
+  clientIdMetadataDocuments:
+    enabled: true

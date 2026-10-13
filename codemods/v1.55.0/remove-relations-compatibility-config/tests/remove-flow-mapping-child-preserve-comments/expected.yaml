@@ -1,0 +1,6 @@
+catalog: {
+  # keep rules comment
+  rules: [{ allow: [Component] }],
+  # keep locations comment
+  locations: [{ type: file, target: ../../catalog-info.yaml }]
+}
