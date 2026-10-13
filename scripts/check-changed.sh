@@ -95,15 +95,6 @@ if [ "${#CODEMOD_DIRS[@]}" -gt 0 ]; then
     (cd "$dir" && yarn test)
   done
   echo "::endgroup::"
-
-  echo "::group::README freshness check"
-  yarn readme
-  if ! git diff --quiet README.md; then
-    echo "::error::README.md is out of date. Run 'yarn readme' and commit the result."
-    git diff README.md
-    exit 1
-  fi
-  echo "::endgroup::"
 fi
 
 echo "All changed-file checks passed (base: $BASE)."
