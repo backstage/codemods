@@ -29,6 +29,9 @@ EOF
 chmod +x "$fixture/bin/yarn"
 export PATH="$fixture/bin:$PATH" CALLS="$fixture/calls"
 
+bash "$script"
+[ ! -e "$CALLS" ]
+
 bash "$script" "$first/scripts/a.ts" "$first/scripts/b.ts" "$second/scripts/c.ts"
 printf 'test:%s\ntest:%s\n' "$first" "$second" > "$fixture/expected"
 cmp "$fixture/expected" "$CALLS"

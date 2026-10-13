@@ -8,6 +8,10 @@ for file in "$@"; do
   dirs+=("$pkg_dir")
 done
 
+if [ "${#dirs[@]}" -eq 0 ]; then
+  exit 0
+fi
+
 unique_dirs=()
 while IFS= read -r pkg_dir; do
   unique_dirs+=("$pkg_dir")
