@@ -1,0 +1,5 @@
+kind: "Tem\u0070late"
+spec:
+  steps:
+    - action: "github:repo:\u0063reate"
+      input: { repoUrl: github.com?repo=demo&owner=team }

@@ -7,6 +7,7 @@ const migrationMetric = useMetricAtom('remove-ignored-github-repo-create-inputs'
 const TARGET_ACTION = 'github:repo:create'
 const TODO_COMMENT =
   '# TODO(backstage-codemod): github:repo:create input may include removed keys via YAML merge/anchor/expression; review manually'
+const ACTION_TODO_COMMENT = '# TODO(backstage-codemod): action may resolve to github:repo:create; review input manually'
 
 const REMOVED_INPUT_KEYS = new Set([
   'blockCreations',
@@ -37,20 +38,72 @@ interface TextEdit {
   replacement: string
 }
 
+const YAML_DOUBLE_QUOTED_ESCAPES: Record<string, string> = {
+  '0': '\0',
+  a: '\x07',
+  b: '\b',
+  t: '\t',
+  n: '\n',
+  v: '\v',
+  f: '\f',
+  r: '\r',
+  e: '\x1b',
+  ' ': ' ',
+  _: '\u00a0',
+  N: '\u0085',
+  L: '\u2028',
+  P: '\u2029',
+  '"': '"',
+  "'": "'",
+  '/': '/',
+  '\\': '\\',
+}
+
 function parseScalarText(text: string): string | null {
   const trimmed = text.trim()
   if (trimmed === '') {
     return null
   }
 
-  const singleQuoted = trimmed.match(/^'([^']*)'(?:\s+#.*)?$/)
+  const singleQuoted = trimmed.match(/^'((?:[^']|'')*)'(?:\s+#.*)?$/u)
   if (singleQuoted) {
-    return singleQuoted[1] ?? null
+    return singleQuoted[1]?.replaceAll("''", "'") ?? null
   }
 
-  const doubleQuoted = trimmed.match(/^"([^"]*)"(?:\s+#.*)?$/)
+  const doubleQuoted = trimmed.match(/^"((?:[^"\\]|\\.)*)"(?:\s+#.*)?$/u)
   if (doubleQuoted) {
-    return doubleQuoted[1] ?? null
+    const value = doubleQuoted[1] ?? ''
+    let decoded = ''
+    for (let index = 0; index < value.length; index += 1) {
+      if (value[index] !== '\\') {
+        decoded += value[index]
+        continue
+      }
+
+      const escape = value[++index]
+      if (escape === 'x' || escape === 'u' || escape === 'U') {
+        const length = escape === 'x' ? 2 : escape === 'u' ? 4 : 8
+        const digits = value.slice(index + 1, index + 1 + length)
+        if (digits.length !== length || !/^[0-9a-fA-F]+$/u.test(digits)) {
+          return null
+        }
+        const codePoint = Number.parseInt(digits, 16)
+        if (codePoint > 0x10ffff) {
+          return null
+        }
+        decoded += String.fromCodePoint(codePoint)
+        index += length
+      } else if (escape !== undefined && Object.hasOwn(YAML_DOUBLE_QUOTED_ESCAPES, escape)) {
+        decoded += YAML_DOUBLE_QUOTED_ESCAPES[escape]
+      } else {
+        return null
+      }
+    }
+    return decoded
+  }
+
+  if (trimmed.startsWith('"') || trimmed.startsWith("'")) {
+    return null
   }
 
   const withoutComment = trimmed.split(/\s+#/u)[0]?.trim() ?? ''
@@ -71,7 +124,7 @@ function getPairKey(pair: SgNode<YAML>): string | null {
     return null
   }
 
-  return parseScalarText(keyNode.text()) ?? keyNode.text().trim()
+  return parseScalarText(keyNode.text())
 }
 
 function getPairValueNode(pair: SgNode<YAML>): SgNode<YAML> | null {
@@ -392,10 +445,6 @@ function applyTextEdits(source: string, edits: TextEdit[]): string {
 const transform: Codemod<YAML> = async (root) => {
   const source = root.source()
   const newline = source.includes('\r\n') ? '\r\n' : '\n'
-  if (!source.includes('Template') || !source.includes('github:repo:create')) {
-    return null
-  }
-
   const lines = source.split('\n')
   const lineStarts = getLineStarts(source)
   const sourceLength = source.length
@@ -443,6 +492,28 @@ const transform: Codemod<YAML> = async (root) => {
       const actionValueNode = actionPair ? getPairValueNode(actionPair) : null
       const actionValue = actionValueNode ? parseScalarText(actionValueNode.text()) : null
       if (actionValue !== TARGET_ACTION) {
+        const actionIsAmbiguous = actionValueNode && (actionValue === null || actionValue.startsWith('*'))
+        if (actionIsAmbiguous) {
+          const possibleInput = findDirectPair(stepMapping, 'input')
+          const possibleInputMapping = possibleInput ? findMappingNode(getPairValueNode(possibleInput)) : null
+          if (
+            possibleInput &&
+            possibleInputMapping &&
+            getDirectPairs(possibleInputMapping).some((pair) => {
+              const key = getPairKey(pair)
+              return key === null || REMOVED_INPUT_KEYS.has(key) || key === '<<'
+            }) &&
+            !stepMapping.text().includes(ACTION_TODO_COMMENT)
+          ) {
+            const inputLine = possibleInput.range().start.line
+            edits.push({
+              start: getLineStart(lineStarts, inputLine, sourceLength),
+              end: getLineStart(lineStarts, inputLine, sourceLength),
+              replacement: `${' '.repeat(possibleInput.range().start.column)}${ACTION_TODO_COMMENT}${newline}`,
+            })
+            migrationMetric.increment({ action: 'todo-added' })
+          }
+        }
         continue
       }
 
@@ -477,6 +548,10 @@ const transform: Codemod<YAML> = async (root) => {
           const key = getPairKey(pair)
           return key !== null && REMOVED_INPUT_KEYS.has(key)
         })
+
+        if (directPairs.some((pair) => getPairKey(pair) === null)) {
+          shouldAddTodo = true
+        }
 
         const hasMergePair = directPairs.some((pair) => getPairKey(pair) === '<<')
         const hasReferencedRemovedAnchor = removablePairs.some((pair) =>

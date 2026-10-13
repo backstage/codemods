@@ -1,0 +1,7 @@
+kind: Template
+spec:
+  steps:
+    - action: "github:repo:\
+        create"
+      input:
+        sourcePath: ./skeleton

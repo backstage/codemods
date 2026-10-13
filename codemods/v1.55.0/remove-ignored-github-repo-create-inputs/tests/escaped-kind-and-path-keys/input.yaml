@@ -1,0 +1,7 @@
+kind: "Tem\u0070late"
+"sp\u0065c":
+  "st\u0065ps":
+    - "act\u0069on": github:repo:create
+      "in\u0070ut":
+        "source\x50ath": ./skeleton
+        repoUrl: github.com?repo=demo&owner=team
