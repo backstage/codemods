@@ -1,0 +1,10 @@
+{
+  "rename-connections-public-api": [
+    {
+      "cardinality": {
+        "action": "connection-auth-match-inlined"
+      },
+      "count": 2
+    }
+  ]
+}

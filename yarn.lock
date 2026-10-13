@@ -700,6 +700,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/rename-connections-public-api@workspace:codemods/v1.55.0/rename-connections-public-api":
+  version: 0.0.0-use.local
+  resolution: "@backstage/rename-connections-public-api@workspace:codemods/v1.55.0/rename-connections-public-api"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.3"
+    codemod: "npm:1.18.3"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/rename-experimental-cimd-config@workspace:codemods/v1.53.0/rename-experimental-cimd-config":
   version: 0.0.0-use.local
   resolution: "@backstage/rename-experimental-cimd-config@workspace:codemods/v1.53.0/rename-experimental-cimd-config"
