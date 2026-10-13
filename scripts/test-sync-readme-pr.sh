@@ -12,7 +12,6 @@ for line in \
   '        run: test "$GITHUB_REF" = refs/heads/main' \
   '          ref: main' \
   '          yarn format:check' \
-  '          yarn lint' \
   '          yarn test' \
   '          cmp README.md "$RUNNER_TEMP/generated-readme.md"' \
   '          bash scripts/test-sync-readme-pr.sh' \
@@ -20,6 +19,7 @@ for line in \
   '        run: bash scripts/sync-readme-pr.sh'; do
   grep -Fqx "$line" "$workflow"
 done
+! grep -Eq '^[[:space:]]+yarn lint([[:space:]]|$)' "$workflow" # README-only dispatch must not require repository-wide lint.
 fixture=$(mktemp -d)
 trap 'rm -rf "$fixture"' EXIT
 mkdir -p "$fixture/bin" "$fixture/generator/scripts" "$fixture/generator/codemods/v1.2.0/example" "$fixture/generator/codemods/v1.1.0/example"
