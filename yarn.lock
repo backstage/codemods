@@ -890,6 +890,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/v1-53-0-migration-recipe@workspace:codemods/v1.53.0/migration-recipe":
+  version: 0.0.0-use.local
+  resolution: "@backstage/v1-53-0-migration-recipe@workspace:codemods/v1.53.0/migration-recipe"
+  dependencies:
+    codemod: "npm:1.18.3"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/version-bridge@npm:^1.0.12":
   version: 1.0.12
   resolution: "@backstage/version-bridge@npm:1.0.12"
