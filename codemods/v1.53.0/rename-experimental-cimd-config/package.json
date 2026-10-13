@@ -1,6 +1,6 @@
 {
   "name": "@backstage/rename-experimental-cimd-config",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Backstage 1.53.0: Rename experimental CIMD auth configuration key",
   "type": "module",
   "scripts": {
