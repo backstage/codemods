@@ -20,11 +20,11 @@ while IFS= read -r f; do
   [ -n "$f" ] && ALL_FILES+=("$f")
 done < <(git diff --name-only --diff-filter=ACMR "$BASE"...HEAD)
 
-# oxfmt ignores shell scripts; passing only .sh files makes it exit 2 with no targets.
+# oxfmt exits 2 when every supplied file is ignored (shell scripts or test fixtures).
 FORMAT_FILES=()
 for f in "${ALL_FILES[@]}"; do
   case "$f" in
-    *.sh) ;;
+    *.sh|tests/*|tests-*/*|*/tests/*|*/tests-*/*) ;;
     *) FORMAT_FILES+=("$f") ;;
   esac
 done
