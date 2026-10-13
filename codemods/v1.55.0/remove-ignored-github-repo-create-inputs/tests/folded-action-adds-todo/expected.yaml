@@ -1,0 +1,10 @@
+kind: Template
+spec:
+  steps:
+    - id: create
+      action: >-
+        github:repo:create
+      # TODO(backstage-codemod): action may resolve to github:repo:create; review input manually
+      input:
+        repoUrl: github.com?repo=folded&owner=team
+        sourcePath: ./skeleton

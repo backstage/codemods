@@ -492,7 +492,12 @@ const transform: Codemod<YAML> = async (root) => {
       const actionValueNode = actionPair ? getPairValueNode(actionPair) : null
       const actionValue = actionValueNode ? parseScalarText(actionValueNode.text()) : null
       if (actionValue !== TARGET_ACTION) {
-        const actionIsAmbiguous = actionValueNode && (actionValue === null || actionValue.startsWith('*'))
+        const actionIsAmbiguous =
+          actionValueNode &&
+          (actionValue === null ||
+            actionValue.startsWith('*') ||
+            (actionValueNode.find({ rule: { kind: 'block_scalar' } }) &&
+              actionValueNode.text().includes(TARGET_ACTION)))
         if (actionIsAmbiguous) {
           const possibleInput = findDirectPair(stepMapping, 'input')
           const possibleInputMapping = possibleInput ? findMappingNode(getPairValueNode(possibleInput)) : null
@@ -531,8 +536,8 @@ const transform: Codemod<YAML> = async (root) => {
       const stepHasTodo =
         hasExistingTodo(stepMapping) || getLineText(lines, stepItem.range().start.line - 1).trim() === TODO_COMMENT
 
-      const inputHasAnchor = /:\s*&[A-Za-z0-9_-]+/.test(inputLineText)
-      const inputIsAlias = inputValueText.startsWith('*')
+      const inputHasAnchor = inputValueNode?.children().some((child) => child.kind() === 'anchor') ?? false
+      const inputIsAlias = inputValueNode?.children().some((child) => child.kind() === 'alias') ?? false
       const safeInputAlias = inputIsAlias && isSafeInputAlias(documentNode, inputValueNode)
 
       let shouldAddTodo = (inputHasAnchor && !inputMapping) || (inputIsAlias && !safeInputAlias)
