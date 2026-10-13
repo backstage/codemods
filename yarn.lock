@@ -608,6 +608,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/remove-bui-anchor-render-props@workspace:codemods/v1.55.0/remove-bui-anchor-render-props":
+  version: 0.0.0-use.local
+  resolution: "@backstage/remove-bui-anchor-render-props@workspace:codemods/v1.55.0/remove-bui-anchor-render-props"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.3"
+    codemod: "npm:1.18.3"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/remove-catalog-card-variant-props@workspace:codemods/v1.49.0/remove-catalog-card-variant-props":
   version: 0.0.0-use.local
   resolution: "@backstage/remove-catalog-card-variant-props@workspace:codemods/v1.49.0/remove-catalog-card-variant-props"
