@@ -1,0 +1,20 @@
+schema_version: '1.0'
+
+name: '@backstage/rename-experimental-cimd-config'
+version: '0.1.0'
+description: 'Backstage 1.53.0: Rename experimental CIMD auth configuration key'
+author: 'Paul Schultz<pschultz@redhat.com>'
+license: 'Apache-2.0'
+repository: 'https://github.com/backstage/codemods'
+workflow: 'workflow.yaml'
+
+targets:
+  languages: ['yaml']
+
+keywords: ['backstage', 'migration', 'auth', 'cimd', 'config', '1.53.0']
+
+registry:
+  access: 'public'
+  visibility: 'public'
+
+capabilities: []

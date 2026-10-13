@@ -1,0 +1,13 @@
+{
+  "name": "@backstage/rename-experimental-cimd-config",
+  "version": "0.1.0",
+  "description": "Backstage 1.53.0: Rename experimental CIMD auth configuration key",
+  "type": "module",
+  "scripts": {
+    "test": "yarn exec codemod jssg test -l yaml ./scripts/codemod.ts ./tests && yarn exec codemod workflow validate -w workflow.yaml"
+  },
+  "devDependencies": {
+    "@codemod.com/jssg-types": "1.6.3",
+    "codemod": "1.18.3"
+  }
+}

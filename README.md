@@ -12,9 +12,9 @@ See the [Codemod docs](https://docs.codemod.com) for more on building and runnin
 
 ### v1.54.0
 
-| Codemod                                                                               | Description                                                     |
-| ------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| [rename-openapi-validate-command](./codemods/v1.54.0/rename-openapi-validate-command) | Rename OpenAPI verify commands in package scripts, shell and CI |
+| Codemod                                                                       | Description                                           |
+| ----------------------------------------------------------------------------- | ----------------------------------------------------- |
+| [rename-root-connection-auth](./codemods/v1.54.0/rename-root-connection-auth) | Rename RootConnectionAuth to ConfiguredConnectionAuth |
 
 ### v1.52.0
 
