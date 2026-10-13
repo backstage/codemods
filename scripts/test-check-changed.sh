@@ -13,16 +13,19 @@ git add README.md
 git -c user.name=Fixture -c user.email=fixture@example.invalid commit -qm base
 git update-ref refs/remotes/origin/main HEAD
 
-mkdir -p changed codemods/misc/fixture/scripts scripts bin calls
+mkdir -p changed codemods/misc/fixture/{scripts,tests/nested,tests-css/nested} tests scripts bin calls
 for ((i = 1; i <= 110; i++)); do
   printf -v number '%03d' "$i"
   printf 'export const fixture = true;\n' > "changed/${number}_$(printf 'x%.0s' {1..100}).ts"
 done
 printf 'export const fixture = true;\n' > 'changed/a file with spaces.ts'
 printf 'export const fixture = true;\n' > codemods/misc/fixture/scripts/codemod.ts
+printf 'export const fixture = true;\n' > codemods/misc/fixture/tests/nested/input.ts
+printf 'fixture\n' > codemods/misc/fixture/tests-css/nested/input.css
+printf 'export const fixture = true;\n' > tests/input.tsx
 printf '{"name":"@backstage/fixture"}\n' > codemods/misc/fixture/package.json
 printf '#!/usr/bin/env bash\n' > scripts/mixed-shell.sh
-git add changed codemods scripts
+git add changed codemods tests scripts
 git -c user.name=Fixture -c user.email=fixture@example.invalid commit -qm changed
 
 cat > bin/yarn <<'EOF'
@@ -55,7 +58,7 @@ for ((i = 1; i <= $(cat calls/count); i++)); do
   esac
 done
 git diff --name-only origin/main...HEAD > expected-all
-grep -vE '\.sh$' expected-all > expected-format
+grep -vE '(^|/)tests(-[^/]*)?/|\.sh$' expected-all > expected-format
 grep -E '\.(ts|js|mts|mjs|tsx|jsx)$' expected-all > expected-lint
 cmp expected-format actual-format
 cmp expected-lint actual-lint
@@ -77,4 +80,17 @@ git -c user.name=Fixture -c user.email=fixture@example.invalid commit -qm shell-
 rm -f calls/*
 bash "$script" > /dev/null
 [ ! -e calls/count ] # No formatter invocation for an unsupported-only diff.
+
+git update-ref refs/remotes/origin/main HEAD
+printf 'export const fixture = false;\n' > codemods/misc/fixture/tests/nested/input.ts
+printf 'fixture changed\n' > codemods/misc/fixture/tests-css/nested/input.css
+git add codemods
+git -c user.name=Fixture -c user.email=fixture@example.invalid commit -qm ignored-only
+rm -f calls/*
+bash "$script" > /dev/null
+[ "$(cat calls/count)" -eq 3 ] # Lint, package tests, and README still run.
+[ "$(sed -n '1p' calls/1)" = lint ]
+[ "$(sed -n '3p' calls/1)" = codemods/misc/fixture/tests/nested/input.ts ]
+[ "$(sed -n '1p' calls/2)" = test ]
+[ "$(sed -n '1p' calls/3)" = readme ]
 echo 'check-changed batching regression passed'
