@@ -1,0 +1,18 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: sample
+spec:
+  steps:
+    - id: create
+      action: github:repo:create
+      input:
+        repoUrl: github.com?repo=demo&owner=team
+        protectDefaultBranch: true
+        sourcePath: ./skeleton
+        requiredLinearHistory: true
+        description: keep me
+    - id: push
+      action: github:repo:push
+      input:
+        protectDefaultBranch: true

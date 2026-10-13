@@ -1,0 +1,9 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: quoted-action-inline
+spec:
+  steps:
+    - id: create
+      action: 'github:repo:create'
+      input: { repoUrl: github.com?repo=demo&owner=team, sourcePath: ./skeleton, branch: main, description: keep }

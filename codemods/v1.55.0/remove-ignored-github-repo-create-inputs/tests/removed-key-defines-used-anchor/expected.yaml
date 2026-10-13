@@ -1,0 +1,12 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+spec:
+  steps:
+    - action: github:repo:create
+      # TODO(backstage-codemod): github:repo:create input may include removed keys via YAML merge/anchor/expression; review manually
+      input:
+        repoUrl: github.com?repo=anchor&owner=team
+        sourcePath: &shared ./skeleton
+    - action: github:repo:push
+      input:
+        sourcePath: *shared

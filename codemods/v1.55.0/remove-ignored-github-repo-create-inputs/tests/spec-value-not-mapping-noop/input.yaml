@@ -1,0 +1,10 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: spec-value-not-mapping
+spec:
+  - steps:
+      - action: github:repo:create
+        input:
+          sourcePath: ./skeleton
+          repoUrl: github.com?repo=ignored&owner=team

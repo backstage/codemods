@@ -1,0 +1,8 @@
+kind: Template
+spec:
+  steps:
+    - action: >-
+        github:repo:create-extra
+      input:
+        repoUrl: github.com?repo=test&owner=team
+        sourcePath: ./skeleton
