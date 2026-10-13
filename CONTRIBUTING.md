@@ -32,12 +32,12 @@ yarn test
 
 After `yarn install`, the `prepare` script runs `husky` and sets `core.hooksPath` to `.husky/_`. Hooks fail loudly if `node_modules` is missing (so worktrees cannot silently skip checks).
 
-| Hook           | What runs                                                                                                                                                                                                          |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **pre-commit** | `yarn lint-staged` — format + lint staged files; package tests for staged `codemods/**/scripts/*`; regenerate `README.md` when `codemods/**/codemod.yaml` is staged ([`.lintstagedrc.json`](./.lintstagedrc.json)) |
-| **pre-push**   | `yarn check:changed` → [`scripts/check-changed.sh`](./scripts/check-changed.sh) — the **same** format / lint / package-name / test / README gates as CI                                                            |
+| Hook           | What runs                                                                                                                                        |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **pre-commit** | `yarn lint-staged` — format + lint staged files; package tests for staged `codemods/**/scripts/*` ([`.lintstagedrc.json`](./.lintstagedrc.json)) |
+| **pre-push**   | `yarn check:changed` → [`scripts/check-changed.sh`](./scripts/check-changed.sh) — the **same** format / lint / package-name / test gates as CI   |
 
-CI (`.github/workflows/ci.yml`) calls that same script, so local and remote gates cannot drift. Run `yarn check:changed` anytime to reproduce CI locally.
+CI (`.github/workflows/ci.yml`) calls that same script, so local and remote gates cannot drift. Run `yarn check:changed` anytime to reproduce CI locally. Codemod PRs do not regenerate or check the root README; leave it unchanged. After codemods land on `main`, run **Sync codemod README** from the Actions tab on `main` to generate a separate reviewable PR. A clean README is a no-op; reruns update the same bot branch/PR without force-pushing. The dispatch runs format, lint, tests, and README idempotence checks: PRs created with `GITHUB_TOKEN` do **not** trigger `pull_request` CI, so review the dispatch result before merging.
 
 ## Making changes
 
