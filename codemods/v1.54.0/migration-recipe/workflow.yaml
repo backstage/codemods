@@ -2,6 +2,13 @@
 
 version: '1'
 
+params:
+  schema:
+    aiFixup:
+      type: boolean
+      default: false
+      description: 'Optional AI fixup for the extension config schema codemod; not validated by this recipe.'
+
 nodes:
   - id: apply-recipe
     name: 'Run every Backstage 1.54.0 codemod in order'
@@ -22,6 +29,7 @@ nodes:
       - name: 'Migrate extension config schemas to Standard Schema values'
         codemod:
           source: '@backstage/migrate-extension-config-schema'
+          args: ['aiFixup']
 
       - name: 'Rename the OpenAPI verify command to validate'
         codemod:

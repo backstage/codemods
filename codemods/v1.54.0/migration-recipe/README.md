@@ -1,6 +1,6 @@
 # v1.54.0-migration-recipe
 
-Run the five Backstage 1.54.0 codemods in order from the [Codemod Registry](https://go.codemod.com/registry). **Do not run this recipe until all five dependencies are published to the registry.** This draft cannot be tested end-to-end while they are unavailable.
+Run the five Backstage 1.54.0 codemods in order from the [Codemod Registry](https://go.codemod.com/registry). The five dependencies are published, but the draft recipe's nested #147 step currently fails in CLI 1.18.3 (unbound `state.targetDirEncoded`). **Do not use or merge this recipe until that blocker is fixed and the full workflow passes.**
 
 ## What it runs
 
@@ -12,7 +12,7 @@ Run the five Backstage 1.54.0 codemods in order from the [Codemod Registry](http
 | 4   | [`@backstage/migrate-extension-config-schema`](https://app.codemod.com/registry/@backstage/migrate-extension-config-schema)   | Migrate extension `config.schema` factories to Standard Schema values.        |
 | 5   | [`@backstage/rename-openapi-validate-command`](https://app.codemod.com/registry/@backstage/rename-openapi-validate-command)   | Rename `repo schema openapi verify` to `validate`.                            |
 
-## Usage (after dependency publication)
+## Usage
 
 ```bash
 # Preview first
@@ -28,9 +28,9 @@ Once the recipe itself is published, replace `workflow run -w codemods/v1.54.0/m
 
 ## AI behavior and review
 
-The recipe passes no `aiFixup` parameter and runs AST-only. Only step 4 (#146) has an optional AI fixup. Recipe-level forwarding via `args: ['aiFixup']` has **not** been verified end-to-end with the current CLI and published nested codemod; workflow schema validation alone does not prove forwarding. Do not use the previously advertised `--agent openai` command: CLI 1.18.3 reports `Unknown agent 'openai' ... ignoring` and `Skipping AI step - no API key provided`; workflow exit 0 does **not** prove an AI fixup ran. After the recipe runs and #146 is published, run #146 individually with `--param aiFixup=true` only if a supported, approved OpenAI work provider and work credentials are available (never `openai-codex`); verify the AI step actually runs and review its edits on a disposable worktree. Check package-local Zod v4 availability, unresolved schema factories, and type checks. Do not silently change dependency versions. The other four steps have no AI fixup.
+The recipe defaults `aiFixup` to `false` and forwards it to step 4 (#146) so the nested workflow can bind its condition; the default run is AST-only. The optional `aiFixup=true` path has **not** been tested or approved for this recipe. Do not rely on it without separate provider-approved end-to-end validation. Do not use the previously advertised `--agent openai` command: CLI 1.18.3 reports `Unknown agent 'openai' ... ignoring` and `Skipping AI step - no API key provided`; workflow exit 0 does **not** prove an AI fixup ran. After the recipe runs, run #146 individually with `--param aiFixup=true` only if a supported, approved OpenAI work provider and work credentials are available (never `openai-codex`); verify the AI step actually runs and review its edits on a disposable worktree. Check package-local Zod v4 availability, unresolved schema factories, and type checks. Do not silently change dependency versions. The other four steps have no AI fixup.
 
-Search the migrated app for residual markers: `rg -F 'TODO(backstage-codemod)' /path/to/backstage-app`. Resolve each with context; the recipe does not guarantee every migration is mechanical. This package has no transform script or fixture tests of its own; `yarn test` validates its workflow schema. End-to-end tests, including mixed-import and schema-factory fixtures, must wait for all five registry packages.
+Search the migrated app for residual markers: `rg -F 'TODO(backstage-codemod)' /path/to/backstage-app`. Resolve each with context; the recipe does not guarantee every migration is mechanical. This package has no transform script; `yarn test` checks the AST-only parameter binding and workflow schema. A registry-backed dry-run completed, but apply failed in nested step 5 (#147) with `Variable identifier is not bound to anything by context: "state.targetDirEncoded"`; repeatability and complete end-to-end execution remain unverified. A standalone #147 run completed only when a tracked root `package.json` initialized that state; adding one did not fix nested execution. Keep this draft unmerged pending upstream remediation and a full apply/repeat QA run.
 
 ## Manual-only changes
 
