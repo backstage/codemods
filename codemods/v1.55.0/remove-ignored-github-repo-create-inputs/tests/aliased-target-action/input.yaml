@@ -1,0 +1,7 @@
+kind: Template
+sharedAction: &create github:repo:create
+sharedInput: &unsafe { repoUrl: github.com?repo=test&owner=team, sourcePath: ./skeleton }
+spec:
+  steps:
+    - action: *create
+      input: *unsafe

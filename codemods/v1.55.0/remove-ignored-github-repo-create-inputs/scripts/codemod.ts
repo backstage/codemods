@@ -218,6 +218,30 @@ function isSafeInputAlias(documentNode: SgNode<YAML>, inputValueNode: SgNode<YAM
   })
 }
 
+function actionMayBeTarget(documentNode: SgNode<YAML>, valueNode: SgNode<YAML>): boolean {
+  const alias = valueNode.children().find((child) => child.kind() === 'alias')
+  if (alias) {
+    const anchors = documentNode
+      .findAll({ rule: { kind: 'anchor' } })
+      .filter(
+        (anchor) =>
+          anchor.text().slice(1) === alias.text().slice(1) && anchor.range().start.index < alias.range().start.index,
+      )
+    if (anchors.length !== 1 || !anchors[0]) {
+      return true // Unresolved aliases may still refer to the target action.
+    }
+    const anchoredValue = anchors[0].parent()
+    return anchoredValue ? actionMayBeTarget(documentNode, anchoredValue) : true
+  }
+
+  const scalar = valueNode.children().find((child) => child.kind() === 'plain_scalar')
+  if (scalar) {
+    return parseScalarText(scalar.text()) === TARGET_ACTION
+  }
+
+  return false
+}
+
 function hasDirectFlowComments(mappingNode: SgNode<YAML>): boolean {
   if (mappingNode.kind() !== 'flow_mapping') {
     return false
@@ -495,19 +519,24 @@ const transform: Codemod<YAML> = async (root) => {
         const actionIsAmbiguous =
           actionValueNode &&
           (actionValue === null ||
-            actionValue.startsWith('*') ||
+            actionMayBeTarget(documentNode, actionValueNode) ||
             (actionValueNode.find({ rule: { kind: 'block_scalar' } }) &&
               actionValueNode.text().includes(TARGET_ACTION)))
         if (actionIsAmbiguous) {
           const possibleInput = findDirectPair(stepMapping, 'input')
-          const possibleInputMapping = possibleInput ? findMappingNode(getPairValueNode(possibleInput)) : null
+          const possibleInputValue = possibleInput ? getPairValueNode(possibleInput) : null
+          const possibleInputMapping = findMappingNode(possibleInputValue)
+          const unsafeInputAlias =
+            possibleInputValue?.children().some((child) => child.kind() === 'alias') &&
+            !isSafeInputAlias(documentNode, possibleInputValue)
           if (
             possibleInput &&
-            possibleInputMapping &&
-            getDirectPairs(possibleInputMapping).some((pair) => {
-              const key = getPairKey(pair)
-              return key === null || REMOVED_INPUT_KEYS.has(key) || key === '<<'
-            }) &&
+            (unsafeInputAlias ||
+              (possibleInputMapping &&
+                getDirectPairs(possibleInputMapping).some((pair) => {
+                  const key = getPairKey(pair)
+                  return key === null || REMOVED_INPUT_KEYS.has(key) || key === '<<'
+                }))) &&
             !stepMapping.text().includes(ACTION_TODO_COMMENT)
           ) {
             const inputLine = possibleInput.range().start.line

@@ -1,0 +1,13 @@
+kind: Template
+otherAction: &other other:action
+spec:
+  steps:
+    - action: !!str other:action
+      input:
+        sourcePath: ./skeleton
+    - action: &elsewhere other:action
+      input:
+        sourcePath: ./skeleton
+    - action: *other
+      input:
+        sourcePath: ./skeleton
