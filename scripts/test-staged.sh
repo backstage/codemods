@@ -8,7 +8,10 @@ for file in "$@"; do
   dirs+=("$pkg_dir")
 done
 
-unique_dirs=($(printf '%s\n' "${dirs[@]}" | sort -u))
+unique_dirs=()
+while IFS= read -r pkg_dir; do
+  unique_dirs+=("$pkg_dir")
+done < <(printf '%s\n' "${dirs[@]}" | sort -u)
 
 for pkg in "${unique_dirs[@]}"; do
   if [ -f "$pkg/package.json" ]; then
