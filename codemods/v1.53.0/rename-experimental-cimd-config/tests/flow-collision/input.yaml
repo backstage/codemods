@@ -1,0 +1,7 @@
+auth: {providers: {}, experimentalClientIdMetadataDocuments: {enabled: false}, clientIdMetadataDocuments: {enabled: true}} # keep
+---
+auth: {
+  clientIdMetadataDocuments: true,
+  experimentalClientIdMetadataDocuments: false, # existing
+  providers: {}
+}
