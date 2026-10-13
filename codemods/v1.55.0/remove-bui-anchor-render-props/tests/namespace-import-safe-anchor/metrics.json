@@ -1,0 +1,18 @@
+{
+  "remove-bui-anchor-render-props": [
+    {
+      "cardinality": {
+        "action": "render-prop-removed",
+        "component": "MenuItem"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "render-prop-removed",
+        "component": "SearchAutocompleteItem"
+      },
+      "count": 1
+    }
+  ]
+}

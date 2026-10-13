@@ -1,0 +1,12 @@
+{
+  "move-connections-config-imports": [
+    {
+      "cardinality": {
+        "action": "todo",
+        "alias": "connections",
+        "kind": "namespace-import"
+      },
+      "count": 1
+    }
+  ]
+}

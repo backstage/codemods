@@ -1,0 +1,5 @@
+{
+  catalog: { enableRelationsCompatibility: true },
+  # keep sibling comment
+  app: { title: Backstage }
+}

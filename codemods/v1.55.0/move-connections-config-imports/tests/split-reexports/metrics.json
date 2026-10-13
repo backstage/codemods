@@ -1,0 +1,25 @@
+{
+  "move-connections-config-imports": [
+    {
+      "cardinality": {
+        "kind": "export",
+        "symbol": "ConfiguredConnection"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "kind": "export",
+        "symbol": "ConfiguredConnectionAuth"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "kind": "export",
+        "symbol": "buildConnectionsFromConfig"
+      },
+      "count": 1
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+auth: {clientIdMetadataDocuments: {enabled: true}, providers: {guest: {}}} # keep
+---
+auth: {
+  clientIdMetadataDocuments: false, # keep inline comment
+  dynamicClientRegistration: {enabled: true}
+}

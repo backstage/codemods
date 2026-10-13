@@ -1,0 +1,12 @@
+{
+  "remove-kubernetes-implicit-children": [
+    {
+      "cardinality": {
+        "action": "todo-added",
+        "component": "PodLogs",
+        "reason": "function call"
+      },
+      "count": 1
+    }
+  ]
+}

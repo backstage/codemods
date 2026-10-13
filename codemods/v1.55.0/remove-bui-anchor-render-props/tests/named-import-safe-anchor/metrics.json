@@ -1,0 +1,60 @@
+{
+  "remove-bui-anchor-render-props": [
+    {
+      "cardinality": {
+        "action": "render-prop-removed",
+        "component": "ButtonLink"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "render-prop-removed",
+        "component": "ComboboxItem"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "render-prop-removed",
+        "component": "Link"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "render-prop-removed",
+        "component": "MenuItem"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "render-prop-removed",
+        "component": "MenuListBoxItem"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "render-prop-removed",
+        "component": "SearchAutocompleteItem"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "render-prop-removed",
+        "component": "SelectItem"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "render-prop-removed",
+        "component": "Tab"
+      },
+      "count": 1
+    }
+  ]
+}

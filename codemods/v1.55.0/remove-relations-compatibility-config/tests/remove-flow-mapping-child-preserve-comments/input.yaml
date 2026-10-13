@@ -1,0 +1,7 @@
+catalog: {
+  # keep rules comment
+  rules: [{ allow: [Component] }],
+  enableRelationsCompatibility: true,
+  # keep locations comment
+  locations: [{ type: file, target: ../../catalog-info.yaml }]
+}

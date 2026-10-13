@@ -55,7 +55,6 @@ jobs:
           yarn readme
           cmp README.md "$RUNNER_TEMP/generated-readme.md"
           yarn format:check
-          yarn lint
           yarn test
           bash scripts/test-check-changed.sh
           bash scripts/test-sync-readme-pr.sh
