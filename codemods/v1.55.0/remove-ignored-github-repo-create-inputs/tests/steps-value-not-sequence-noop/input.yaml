@@ -1,0 +1,11 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: steps-value-not-sequence
+spec:
+  steps:
+    group:
+      - action: github:repo:create
+        input:
+          sourcePath: ./skeleton
+          repoUrl: github.com?repo=ignored&owner=team

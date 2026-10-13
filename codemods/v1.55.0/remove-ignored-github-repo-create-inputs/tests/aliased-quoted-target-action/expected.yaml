@@ -1,0 +1,9 @@
+kind: Template
+sharedAction: &create 'github:repo:create'
+spec:
+  steps:
+    - action: *create
+      # TODO(backstage-codemod): action may resolve to github:repo:create; review input manually
+      input:
+        repoUrl: github.com?repo=test&owner=team
+        sourcePath: ./skeleton

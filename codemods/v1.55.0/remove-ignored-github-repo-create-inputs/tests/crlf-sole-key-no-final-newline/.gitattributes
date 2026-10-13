@@ -1,0 +1,2 @@
+input.yaml -text -eol whitespace=cr-at-eol
+expected.yaml -text -eol whitespace=cr-at-eol

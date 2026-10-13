@@ -1,0 +1,7 @@
+kind: Template
+spec:
+  steps:
+    - action: "github:repo:\u0063reate"
+      input:
+        "source\u0050ath": ./skeleton
+        repoUrl: github.com?repo=demo&owner=team

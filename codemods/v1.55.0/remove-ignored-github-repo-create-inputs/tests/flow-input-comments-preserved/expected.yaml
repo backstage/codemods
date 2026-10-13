@@ -1,0 +1,11 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: flow-comments
+spec:
+  steps:
+    - id: create
+      action: github:repo:create
+      input: { repoUrl: github.com?repo=flow-comments&owner=team, # keep repo comment
+        # keep interstitial comment
+        description: keep this text }

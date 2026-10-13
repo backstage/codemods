@@ -1,0 +1,6 @@
+kind: Template
+spec:
+  steps:
+    - action: "github:repo:\u0063reate"
+      input:
+        repoUrl: github.com?repo=demo&owner=team

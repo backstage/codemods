@@ -1,0 +1,13 @@
+{
+  "name": "@backstage/rename-connections-public-api",
+  "version": "0.2.0",
+  "description": "Backstage 1.55.0: Rename Connections public symbols",
+  "type": "module",
+  "scripts": {
+    "test": "yarn exec codemod jssg test -l tsx ./scripts/codemod.ts ./tests && yarn exec codemod workflow validate -w workflow.yaml && bash ./scripts/workflow-run.test.sh"
+  },
+  "devDependencies": {
+    "@codemod.com/jssg-types": "1.6.3",
+    "codemod": "1.18.3"
+  }
+}

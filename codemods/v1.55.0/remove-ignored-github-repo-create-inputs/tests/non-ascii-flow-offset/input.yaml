@@ -1,0 +1,8 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: café
+spec:
+  steps:
+    - action: github:repo:create
+      input: { repoUrl: github.com?repo=cafe&owner=team, sourcePath: ./skeleton }

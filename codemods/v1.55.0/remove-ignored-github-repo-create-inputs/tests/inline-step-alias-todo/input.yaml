@@ -1,0 +1,6 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+shared: &cfg { sourcePath: ./skeleton }
+spec:
+  steps:
+    - { input: *cfg, action: github:repo:create }

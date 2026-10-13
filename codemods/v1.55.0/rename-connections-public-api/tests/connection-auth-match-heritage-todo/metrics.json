@@ -1,0 +1,12 @@
+{
+  "rename-connections-public-api": [
+    {
+      "cardinality": {
+        "action": "todo-added",
+        "name": "ConnectionAuthMatch",
+        "reason": "unsafe-reference"
+      },
+      "count": 1
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+kind: Template
+sharedAction: &create github:repo:create
+sharedInput: &unsafe { repoUrl: github.com?repo=test&owner=team, sourcePath: ./skeleton }
+spec:
+  steps:
+    - action: *create
+      # TODO(backstage-codemod): action may resolve to github:repo:create; review input manually
+      input: *unsafe

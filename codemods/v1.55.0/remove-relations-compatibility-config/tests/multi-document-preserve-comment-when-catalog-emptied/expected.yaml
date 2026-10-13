@@ -1,0 +1,7 @@
+# shared header
+catalog: {}
+  # keep this note for operators
+---
+catalog:
+  rules:
+    - allow: [Component]

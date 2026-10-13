@@ -1,0 +1,7 @@
+kind: Template
+shared: &safe { "source\u0050ath": ./skeleton }
+spec:
+  steps:
+    - action: github:repo:create
+      # TODO(backstage-codemod): github:repo:create input may include removed keys via YAML merge/anchor/expression; review manually
+      input: *safe

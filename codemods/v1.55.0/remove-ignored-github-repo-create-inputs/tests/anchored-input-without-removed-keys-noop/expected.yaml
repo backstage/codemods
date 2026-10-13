@@ -1,0 +1,14 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: shared-safe-input
+spec:
+  steps:
+    - id: create
+      action: github:repo:create
+      input: &sharedInput
+        repoUrl: github.com?repo=safe&owner=team
+        description: Shared settings
+    - id: other
+      action: other:action
+      input: *sharedInput

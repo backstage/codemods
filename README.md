@@ -10,13 +10,11 @@ See the [Codemod docs](https://docs.codemod.com) for more on building and runnin
 
 <!-- CODEMODS_START -->
 
-### v1.55.0
+### v1.54.0
 
-Run the [`migration-recipe`](./codemods/v1.55.0/migration-recipe) to apply every codemod below in one pass, or run any individual codemod on its own.
-
-| Codemod                                                 | Description                                                                                    |
-| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| [migration-recipe](./codemods/v1.55.0/migration-recipe) | Migration recipe that runs every @backstage v1.55.0 codemod from the registry in a safe order. |
+| Codemod                                                                       | Description                                           |
+| ----------------------------------------------------------------------------- | ----------------------------------------------------- |
+| [rename-root-connection-auth](./codemods/v1.54.0/rename-root-connection-auth) | Rename RootConnectionAuth to ConfiguredConnectionAuth |
 
 ### v1.52.0
 
