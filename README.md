@@ -12,9 +12,9 @@ See the [Codemod docs](https://docs.codemod.com) for more on building and runnin
 
 ### v1.54.0
 
-| Codemod                                                                               | Description                                               |
-| ------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| [migrate-extension-config-schema](./codemods/v1.54.0/migrate-extension-config-schema) | Migrate extension config.schema to Standard Schema values |
+| Codemod                                                                       | Description                                           |
+| ----------------------------------------------------------------------------- | ----------------------------------------------------- |
+| [rename-root-connection-auth](./codemods/v1.54.0/rename-root-connection-auth) | Rename RootConnectionAuth to ConfiguredConnectionAuth |
 
 ### v1.52.0
 

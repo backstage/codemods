@@ -1,0 +1,9 @@
+{
+  "description": "backstage-repo-tools repo schema openapi verify",
+  "scr\u0069pts": {
+    "openapi:verify": "ENV=1 yarn backstage-repo-tools repo schema openapi verify --flag && ./node_modules/.bin/backstage-repo-tools repo schema openapi 'verify' --other",
+    "quoted": "npx backstage-repo-tools repo schema openapi \"verify\" --format json",
+    "plain": "backstage-repo-tools repo schema openapi verify",
+    "unrelated": "backstage-repo-tools repo schema openapi test"
+  }
+}

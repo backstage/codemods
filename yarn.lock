@@ -211,6 +211,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/migrate-connections-query@workspace:codemods/v1.54.0/migrate-connections-query":
+  version: 0.0.0-use.local
+  resolution: "@backstage/migrate-connections-query@workspace:codemods/v1.54.0/migrate-connections-query"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.3"
+    codemod: "npm:1.18.3"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/migrate-extension-config-schema@workspace:codemods/v1.54.0/migrate-extension-config-schema":
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-extension-config-schema@workspace:codemods/v1.54.0/migrate-extension-config-schema"
@@ -534,6 +543,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/move-connections-backend-imports@workspace:codemods/v1.54.0/move-connections-backend-imports":
+  version: 0.0.0-use.local
+  resolution: "@backstage/move-connections-backend-imports@workspace:codemods/v1.54.0/move-connections-backend-imports"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.3"
+    codemod: "npm:1.18.3"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/mui4-to-bui-migration-recipe@workspace:codemods/misc/mui4-to-bui-migration-recipe":
   version: 0.0.0-use.local
   resolution: "@backstage/mui4-to-bui-migration-recipe@workspace:codemods/misc/mui4-to-bui-migration-recipe"
@@ -673,6 +691,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/rename-experimental-cimd-config@workspace:codemods/v1.53.0/rename-experimental-cimd-config":
+  version: 0.0.0-use.local
+  resolution: "@backstage/rename-experimental-cimd-config@workspace:codemods/v1.53.0/rename-experimental-cimd-config"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.3"
+    codemod: "npm:1.18.3"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/rename-header-main-class@workspace:codemods/v1.51.0/rename-header-main-class":
   version: 0.0.0-use.local
   resolution: "@backstage/rename-header-main-class@workspace:codemods/v1.51.0/rename-header-main-class"
@@ -691,9 +718,27 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/rename-openapi-validate-command@workspace:codemods/v1.54.0/rename-openapi-validate-command":
+  version: 0.0.0-use.local
+  resolution: "@backstage/rename-openapi-validate-command@workspace:codemods/v1.54.0/rename-openapi-validate-command"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.3"
+    codemod: "npm:1.18.3"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/rename-plugin-header-toolbar@workspace:codemods/v1.50.0/rename-plugin-header-toolbar":
   version: 0.0.0-use.local
   resolution: "@backstage/rename-plugin-header-toolbar@workspace:codemods/v1.50.0/rename-plugin-header-toolbar"
+  dependencies:
+    "@codemod.com/jssg-types": "npm:1.6.3"
+    codemod: "npm:1.18.3"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/rename-root-connection-auth@workspace:codemods/v1.54.0/rename-root-connection-auth":
+  version: 0.0.0-use.local
+  resolution: "@backstage/rename-root-connection-auth@workspace:codemods/v1.54.0/rename-root-connection-auth"
   dependencies:
     "@codemod.com/jssg-types": "npm:1.6.3"
     codemod: "npm:1.18.3"
@@ -2169,8 +2214,8 @@ __metadata:
   linkType: hard
 
 "zod@npm:^3.25.76 || ^4.0.0, zod@npm:^4.1.0":
-  version: 4.6.6
-  resolution: "zod@npm:4.6.6"
-  checksum: 10c0/447a3113bb743c54ab839213ff95e9e8c197cc1206f65270c18aac35aa70c47a5c8cab753be911b574df9a8a9801ea74ed6be776575232cae0084e51dab3e970
+  version: 4.6.7
+  resolution: "zod@npm:4.6.7"
+  checksum: 10c0/4ce2eb14034317b7254e347ca37b5ad591cf8333147030cf05b9b5d31692d45073f7f2747aa50cf8c6b29012194d2b22978cecc89969cf34a0d18e89d0ee7d7b
   languageName: node
   linkType: hard
