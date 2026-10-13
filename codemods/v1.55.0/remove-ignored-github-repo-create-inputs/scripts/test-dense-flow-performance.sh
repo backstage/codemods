@@ -5,31 +5,47 @@ cd "$(dirname "$0")/.."
 target=$(mktemp -d)
 trap 'rm -rf "$target"' EXIT
 
-run_size() {
-  local size=$1 start end
-  node - "$target" "$size" <<'NODE'
+node - "$target" <<'NODE'
 const fs = require('node:fs')
 const path = require('node:path')
-const [directory, size] = process.argv.slice(2)
+const directory = process.argv[2]
 const header = 'apiVersion: scaffolder.backstage.io/v1beta3\nkind: Template\nmetadata:\n  name: dense\nspec:\n  steps:\n'
-const input = header + Array.from({ length: Number(size) }, (_, i) =>
+const input = header + Array.from({ length: 1200 }, (_, i) =>
   `    - id: create-${String(i).padStart(4, '0')}\n      action: github:repo:create\n      input: { repoUrl: github.com?repo=dense${i}&owner=team, sourcePath: ./skeleton, defaultBranch: main, description: keep-${i} }\n`
 ).join('')
-fs.writeFileSync(path.join(directory, 'dense.yaml'), input)
+fs.writeFileSync(path.join(directory, 'input'), input)
 fs.writeFileSync(path.join(directory, 'expected'), input.replaceAll(', sourcePath: ./skeleton, defaultBranch: main', ''))
+// One character per action changes; size, parser shape, and workflow stay the same.
+fs.writeFileSync(path.join(directory, 'noop'), input.replaceAll('action: github:repo:create', 'action: github:repo:creatE'))
 NODE
+
+run_flow() {
+  local start end
   start=$(node -p 'Date.now()')
   yarn exec codemod workflow run -w workflow.yaml --target "$target" --allow-dirty --no-interactive --disable-analytics >/dev/null
   end=$(node -p 'Date.now()')
-  cmp "$target/dense.yaml" "$target/expected"
-  rm "$target/expected"
   echo $((end - start))
 }
 
-small=$(run_size 600)
-large=$(run_size 1200)
-echo "dense flow mapping: 600=${small}ms 1200=${large}ms"
-if (( large >= 20000 || large * 10 >= small * 28 )); then
-  echo 'dense edit application regressed' >&2
+noop_times=()
+real_times=()
+for iteration in 1 2 3; do
+  cp "$target/noop" "$target/dense.yaml"
+  noop_times+=("$(run_flow)")
+  cmp "$target/dense.yaml" "$target/noop"
+
+  cp "$target/input" "$target/dense.yaml"
+  real_times+=("$(run_flow)")
+  cmp "$target/dense.yaml" "$target/expected"
+done
+# Reapplying the real workflow must preserve the exact transformed bytes.
+run_flow >/dev/null
+cmp "$target/dense.yaml" "$target/expected"
+
+noop_median=$(printf '%s\n' "${noop_times[@]}" | sort -n | sed -n '2p')
+real_median=$(printf '%s\n' "${real_times[@]}" | sort -n | sed -n '2p')
+echo "dense flow mapping (1200 steps): no-op=${noop_median}ms real=${real_median}ms (medians of 3)"
+if (( real_median >= noop_median * 5 )); then
+  echo 'dense edit application regressed relative to the same-size no-op workflow' >&2
   exit 1
 fi
