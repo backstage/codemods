@@ -398,12 +398,13 @@ function getCommentedFlowPairRemovalRange(
   mappingNode: SgNode<YAML>,
   source: string,
   lineStarts: number[],
+  byteOffsetToStringIndex: (offset: number) => number,
 ): TextEdit | null {
   const range = pair.range()
   const lineStart = getLineStart(lineStarts, range.start.line, source.length)
   const nextLineStart = getLineStart(lineStarts, range.start.line + 1, source.length)
-  const pairStart = utf8ByteOffsetToStringIndex(source, range.start.index)
-  const pairEnd = utf8ByteOffsetToStringIndex(source, range.end.index)
+  const pairStart = byteOffsetToStringIndex(range.start.index)
+  const pairEnd = byteOffsetToStringIndex(range.end.index)
   const suffix = source.slice(pairEnd, nextLineStart)
 
   if (
@@ -419,7 +420,7 @@ function getCommentedFlowPairRemovalRange(
     return { start: pairStart, end: pairEnd + followingComma[0].length, replacement: '' }
   }
 
-  const mappingEnd = utf8ByteOffsetToStringIndex(source, mappingNode.range().end.index)
+  const mappingEnd = byteOffsetToStringIndex(mappingNode.range().end.index)
   if (/^[ \t]*\}$/u.test(source.slice(pairEnd, mappingEnd))) {
     return { start: pairStart, end: mappingEnd - 1, replacement: '' }
   }
@@ -431,15 +432,22 @@ function hasExistingTodo(stepNode: SgNode<YAML>): boolean {
   return stepNode.text().includes(TODO_COMMENT)
 }
 
-function utf8ByteOffsetToStringIndex(source: string, offset: number): number {
-  let bytes = 0
-  let index = 0
-  while (bytes < offset && index < source.length) {
-    const codePoint = source.codePointAt(index) ?? 0
-    bytes += codePoint < 0x80 ? 1 : codePoint < 0x800 ? 2 : codePoint < 0x10000 ? 3 : 4
-    index += codePoint > 0xffff ? 2 : 1
+function createByteOffsetToStringIndex(source: string): (offset: number) => number {
+  let positions: Uint32Array | undefined
+  return (offset) => {
+    if (!positions) {
+      positions = new Uint32Array(new TextEncoder().encode(source).length + 1)
+      let bytes = 0
+      for (let index = 0; index < source.length;) {
+        const codePoint = source.codePointAt(index) ?? 0
+        const width = codePoint < 0x80 ? 1 : codePoint < 0x800 ? 2 : codePoint < 0x10000 ? 3 : 4
+        index += codePoint > 0xffff ? 2 : 1
+        positions.fill(index, bytes + 1, bytes + width + 1)
+        bytes += width
+      }
+    }
+    return positions[offset] ?? source.length
   }
-  return index
 }
 
 function applyTextEdits(source: string, edits: TextEdit[]): string {
@@ -458,14 +466,31 @@ function applyTextEdits(source: string, edits: TextEdit[]): string {
     }
   }
 
-  const sortedDescending = [...sortedAscending].sort((a, b) => b.start - a.start || b.end - a.end)
-  let result = source
-
-  for (const edit of sortedDescending) {
-    result = `${result.slice(0, edit.start)}${edit.replacement}${result.slice(edit.end)}`
+  const parts: string[] = []
+  let cursor = 0
+  for (let index = 0; index < sortedAscending.length;) {
+    const edit = sortedAscending[index]
+    if (!edit) {
+      break
+    }
+    parts.push(source.slice(cursor, edit.start))
+    let next = index + 1
+    while (
+      next < sortedAscending.length &&
+      sortedAscending[next]?.start === edit.start &&
+      sortedAscending[next]?.end === edit.end
+    ) {
+      next += 1
+    }
+    // The former descending application reversed equal-offset insertions.
+    for (let replacementIndex = next - 1; replacementIndex >= index; replacementIndex -= 1) {
+      parts.push(sortedAscending[replacementIndex]?.replacement ?? '')
+    }
+    cursor = edit.end
+    index = next
   }
-
-  return result
+  parts.push(source.slice(cursor))
+  return parts.join('')
 }
 
 const transform: Codemod<YAML> = async (root) => {
@@ -474,6 +499,7 @@ const transform: Codemod<YAML> = async (root) => {
   const lines = source.split('\n')
   const lineStarts = getLineStarts(source)
   const sourceLength = source.length
+  const byteOffsetToStringIndex = createByteOffsetToStringIndex(source)
 
   const edits: TextEdit[] = []
   const templateDocuments = collectTemplateDocuments(root.root())
@@ -605,7 +631,7 @@ const transform: Codemod<YAML> = async (root) => {
           if (inputMapping.kind() === 'flow_mapping') {
             if (hasDirectFlowComments(inputMapping)) {
               const commentEdits = removablePairs.map((pair) =>
-                getCommentedFlowPairRemovalRange(pair, inputMapping, source, lineStarts),
+                getCommentedFlowPairRemovalRange(pair, inputMapping, source, lineStarts, byteOffsetToStringIndex),
               )
               if (commentEdits.every((edit): edit is TextEdit => edit !== null)) {
                 edits.push(...commentEdits)
@@ -624,8 +650,8 @@ const transform: Codemod<YAML> = async (root) => {
 
               const valueRange = inputMapping.range()
               edits.push({
-                start: utf8ByteOffsetToStringIndex(source, valueRange.start.index),
-                end: utf8ByteOffsetToStringIndex(source, valueRange.end.index),
+                start: byteOffsetToStringIndex(valueRange.start.index),
+                end: byteOffsetToStringIndex(valueRange.end.index),
                 replacement,
               })
 

@@ -4,7 +4,8 @@
   "description": "Backstage 1.55.0: Remove ignored github:repo:create inputs from scaffolder templates",
   "type": "module",
   "scripts": {
-    "test": "yarn exec codemod jssg test -l yaml ./scripts/codemod.ts ./tests && yarn exec codemod workflow validate -w workflow.yaml"
+    "test": "yarn exec codemod jssg test -l yaml ./scripts/codemod.ts ./tests && yarn exec codemod workflow validate -w workflow.yaml",
+    "test:scale": "bash scripts/test-dense-flow-performance.sh"
   },
   "devDependencies": {
     "@codemod.com/jssg-types": "1.6.3",
