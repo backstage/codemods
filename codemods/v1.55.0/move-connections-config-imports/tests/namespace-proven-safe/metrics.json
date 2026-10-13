@@ -1,0 +1,31 @@
+{
+  "move-connections-config-imports": [
+    {
+      "cardinality": {
+        "action": "migrated",
+        "alias": "connections",
+        "kind": "namespace-import",
+        "symbol": "ConfiguredConnection"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "migrated",
+        "alias": "connections",
+        "kind": "namespace-import",
+        "symbol": "ConfiguredConnectionAuth"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "migrated",
+        "alias": "connections",
+        "kind": "namespace-import",
+        "symbol": "buildConnectionsFromConfig"
+      },
+      "count": 1
+    }
+  ]
+}
