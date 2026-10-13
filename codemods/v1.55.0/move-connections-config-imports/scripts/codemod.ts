@@ -19,7 +19,11 @@ function deferMixedDeclarationWithDirective(
   edits: Edit[],
   kind: 'import' | 'export',
 ): boolean {
-  const comments = rootNode.children().filter((child) => child.is('comment'))
+  const comments =
+    statement
+      .parent()
+      ?.children()
+      .filter((child) => child.is('comment')) ?? []
   const isDirective = (comment: SgNode<TSX>) => /^\s*(?:\/\/|\/\*)\s*@ts-(?:expect-error|ignore)\b/.test(comment.text())
   const precedingDirective = comments.find(
     (comment) => comment.range().end.line === statement.range().start.line - 1 && isDirective(comment),
@@ -34,10 +38,13 @@ function deferMixedDeclarationWithDirective(
   if (
     !comments.some((comment) => comment.range().end.line === anchor.range().start.line - 1 && comment.text() === todo)
   ) {
+    const prefix = rootNode
+      .text()
+      .slice(rootNode.text().lastIndexOf('\n', anchor.range().start.index - 1) + 1, anchor.range().start.index)
     edits.push({
       startPos: anchor.range().start.index,
       endPos: anchor.range().start.index,
-      insertedText: `${todo}\n`,
+      insertedText: `${todo}\n${/^[ \t]*$/.test(prefix) ? prefix : ''}`,
     })
     migrationMetric.increment({ kind, action: 'todo' })
   }
