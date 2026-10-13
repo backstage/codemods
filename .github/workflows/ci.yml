@@ -39,11 +39,12 @@ jobs:
 
       - run: yarn install --immutable
 
-      - name: Test changed-file checks
-        run: bash scripts/test-check-changed.sh
-
-      - name: Test manual README sync
-        run: bash scripts/test-sync-readme-pr.sh
+      - name: Test shell scripts
+        run: |
+          export LC_ALL=C
+          for script in scripts/test-*.sh; do
+            bash "$script" || exit $?
+          done
 
       # Shared with local husky pre-push (scripts/check-changed.sh) so gates cannot drift.
       - name: Check changed files
