@@ -1,0 +1,6 @@
+"auth":
+  'experimentalClientIdMetadataDocuments': &cimd
+    enabled: true
+other:
+  auth:
+    experimentalClientIdMetadataDocuments: false

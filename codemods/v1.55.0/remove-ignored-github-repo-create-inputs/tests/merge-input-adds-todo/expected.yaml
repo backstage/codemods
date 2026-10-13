@@ -1,0 +1,17 @@
+repoDefaults: &repoDefaults
+  sourcePath: ./anchor-default
+  protectDefaultBranch: true
+
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: merge-template
+spec:
+  steps:
+    - id: create
+      action: github:repo:create
+      # TODO(backstage-codemod): github:repo:create input may include removed keys via YAML merge/anchor/expression; review manually
+      input:
+        <<: *repoDefaults
+        repoUrl: github.com?repo=merge&owner=team
+        sourcePath: ./skeleton

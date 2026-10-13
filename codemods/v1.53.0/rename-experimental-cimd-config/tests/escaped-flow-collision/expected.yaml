@@ -1,0 +1,3 @@
+auth: {
+  # TODO(backstage-codemod): reconcile experimentalClientIdMetadataDocuments with clientIdMetadataDocuments
+  "experimentalClientIdMetadataDocument\x73": false, "clientIdMetadataDocument\U00000073": true}

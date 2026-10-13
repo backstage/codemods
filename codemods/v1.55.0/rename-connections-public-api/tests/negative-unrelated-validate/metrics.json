@@ -1,0 +1,44 @@
+{
+  "rename-connections-public-api": [
+    {
+      "cardinality": {
+        "action": "import-renamed",
+        "from": "ConnectionType",
+        "to": "ConnectionTypeDefinition"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-renamed",
+        "from": "ConnectionTypeKey",
+        "to": "ConnectionType"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "reference-renamed",
+        "from": "ConnectionType",
+        "to": "ConnectionTypeDefinition"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "reference-renamed",
+        "from": "ConnectionTypeKey",
+        "to": "ConnectionType"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "todo-added",
+        "name": "matchAuth",
+        "reason": "removed-connection-type-member"
+      },
+      "count": 1
+    }
+  ]
+}

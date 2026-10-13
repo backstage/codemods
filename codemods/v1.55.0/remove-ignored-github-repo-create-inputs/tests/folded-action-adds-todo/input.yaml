@@ -1,0 +1,9 @@
+kind: Template
+spec:
+  steps:
+    - id: create
+      action: >-
+        github:repo:create
+      input:
+        repoUrl: github.com?repo=folded&owner=team
+        sourcePath: ./skeleton

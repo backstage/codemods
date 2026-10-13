@@ -1,0 +1,18 @@
+{
+  "move-connections-config-imports": [
+    {
+      "cardinality": {
+        "action": "todo",
+        "kind": "export"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "todo",
+        "kind": "import"
+      },
+      "count": 1
+    }
+  ]
+}

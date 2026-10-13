@@ -1,0 +1,3 @@
+auth: {✨: true,
+  # TODO(backstage-codemod): reconcile experimentalClientIdMetadataDocuments with clientIdMetadataDocuments
+  experimentalClientIdMetadataDocuments: false, clientIdMetadataDocuments: true}

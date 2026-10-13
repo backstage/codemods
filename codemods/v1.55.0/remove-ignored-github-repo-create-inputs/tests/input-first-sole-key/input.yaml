@@ -1,0 +1,7 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+spec:
+  steps:
+    - input:
+        sourcePath: ./skeleton
+      action: github:repo:create

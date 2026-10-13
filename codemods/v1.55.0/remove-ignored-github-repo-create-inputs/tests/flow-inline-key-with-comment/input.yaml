@@ -1,0 +1,7 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+spec:
+  steps:
+    - action: github:repo:create
+      input: { repoUrl: github.com?repo=flow&owner=team, # keep repo comment
+        sourcePath: ./skeleton, description: keep }

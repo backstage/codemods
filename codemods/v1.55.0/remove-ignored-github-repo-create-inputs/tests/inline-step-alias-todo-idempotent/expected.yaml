@@ -1,0 +1,7 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+shared: &cfg { sourcePath: ./skeleton }
+spec:
+  steps:
+    # TODO(backstage-codemod): github:repo:create input may include removed keys via YAML merge/anchor/expression; review manually
+    - { input: *cfg, action: github:repo:create }

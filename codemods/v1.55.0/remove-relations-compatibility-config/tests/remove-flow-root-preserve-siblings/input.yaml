@@ -1,0 +1,1 @@
+{ catalog: { enableRelationsCompatibility: true }, app: { title: Backstage } }

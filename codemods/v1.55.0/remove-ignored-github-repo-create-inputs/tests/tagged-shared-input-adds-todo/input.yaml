@@ -1,0 +1,11 @@
+kind: Template
+spec:
+  steps:
+    - id: create
+      action: github:repo:create
+      input: !!map &shared
+        repoUrl: github.com?repo=anchor&owner=team
+        sourcePath: ./skeleton
+    - id: other
+      action: other:action
+      input: *shared

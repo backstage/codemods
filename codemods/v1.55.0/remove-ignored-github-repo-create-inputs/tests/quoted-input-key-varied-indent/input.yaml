@@ -1,0 +1,13 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: varied-indent
+spec:
+    steps:
+      - id: create
+        action: github:repo:create
+        input:
+            repoUrl: github.com?repo=demo&owner=team
+            'sourcePath': ./skeleton
+            defaultBranch: main
+            description: keep
