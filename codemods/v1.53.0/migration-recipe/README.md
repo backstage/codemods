@@ -10,7 +10,7 @@ Run the eligible Backstage 1.53.0 config migration from the [Codemod Registry](h
 
 ## Usage
 
-Run after `@backstage/rename-experimental-cimd-config` is published to the registry. Until then, the workflow can be validated locally but cannot run end-to-end.
+The recipe requires registry-sourced `@backstage/rename-experimental-cimd-config`, published at version 0.2.1.
 
 ```bash
 # Dry-run first
