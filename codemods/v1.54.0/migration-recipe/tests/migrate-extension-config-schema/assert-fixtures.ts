@@ -2,23 +2,47 @@
 // Each fixture is a full app tree; the whole recipe workflow must succeed on
 // it and produce exactly the expected output. The other steps are expected
 // to no-op on these fixtures, which the diff verifies.
-import { spawnSync } from 'node:child_process'
-import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
+//
+// Fixtures are independent workflow runs, so they execute concurrently
+// (bounded) to keep CI fast; each run has a timeout so a hung CLI fails
+// loudly with its log instead of stalling the suite.
+import { spawn } from 'node:child_process'
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
-function runYarn(args: string[]): { status: number | null; stdout: string } {
-  // Invoked through run-recipe-tests, which runs under Yarn (npm_execpath set).
-  // Corepack points npm_execpath at a shell shim; only a JS entry can be
-  // executed directly, everything else goes through the shell with quoting.
-  const execPath = process.env.npm_execpath
-  const quote = (arg: string) =>
-    process.platform === 'win32' ? `"${arg.replaceAll('"', '""')}"` : `'${arg.replaceAll("'", `'\\''`)}'`
-  if (execPath !== undefined && /\.(cm?js|mjs)$/i.test(execPath)) {
-    const result = spawnSync(process.execPath, [execPath, ...args], { encoding: 'utf8' })
-    return { status: result.status, stdout: result.stdout ?? '' }
-  }
-  const result = spawnSync(['yarn', ...args.map(quote)].join(' '), { encoding: 'utf8', shell: true })
-  return { status: result.status, stdout: result.stdout ?? '' }
+const CONCURRENCY = 4
+const FIXTURE_TIMEOUT_MS = 300_000
+
+function yarn(args: string[], timeoutMs: number): Promise<{ status: number | null; stdout: string; timedOut: boolean }> {
+  return new Promise((resolve) => {
+    // Invoked through run-recipe-tests, which runs under Yarn (npm_execpath
+    // set). Corepack points it at a shell shim; only a JS entry can be
+    // executed directly, everything else goes through the shell with quoting.
+    const execPath = process.env.npm_execpath
+    const quote = (arg: string) =>
+      process.platform === 'win32' ? `"${arg.replaceAll('"', '""')}"` : `'${arg.replaceAll("'", `'\\''`)}'`
+    const child =
+      execPath !== undefined && /\.(cm?js|mjs)$/i.test(execPath)
+        ? spawn(process.execPath, [execPath, ...args], { stdio: ['ignore', 'pipe', 'inherit'] })
+        : spawn(['yarn', ...args].map(quote).join(' '), { shell: true, stdio: ['ignore', 'pipe', 'inherit'] })
+    let stdout = ''
+    let timedOut = false
+    const timer = setTimeout(() => {
+      timedOut = true
+      child.kill()
+    }, timeoutMs)
+    child.stdout?.on('data', (chunk: Buffer) => {
+      stdout += chunk.toString()
+    })
+    child.on('close', (status) => {
+      clearTimeout(timer)
+      resolve({ status, stdout, timedOut })
+    })
+    child.on('error', () => {
+      clearTimeout(timer)
+      resolve({ status: 1, stdout, timedOut })
+    })
+  })
 }
 
 function diffTrees(expected: string, actual: string): string[] {
@@ -29,7 +53,7 @@ function diffTrees(expected: string, actual: string): string[] {
     const expectedExists = existsSync(expectedPath)
     const actualExists = existsSync(actualPath)
     if (expectedExists !== actualExists) {
-      problems.push(`${relative}: ${expectedExists ? 'missing in actual' : 'unexpected in actual'}`)
+      problems.push(`${relative.replaceAll('\\', '/')}: ${expectedExists ? 'missing in actual' : 'unexpected in actual'}`)
       return
     }
     if (!expectedExists) {
@@ -42,9 +66,7 @@ function diffTrees(expected: string, actual: string): string[] {
       }
       return
     }
-    const expectedContents = readFileSync(expectedPath, 'utf8')
-    const actualContents = readFileSync(actualPath, 'utf8')
-    if (expectedContents !== actualContents) {
+    if (readFileSync(expectedPath, 'utf8') !== readFileSync(actualPath, 'utf8')) {
       problems.push(`${relative.replaceAll('\\', '/')}: contents differ`)
     }
   }
@@ -53,49 +75,63 @@ function diffTrees(expected: string, actual: string): string[] {
 }
 
 const fixtureRoot = 'tests/migrate-extension-config-schema'
-for (const entry of readdirSync(fixtureRoot).sort()) {
-  if (!statSync(join(fixtureRoot, entry)).isDirectory() || !existsSync(join(fixtureRoot, entry, 'input'))) {
-    continue
-  }
-  const fixture = `${fixtureRoot}/${entry}`
+const fixtures = readdirSync(fixtureRoot)
+  .sort()
+  .filter((entry) => statSync(join(fixtureRoot, entry)).isDirectory() && existsSync(join(fixtureRoot, entry, 'input')))
+  .map((entry) => `${fixtureRoot}/${entry}`)
 
+let failed = false
+let next = 0
+
+async function runFixture(fixture: string): Promise<void> {
   const scratch = mkdtempSync('tests/.fixture-')
   try {
     const input = join(fixture, 'input')
+    mkdirSync(scratch, { recursive: true })
     for (const entry of readdirSync(input)) {
       cpSync(join(input, entry), join(scratch, entry), { recursive: true })
     }
-    const run = runYarn([
-      'exec',
-      'codemod',
-      'workflow',
-      'run',
-      '-w',
-      'workflow.yaml',
-      '-t',
-      scratch,
-      '--allow-dirty',
-      '--no-interactive',
-      '--format',
-      'jsonl',
-    ])
-    if (run.status !== 0) {
+    const run = await yarn(
+      ['exec', 'codemod', 'workflow', 'run', '-w', 'workflow.yaml', '-t', scratch, '--allow-dirty', '--no-interactive', '--format', 'jsonl'],
+      FIXTURE_TIMEOUT_MS,
+    )
+    if (run.timedOut) {
+      console.error(`${fixture}: workflow run timed out after ${FIXTURE_TIMEOUT_MS / 1000}s`)
       console.error(run.stdout)
-      process.exit(1)
+      failed = true
+      return
     }
-    if (!run.stdout.includes('"outcome":"success"') || run.stdout.includes('"outcome":"failure"')) {
+    if (run.status !== 0 || !run.stdout.includes('"outcome":"success"') || run.stdout.includes('"outcome":"failure"')) {
+      console.error(`${fixture}: workflow run failed (exit ${run.status})`)
       console.error(run.stdout)
-      process.exit(1)
+      failed = true
+      return
     }
     const problems = diffTrees(join(fixture, 'expected'), scratch)
     if (problems.length > 0) {
       for (const problem of problems) {
         console.error(`diff: ${problem}`)
       }
-      process.exit(1)
+      failed = true
+      return
     }
   } finally {
     rmSync(scratch, { recursive: true, force: true })
   }
   console.log(`passed: ${fixture}`)
+}
+
+const workers = Array.from({ length: Math.min(CONCURRENCY, fixtures.length) }, async () => {
+  for (;;) {
+    const index = next++
+    if (index >= fixtures.length) {
+      return
+    }
+    await runFixture(fixtures[index] ?? '')
+  }
+})
+await Promise.all(workers)
+
+if (failed) {
+  process.exit(1)
 }
