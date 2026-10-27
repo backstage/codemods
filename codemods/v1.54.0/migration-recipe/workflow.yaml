@@ -103,7 +103,9 @@ nodes:
         env:
           CODEMOD_SCRIPT: 'scripts/rename-openapi-validate-command-shell.mjs'
           CODEMOD_URL_MODULE: 'node:url'
-        run: 'node -e import(require(process.env.CODEMOD_URL_MODULE).pathToFileURL(process.env.CODEMOD_PATH+String.fromCharCode(47)+process.env.CODEMOD_SCRIPT)) ${{ state.targetDirEncoded }}'
+        # The -e payload must be quoted: an unquoted parenthesized expression
+        # is a syntax error under sh (Linux) even though cmd accepts it.
+        run: 'node -e "import(require(process.env.CODEMOD_URL_MODULE).pathToFileURL(process.env.CODEMOD_PATH+String.fromCharCode(47)+process.env.CODEMOD_SCRIPT))" ${{ state.targetDirEncoded }}'
 
   - id: ai-fixup
     name: 'Review unresolved schema factories'
