@@ -39,16 +39,12 @@ jobs:
 
       - run: yarn install --immutable
 
-      - name: Test shell scripts
-        run: |
-          export LC_ALL=C
-          for script in scripts/test-*.sh; do
-            bash "$script" || exit $?
-          done
+      - name: Test scripts package
+        run: yarn test:scripts
 
-      # Shared with local husky pre-push (scripts/check-changed.sh) so gates cannot drift.
+      # Shared with local husky pre-push (yarn check:changed) so gates cannot drift.
       - name: Check changed files
-        run: bash scripts/check-changed.sh origin/main
+        run: yarn check:changed origin/main
 
   changeset-check:
     name: Changeset Check

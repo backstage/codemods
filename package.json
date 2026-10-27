@@ -9,17 +9,21 @@
   ],
   "scripts": {
     "test": "yarn workspaces foreach -A run test",
+    "test:scripts": "yarn workspace @backstage/scripts run test",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "lint": "oxlint --type-aware --type-check --deny-warnings --no-error-on-unmatched-pattern",
     "lint:fix": "oxlint --type-aware --type-check --fix --no-error-on-unmatched-pattern",
     "prepare": "husky",
     "changeset": "changeset",
-    "version-packages": "changeset version && bash scripts/sync-codemod-versions.sh",
-    "readme": "bash scripts/generate-readme-codemods.sh",
-    "check:changed": "bash scripts/check-changed.sh"
+    "version-packages": "changeset version && sync-codemod-versions",
+    "readme": "generate-readme-codemods",
+    "check:changed": "check-changed",
+    "tag-and-publish": "tag-and-publish",
+    "sync-readme-pr": "sync-readme-pr"
   },
   "devDependencies": {
+    "@backstage/scripts": "workspace:*",
     "@changesets/cli": "^3.0.3",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",

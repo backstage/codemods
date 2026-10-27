@@ -57,7 +57,7 @@ jobs:
       - name: Tag released versions
         if: steps.changesets.outputs['has-changesets'] == 'false'
         id: tag
-        run: bash scripts/tag-and-publish.sh
+        run: yarn tag-and-publish
 
   publish:
     name: Publish ${{ matrix.dir }}

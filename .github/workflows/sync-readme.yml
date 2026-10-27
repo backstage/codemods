@@ -56,10 +56,8 @@ jobs:
           cmp README.md "$RUNNER_TEMP/generated-readme.md"
           yarn format:check
           yarn test
-          bash scripts/test-check-changed.sh
-          bash scripts/test-sync-readme-pr.sh
 
       - name: Create or update review PR (no-op if README is current)
         env:
           GH_TOKEN: ${{ github.token }}
-        run: bash scripts/sync-readme-pr.sh
+        run: yarn sync-readme-pr

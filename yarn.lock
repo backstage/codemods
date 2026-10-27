@@ -548,16 +548,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@backstage/recipe-test-runner@workspace:*, @backstage/recipe-test-runner@workspace:packages/recipe-test-runner":
-  version: 0.0.0-use.local
-  resolution: "@backstage/recipe-test-runner@workspace:packages/recipe-test-runner"
-  dependencies:
-    "@types/node": "npm:^24"
-  bin:
-    run-recipe-tests: ./run-recipe-tests.ts
-  languageName: unknown
-  linkType: soft
-
 "@backstage/remove-alert-surface-prop@workspace:codemods/v1.48.0/remove-alert-surface-prop":
   version: 0.0.0-use.local
   resolution: "@backstage/remove-alert-surface-prop@workspace:codemods/v1.48.0/remove-alert-surface-prop"
@@ -781,6 +771,24 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/scripts@workspace:*, @backstage/scripts@workspace:packages/scripts":
+  version: 0.0.0-use.local
+  resolution: "@backstage/scripts@workspace:packages/scripts"
+  dependencies:
+    "@types/node": "npm:^24"
+    cleye: "npm:^2.7.0"
+  bin:
+    check-changed: ./src/check-changed.ts
+    format-staged: ./src/format-staged.ts
+    generate-readme-codemods: ./src/generate-readme-codemods.ts
+    run-recipe-tests: ./src/run-recipe-tests.ts
+    sync-codemod-versions: ./src/sync-codemod-versions.ts
+    sync-readme-pr: ./src/sync-readme-pr.ts
+    tag-and-publish: ./src/tag-and-publish.ts
+    test-staged: ./src/test-staged.ts
+  languageName: unknown
+  linkType: soft
+
 "@backstage/types@npm:^1.2.2":
   version: 1.2.2
   resolution: "@backstage/types@npm:1.2.2"
@@ -865,7 +873,7 @@ __metadata:
   resolution: "@backstage/v1-54-0-migration-recipe@workspace:codemods/v1.54.0/migration-recipe"
   dependencies:
     "@backstage/frontend-plugin-api": "npm:0.18.1"
-    "@backstage/recipe-test-runner": "workspace:*"
+    "@backstage/scripts": "workspace:*"
     "@codemod.com/jssg-types": "npm:1.6.3"
     codemod: "npm:1.18.3"
     typescript: "npm:^7.0.2"
@@ -1663,10 +1671,28 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ansis@npm:4.2.0":
+  version: 4.2.0
+  resolution: "ansis@npm:4.2.0"
+  checksum: 10c0/cd6a7a681ecd36e72e0d79c1e34f1f3bcb1b15bcbb6f0f8969b4228062d3bfebbef468e09771b00d93b2294370b34f707599d4a113542a876de26823b795b5d2
+  languageName: node
+  linkType: hard
+
 "cac@npm:^7.0.0":
   version: 7.0.1
   resolution: "cac@npm:7.0.1"
   checksum: 10c0/82153055748bfc7692cc113cbb38ddd80023fdc691de7ce3297abdd0e746f63fcc55a9a80c20cdb8008866afd1dfea1557084b21c3a28b2138fd273727eca7ca
+  languageName: node
+  linkType: hard
+
+"cleye@npm:^2.7.0":
+  version: 2.7.0
+  resolution: "cleye@npm:2.7.0"
+  dependencies:
+    ansis: "npm:4.2.0"
+    terminal-columns: "npm:^2.0.0"
+    type-flag: "npm:^4.5.2"
+  checksum: 10c0/fb35c5e56a2ec295ecc0d24ff32d9295f8613eb575d1a3ac369d472bf63c8174c2cd5523aa81da04158343fd0c1acb866fe07c79a3bd5eefbe05487e22f8382d
   languageName: node
   linkType: hard
 
@@ -2062,6 +2088,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"terminal-columns@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "terminal-columns@npm:2.0.0"
+  checksum: 10c0/b62c9ea709c787178624cc9c328227be9e731a9ee1d61457780063dcf887e6c8f6e3c2c67ec8f7de52eb4f99dd4c228737bfd46092c1bb06818c6f6786d8a5a5
+  languageName: node
+  linkType: hard
+
 "tinyexec@npm:^1.3.0, tinyexec@npm:^1.3.1":
   version: 1.3.1
   resolution: "tinyexec@npm:1.3.1"
@@ -2090,6 +2123,13 @@ __metadata:
   version: 0.20.2
   resolution: "type-fest@npm:0.20.2"
   checksum: 10c0/dea9df45ea1f0aaa4e2d3bed3f9a0bfe9e5b2592bddb92eb1bf06e50bcf98dbb78189668cd8bc31a0511d3fc25539b4cd5c704497e53e93e2d40ca764b10bfc3
+  languageName: node
+  linkType: hard
+
+"type-flag@npm:^4.5.2":
+  version: 4.5.2
+  resolution: "type-flag@npm:4.5.2"
+  checksum: 10c0/1106c775f455076a107be294f67451f3ee68b1481678b4ba2e13932a9b33b34763e4d9320d432a9808f542af88890fe00f29a76a1de3207e4520200cd9826b46
   languageName: node
   linkType: hard
 
@@ -2246,6 +2286,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "useful-codemods@workspace:."
   dependencies:
+    "@backstage/scripts": "workspace:*"
     "@changesets/cli": "npm:^3.0.3"
     husky: "npm:^9.1.7"
     lint-staged: "npm:^17.6.0"

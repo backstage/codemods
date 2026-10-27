@@ -4,6 +4,7 @@
     "moduleResolution": "NodeNext",
     "target": "ES2022",
     "types": ["node"],
+    "allowImportingTsExtensions": true,
     "noEmit": true,
     "strict": true,
     "strictNullChecks": true,
@@ -12,5 +13,5 @@
     "noUncheckedIndexedAccess": true,
     "skipLibCheck": true
   },
-  "exclude": ["node_modules"]
+  "exclude": ["tests", "node_modules"]
 }

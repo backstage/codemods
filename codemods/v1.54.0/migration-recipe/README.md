@@ -47,10 +47,10 @@ Search the migrated app for residual markers: `rg -F 'TODO(backstage-codemod)' /
 
 ## Development
 
-`yarn test` runs `run-recipe-tests` (the repo-wide recipe runner from `packages/recipe-test-runner`), which discovers every suite by convention — adding a script or fixture suite needs no test-command change:
+`yarn test` runs `run-recipe-tests` (the repo-wide recipe runner from `@backstage/scripts`), which discovers every suite by convention — adding a script or fixture suite needs no test-command change:
 
 - `scripts/<name>.ts` + `tests/<name>/<case>/input.<ext>` fixtures run as JSSG tests (language inferred from the fixture extension).
-- `tests/<name>/assert-fixtures.sh` suites run whole app trees through the recipe workflow (the extension config schema fixtures; the diffs prove the other steps no-op on them) and `typed-extension` is type-checked with `tsc`.
+- `tests/<name>/assert-fixtures.ts` suites run whole app trees through the recipe workflow (the extension config schema fixtures; the diffs prove the other steps no-op on them) and `typed-extension` is type-checked with `tsc`.
 - `tests/**/*.test.mjs` run under `node --test` (OpenAPI `rewriteCommand` and shell walker unit tests, plus workflow structure checks).
 - `codemod workflow validate` checks the workflow schema.
 

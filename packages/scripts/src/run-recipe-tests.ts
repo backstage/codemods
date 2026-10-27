@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+import { spawnSync } from 'node:child_process'
+import { existsSync, readdirSync, statSync } from 'node:fs'
+import { join } from 'node:path'
+
 // Repo-wide test runner for migration recipes (codemods/<version>/migration-recipe).
 // Invoked by a recipe's package.json test script as `run-recipe-tests`, run from
 // the recipe directory.
@@ -10,30 +14,43 @@
 //     (ext ts/tsx -> language tsx, json -> json, yaml/yml -> yaml; fixture roots
 //      without JSSG input files, e.g. .sh suites, are skipped here and covered
 //      by their node --test suites)
-//   tests/<name>/assert-fixtures.sh                         -> workflow fixture run
+//   tests/<name>/assert-fixtures.ts                        -> node tests/<name>/assert-fixtures.ts
 //   tests/**/tsconfig.json                                  -> tsc -p
 //   tests/**/*.test.mjs                                     -> node --test
 // plus codemod workflow validate.
 //
 // --list prints the planned suites and commands without running them.
-import { spawnSync } from 'node:child_process'
-import { existsSync, readdirSync, statSync } from 'node:fs'
-import { join } from 'node:path'
+import { cli } from 'cleye'
+
+import { runYarn } from './lib/spawn.ts'
+
+const argv = cli({
+  name: 'run-recipe-tests',
+  flags: {
+    list: { type: Boolean, description: 'Print the planned suites and commands without running them' },
+  },
+})
+const listOnly = argv.flags.list
 
 const recipeDir = process.cwd()
-const listOnly = process.argv.includes('--list')
-
 if (!existsSync(join(recipeDir, 'workflow.yaml'))) {
   console.error(`error: run this from a recipe directory containing workflow.yaml (got ${recipeDir})`)
   process.exit(1)
 }
 
-function run(command: string): void {
+function run(command: string, args: string[]): void {
   if (listOnly) {
-    console.log(`  ${command}`)
+    console.log(`  ${command} ${args.join(' ')}`)
     return
   }
-  const result = spawnSync(command, { stdio: 'inherit', shell: true })
+  if (command === 'node') {
+    const result = spawnSync(process.execPath, args, { stdio: 'inherit' })
+    if (result.status !== 0) {
+      process.exit(result.status ?? 1)
+    }
+    return
+  }
+  const result = runYarn(args)
   if (result.status !== 0) {
     process.exit(result.status ?? 1)
   }
@@ -114,31 +131,33 @@ for (const scriptFile of listDir('scripts').filter((name) => name.endsWith('.ts'
   }
 
   console.log(`== jssg test: ${name} (${language})`)
-  run(`yarn exec codemod jssg test -l ${language} scripts/${scriptFile} ${fixtureRoot}`)
+  run('yarn', ['exec', 'codemod', 'jssg', 'test', '-l', language, `scripts/${scriptFile}`, fixtureRoot])
 }
 
 // --- Workflow-level fixture suites
 for (const entry of listDir('tests')) {
-  const fixtureRunner = `tests/${entry}/assert-fixtures.sh`
+  const fixtureRunner = `tests/${entry}/assert-fixtures.ts`
   if (!existsSync(fixtureRunner)) {
     continue
   }
   console.log(`== workflow fixtures: ${fixtureRunner}`)
-  run(`bash ${fixtureRunner}`)
+  run('node', [fixtureRunner])
 }
 
 // --- Fixture type checks
 for (const tsconfig of collectFiles('tests', (name) => name === 'tsconfig.json')) {
-  console.log(`== tsc: ${tsconfig.replaceAll('\\', '/')}`)
-  run(`yarn exec tsc -p ${tsconfig.replaceAll('\\', '/')}`)
+  const path = tsconfig.replaceAll('\\', '/')
+  console.log(`== tsc: ${path}`)
+  run('yarn', ['exec', 'tsc', '-p', path])
 }
 
 // --- Node unit tests
 for (const testFile of collectFiles('tests', (name) => name.endsWith('.test.mjs'))) {
-  console.log(`== node --test: ${testFile.replaceAll('\\', '/')}`)
-  run(`node --test ${testFile.replaceAll('\\', '/')}`)
+  const path = testFile.replaceAll('\\', '/')
+  console.log(`== node --test: ${path}`)
+  run('node', ['--test', path])
 }
 
 // --- Workflow schema
 console.log('== codemod workflow validate')
-run('yarn exec codemod workflow validate -w workflow.yaml')
+run('yarn', ['exec', 'codemod', 'workflow', 'validate', '-w', 'workflow.yaml'])

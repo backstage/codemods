@@ -8,7 +8,7 @@
   },
   "devDependencies": {
     "@backstage/frontend-plugin-api": "0.18.1",
-    "@backstage/recipe-test-runner": "workspace:*",
+    "@backstage/scripts": "workspace:*",
     "@codemod.com/jssg-types": "1.6.3",
     "codemod": "1.18.3",
     "typescript": "^7.0.2",
