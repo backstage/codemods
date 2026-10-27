@@ -47,7 +47,13 @@ Search the migrated app for residual markers: `rg -F 'TODO(backstage-codemod)' /
 
 ## Development
 
+Every bundled script keeps its full test suite inside `tests/<codemod-name>/`:
+
+- The three Connections scripts run as JSSG fixture tests (`codemod jssg test`).
+- The extension config schema fixtures are full app trees run through the entire recipe workflow (`tests/migrate-extension-config-schema/assert-fixtures.sh`), asserting the other steps no-op on them; `typed-extension` is additionally type-checked with `tsc`.
+- The OpenAPI scripts have JSON, YAML, shell fixture suites plus `node --test` unit tests for `rewriteCommand` and the shell walker.
+
 ```bash
 yarn install
-yarn test # structural workflow tests + codemod workflow validate
+yarn test # all fixture suites, unit tests, tsc check and codemod workflow validate
 ```
