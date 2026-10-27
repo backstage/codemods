@@ -10,6 +10,11 @@ import { readCalls, runBin, src, tempDir, writeYarnStub } from './helpers.ts'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
 
+function git(cwd: string, ...args: string[]): void {
+  const result = spawnSync('git', args, { cwd, encoding: 'utf8' })
+  assert.equal(result.status, 0, result.stderr)
+}
+
 test('test-staged runs each owning package once, in order', () => {
   const fixture = tempDir('test-staged-')
   const callsDir = join(fixture, 'calls')
@@ -72,6 +77,11 @@ test('pre-commit hook runs package tests through lint-staged', { skip: process.p
   }
   chmodSync(join(binDir, 'yarn'), 0o755)
   writeFileSync(
+    join(binDir, 'lint-staged'),
+    `#!/usr/bin/env sh\nexec node "${join(repoRoot, 'node_modules', 'lint-staged', 'bin', 'lint-staged.mjs')}" "$@"\n`,
+  )
+  chmodSync(join(binDir, 'lint-staged'), 0o755)
+  writeFileSync(
     join(repo, 'package.json'),
     JSON.stringify({ scripts: { format: 'node -e "process.exit(0)"', lint: 'node -e "process.exit(0)"' } }),
   )
@@ -81,6 +91,9 @@ test('pre-commit hook runs package tests through lint-staged', { skip: process.p
     writeFileSync(join(repo, 'codemods', 'misc', name, 'package.json'), JSON.stringify({ scripts: { test: 'node -e "process.exit(0)"' } }))
     writeFileSync(join(directory, `${name}.ts`), 'export const fixture = true;\n')
   }
+  git(repo, 'init', '-q')
+  git(repo, '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '--allow-empty', '-qm', 'base')
+  git(repo, 'add', 'codemods/misc/first/scripts', 'codemods/misc/second/scripts')
 
   const hook = spawnSync('sh', ['.husky/pre-commit'], {
     cwd: repo,
@@ -89,7 +102,7 @@ test('pre-commit hook runs package tests through lint-staged', { skip: process.p
       PATH: `${binDir}:${process.env.PATH}`,
       npm_execpath: stub,
       CALLS: callsDir,
-      LINT_STAGED: join(repoRoot, 'node_modules', '.bin', 'lint-staged'),
+      LINT_STAGED: join(binDir, 'lint-staged'),
     },
     encoding: 'utf8',
   })

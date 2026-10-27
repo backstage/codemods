@@ -110,12 +110,15 @@ esac
     git(seed, 'push', '-q', '-u', 'origin', 'main')
     git(remote, 'symbolic-ref', 'HEAD', 'refs/heads/main')
 
-    const runSync = (cwd: string) =>
-      spawnSync(process.execPath, [join(repoRoot, 'packages', 'scripts', 'src', 'sync-readme-pr.ts')], {
+    const runSync = (cwd: string) => {
+      const result = spawnSync(process.execPath, [join(repoRoot, 'packages', 'scripts', 'src', 'sync-readme-pr.ts')], {
         cwd,
         env,
         encoding: 'utf8',
       })
+      return { status: result.status, output: `${result.stdout}
+${result.stderr}` }
+    }
 
     const ghLog = () => (readFileSync(ghCalls, 'utf8').split('\n').filter((line) => line !== ''))
 
@@ -123,14 +126,16 @@ esac
     const first = join(fixture, 'first')
     git(fixture, 'clone', '-q', remote, first)
     writeFileSync(join(first, 'README.md'), 'generated README v1\n')
-    assert.equal(runSync(first).status, 0)
+    const firstResult = runSync(first)
+    assert.equal(firstResult.status, 0, firstResult.output)
     assert.equal(ghLog().filter((line) => line === 'pr create').length, 1)
     const firstHead = git(remote, 'rev-parse', 'refs/heads/automation/readme-sync')
 
     // A current README is a no-op.
     const noOp = join(fixture, 'no-op')
     git(fixture, 'clone', '-q', remote, noOp)
-    assert.equal(runSync(noOp).status, 0)
+    const noOpResult = runSync(noOp)
+    assert.equal(noOpResult.status, 0, noOpResult.output)
     assert.equal(git(remote, 'rev-parse', 'refs/heads/automation/readme-sync'), firstHead)
     assert.equal(ghLog().length, 2) // Only the first run listed/created a PR.
 
@@ -142,7 +147,8 @@ esac
     const update = join(fixture, 'update')
     git(fixture, 'clone', '-q', remote, update)
     writeFileSync(join(update, 'README.md'), 'generated README v2\n')
-    assert.equal(runSync(update).status, 0)
+    const updateResult = runSync(update)
+    assert.equal(updateResult.status, 0, updateResult.output)
     assert.equal(ghLog().filter((line) => line === 'pr create').length, 1)
     assert.equal(git(remote, 'diff', '--name-only', 'main...automation/readme-sync'), 'README.md')
     assert.equal(git(remote, 'show', 'automation/readme-sync:README.md'), 'generated README v2')
@@ -158,7 +164,8 @@ esac
     const afterMerge = join(fixture, 'after-merge')
     git(fixture, 'clone', '-q', remote, afterMerge)
     writeFileSync(join(afterMerge, 'README.md'), 'generated README v3\n')
-    assert.equal(runSync(afterMerge).status, 0)
+    const afterMergeResult = runSync(afterMerge)
+    assert.equal(afterMergeResult.status, 0, afterMergeResult.output)
     assert.equal(ghLog().filter((line) => line === 'pr create').length, 2)
     assert.equal(git(remote, 'diff', '--name-only', 'main...automation/readme-sync'), 'README.md')
 

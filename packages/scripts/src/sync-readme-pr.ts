@@ -44,7 +44,7 @@ if (changed.length === 0) {
   console.log('README is current; no branch or PR changes.')
   process.exit(0)
 }
-if (changed.length !== 1 || changed[0] !== 'README.md' || gitOk(['diff', '--cached', '--quiet'])) {
+if (changed.length !== 1 || changed[0] !== 'README.md' || !gitOk(['diff', '--cached', '--quiet'])) {
   fail('Expected only an unstaged generated README.md change.')
 }
 
