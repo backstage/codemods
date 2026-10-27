@@ -1,8 +1,8 @@
 # v1-54-0-migration-recipe
 
-Runs every Backstage 1.54.0 codemod in a safe order. All transform scripts are bundled locally in `scripts/` and run as individual `js-ast-grep`/shell steps — the recipe does not nest registry codemod packages, which avoids the CLI 1.18.3 bug where nested workflow steps fail on unbound `state.targetDirEncoded`.
+Runs every Backstage 1.54.0 codemod in a safe order. All transform scripts are bundled locally in `scripts/` and run as individual `js-ast-grep`/shell steps — one recipe, one published package, no per-codemod registry packages.
 
-This is the only package published for the 1.54.0 migration. The five codemods it bundles were removed as standalone packages so the recipe is the single release artifact; users who need only one transform can still run that script individually (see below).
+Users who need only one transform can still run that script individually (see below).
 
 ## What it runs
 
@@ -26,7 +26,7 @@ yarn dlx codemod@latest workflow run -w codemods/v1.54.0/migration-recipe/workfl
   --target /path/to/backstage-app
 ```
 
-Once the recipe itself is published, replace `workflow run -w codemods/v1.54.0/migration-recipe/workflow.yaml` with `run @backstage/v1-54-0-migration-recipe`.
+Once the recipe is published, replace `workflow run -w codemods/v1.54.0/migration-recipe/workflow.yaml` with `run @backstage/v1-54-0-migration-recipe`.
 
 ## Running a single script
 
@@ -34,7 +34,7 @@ Each script is a standalone JSSG transform. To run one individually, copy the co
 
 ## AI behavior and review
 
-The recipe defaults `aiFixup` to `false`; the default run is AST-only. The optional `aiFixup=true` path has **not** been tested or approved for this recipe. Do not rely on it without separate provider-approved end-to-end validation. Do not use the previously advertised `--agent openai` command: CLI 1.18.3 reports `Unknown agent 'openai' ... ignoring` and `Skipping AI step - no API key provided`; workflow exit 0 does **not** prove an AI fixup ran. To use it, run the recipe with `--param aiFixup=true` only if a supported, approved OpenAI work provider and work credentials are available (never `openai-codex`); verify the AI step actually runs and review its edits on a disposable worktree. Check package-local Zod v4 availability, unresolved schema factories, and type checks. Do not silently change dependency versions.
+The recipe defaults `aiFixup` to `false`; the default run is AST-only. The optional `aiFixup=true` path has **not** been tested or approved for this recipe. To use it, run the recipe with `--param aiFixup=true` only with a supported, approved OpenAI work provider and work credentials (never `openai-codex`); verify the AI step actually runs and review its edits on a disposable worktree. Check package-local Zod v4 availability, unresolved schema factories, and type checks. Do not silently change dependency versions.
 
 Search the migrated app for residual markers: `rg -F 'TODO(backstage-codemod)' /path/to/backstage-app`. Resolve each with context; the recipe does not guarantee every migration is mechanical.
 
