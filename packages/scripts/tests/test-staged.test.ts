@@ -3,7 +3,7 @@
 // lint-staged.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { chmodSync, copyFileSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { readCalls, runBin, src, tempDir, writeYarnStub } from './helpers.ts'
@@ -76,9 +76,16 @@ test('pre-commit hook runs package tests through lint-staged', { skip: process.p
     chmodSync(join(binDir, name), 0o755)
   }
   chmodSync(join(binDir, 'yarn'), 0o755)
+  // The real lint-staged entry, resolved from its manifest so the shim survives bin renames.
+  const lintStagedEntry = join(
+    repoRoot,
+    'node_modules',
+    'lint-staged',
+    (JSON.parse(readFileSync(join(repoRoot, 'node_modules', 'lint-staged', 'package.json'), 'utf8')) as { bin: Record<string, string> }).bin['lint-staged'] ?? '',
+  )
   writeFileSync(
     join(binDir, 'lint-staged'),
-    `#!/usr/bin/env sh\nexec node "${join(repoRoot, 'node_modules', 'lint-staged', 'bin', 'lint-staged.mjs')}" "$@"\n`,
+    `#!/usr/bin/env sh\nexec node "${lintStagedEntry}" "$@"\n`,
   )
   chmodSync(join(binDir, 'lint-staged'), 0o755)
   writeFileSync(
