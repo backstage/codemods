@@ -211,15 +211,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@backstage/migrate-connections-query@workspace:codemods/v1.54.0/migrate-connections-query":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-connections-query@workspace:codemods/v1.54.0/migrate-connections-query"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
 "@backstage/migrate-gerrit-gitiles-functions@workspace:codemods/v1.49.0/migrate-gerrit-gitiles-functions":
   version: 0.0.0-use.local
   resolution: "@backstage/migrate-gerrit-gitiles-functions@workspace:codemods/v1.49.0/migrate-gerrit-gitiles-functions"
@@ -531,15 +522,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@backstage/move-connections-backend-imports@workspace:codemods/v1.54.0/move-connections-backend-imports":
-  version: 0.0.0-use.local
-  resolution: "@backstage/move-connections-backend-imports@workspace:codemods/v1.54.0/move-connections-backend-imports"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
 "@backstage/move-connections-config-imports@workspace:codemods/v1.55.0/move-connections-config-imports":
   version: 0.0.0-use.local
   resolution: "@backstage/move-connections-config-imports@workspace:codemods/v1.55.0/move-connections-config-imports"
@@ -563,6 +545,16 @@ __metadata:
   dependencies:
     "@codemod.com/jssg-types": "npm:1.6.3"
     codemod: "npm:1.18.3"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/recipe-test-runner@workspace:*, @backstage/recipe-test-runner@workspace:packages/recipe-test-runner":
+  version: 0.0.0-use.local
+  resolution: "@backstage/recipe-test-runner@workspace:packages/recipe-test-runner"
+  dependencies:
+    "@types/node": "npm:^24"
+  bin:
+    run-recipe-tests: ./run-recipe-tests.ts
   languageName: unknown
   linkType: soft
 
@@ -769,15 +761,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@backstage/rename-root-connection-auth@workspace:codemods/v1.54.0/rename-root-connection-auth":
-  version: 0.0.0-use.local
-  resolution: "@backstage/rename-root-connection-auth@workspace:codemods/v1.54.0/rename-root-connection-auth"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
 "@backstage/render-test-app-nav-migration@workspace:codemods/v1.51.0/render-test-app-nav-migration":
   version: 0.0.0-use.local
   resolution: "@backstage/render-test-app-nav-migration@workspace:codemods/v1.51.0/render-test-app-nav-migration"
@@ -882,6 +865,7 @@ __metadata:
   resolution: "@backstage/v1-54-0-migration-recipe@workspace:codemods/v1.54.0/migration-recipe"
   dependencies:
     "@backstage/frontend-plugin-api": "npm:0.18.1"
+    "@backstage/recipe-test-runner": "workspace:*"
     "@codemod.com/jssg-types": "npm:1.6.3"
     codemod: "npm:1.18.3"
     typescript: "npm:^7.0.2"
@@ -1527,6 +1511,15 @@ __metadata:
   version: 1.1.0
   resolution: "@standard-schema/spec@npm:1.1.0"
   checksum: 10c0/d90f55acde4b2deb983529c87e8025fa693de1a5e8b49ecc6eb84d1fd96328add0e03d7d551442156c7432fd78165b2c26ff561b970a9a881f046abb78d6a526
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:^24":
+  version: 24.19.2
+  resolution: "@types/node@npm:24.19.2"
+  dependencies:
+    undici-types: "npm:>=7.24.0 <7.24.7"
+  checksum: 10c0/b51a7f8854007ad579dffdd0633d8addbfeb2c97cceb380f2eba0ed163638ec52e17565385a6cc04d54ac4ff99c70c64aee68a4ca45b6128c035e828794e29c5
   languageName: node
   linkType: hard
 
@@ -2239,6 +2232,13 @@ __metadata:
   bin:
     tsc: bin/tsc
   checksum: 10c0/6b3cdc369cd829d46e00734ea64233ee84419c2825ad8fe408915adde77abced4b7a2401f7eed517d54a7a4f5d1c1869753cb99018df1c2159c761d9f33483a6
+  languageName: node
+  linkType: hard
+
+"undici-types@npm:>=7.24.0 <7.24.7":
+  version: 7.24.6
+  resolution: "undici-types@npm:7.24.6"
+  checksum: 10c0/d9cd8befb643ac904615c280a095ba4240531f6bb4a5e75a22a7483630ca8d3f1016d2ab6ace6ceda1f63b3a2db2fe037fafe121d6917a0187573aa548ff78ca
   languageName: node
   linkType: hard
 

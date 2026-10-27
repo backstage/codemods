@@ -111,10 +111,10 @@ codemods/<version>/migration-recipe/
 
 Conventions:
 
-- `package.json` `test` is `bash ../../../scripts/run-recipe-tests.sh`. The runner discovers suites by convention, so adding a step never changes a test command:
+- `package.json` `test` is `run-recipe-tests` (a bin from the private `@backstage/recipe-test-runner` workspace package, declared as a devDependency — no relative paths). The runner discovers suites by convention, so adding a step never changes a test command:
   - `scripts/<name>.ts` + `tests/<name>/<case>/input.<ext>` fixtures run as `codemod jssg test`; the language is inferred from the fixture extension (`ts`/`tsx` → `tsx`, `json`, `yaml`/`yml`). Fixture roots without JSSG input files (e.g. `.sh` suites) are skipped there and covered by their `node --test` suites.
   - `tests/<name>/assert-fixtures.sh` runs whole-app fixture trees through the recipe workflow (`--list` on the runner prints the plan without executing).
   - Every `tests/**/tsconfig.json` is type-checked with `tsc`.
   - Every `tests/**/*.test.mjs` runs under `node --test`.
 - Steps that share workflow state (an indexing step feeding a transform, or a shell step reading state set by another step) must run in the same workflow and in order — keep that coupling when reordering.
-- `scripts/run-recipe-tests.sh` has its own regression test (`scripts/test-run-recipe-tests.sh`, run by CI); update it when changing discovery rules.
+- `packages/recipe-test-runner` has its own regression test (`packages/recipe-test-runner/test.ts`, run by CI via `scripts/test-recipe-test-runner.sh` and by `yarn test` at the root); update it when changing discovery rules.
