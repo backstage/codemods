@@ -30,8 +30,16 @@ render_group() {
 
   # Only show migration-recipe link for version directories that have one
   if [ -d "$group_dir/migration-recipe" ]; then
+    local standalone=""
+    for codemod_dir in "$group_dir"/*/; do
+      [ "$(basename "$codemod_dir")" != "migration-recipe" ] && [ -f "$codemod_dir/codemod.yaml" ] && standalone=1
+    done
     # shellcheck disable=SC2016
-    echo "Run the [\`migration-recipe\`](./codemods/$group/migration-recipe) to apply every codemod below in one pass, or run any individual codemod on its own."
+    if [ -n "$standalone" ]; then
+      echo "Run the [\`migration-recipe\`](./codemods/$group/migration-recipe) to apply every codemod below in one pass, or run any individual codemod on its own."
+    else
+      echo "Run the [\`migration-recipe\`](./codemods/$group/migration-recipe) to apply every codemod below in one pass. Individual scripts can still be run on their own; see the recipe's README."
+    fi
     echo ""
   fi
 

@@ -7,30 +7,120 @@ params:
     aiFixup:
       type: boolean
       default: false
-      description: 'Optional AI fixup for the extension config schema codemod; not validated by this recipe.'
+      description: 'Optional AI fixup for the extension config schema step; not validated by this recipe.'
 
 nodes:
   - id: apply-recipe
     name: 'Run every Backstage 1.54.0 codemod in order'
     type: automatic
     steps:
-      - name: 'Move Connections backend-only imports'
-        codemod:
-          source: '@backstage/move-connections-backend-imports'
+      # --- BREAKING: Connections backend-only imports moved to @backstage/connections-backend
+      - name: 'Split backend-only Connections symbols from common exports'
+        js-ast-grep:
+          js_file: scripts/move-connections-backend-imports.ts
+          language: 'tsx'
+          base_path: '.'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
 
-      - name: 'Move Connections URL lookups into query objects'
-        codemod:
-          source: '@backstage/migrate-connections-query'
+      # --- BREAKING: built-in Connections URL lookups moved into query objects
+      - name: 'Move built-in URL lookups into query objects'
+        js-ast-grep:
+          js_file: scripts/migrate-connections-query.ts
+          language: 'tsx'
+          semantic_analysis: file
+          base_path: '.'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
 
-      - name: 'Rename RootConnectionAuth to ConfiguredConnectionAuth'
-        codemod:
-          source: '@backstage/rename-root-connection-auth'
+      # --- BREAKING: RootConnectionAuth renamed to ConfiguredConnectionAuth
+      - name: 'Rename imports, re-exports and bound type references'
+        js-ast-grep:
+          js_file: scripts/rename-root-connection-auth.ts
+          language: 'tsx'
+          semantic_analysis: file
+          base_path: '.'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+            - '**/dist/**'
+            - '**/build/**'
+            - '**/coverage/**'
 
-      - name: 'Migrate extension config schemas to Standard Schema values'
-        codemod:
-          source: '@backstage/migrate-extension-config-schema'
-          args: ['aiFixup']
+      # --- BREAKING: extension config.schema factories must return Standard Schema values
+      - name: 'Index direct package-local Zod v4 dependencies'
+        js-ast-grep:
+          js_file: scripts/migrate-extension-config-schema-index.ts
+          language: 'json'
+          base_path: '.'
+          include:
+            - '**/package.json'
+          exclude:
+            - '**/node_modules/**'
 
-      - name: 'Rename the OpenAPI verify command to validate'
-        codemod:
-          source: '@backstage/rename-openapi-validate-command'
+      - name: 'Lift safe Zod v4 factories to configSchema'
+        js-ast-grep:
+          js_file: scripts/migrate-extension-config-schema.ts
+          language: 'tsx'
+          base_path: '.'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+
+      # --- BREAKING: repo schema openapi verify renamed to validate
+      - name: 'Update package scripts'
+        js-ast-grep:
+          js_file: scripts/rename-openapi-validate-command-package-json.ts
+          language: 'json'
+          base_path: '.'
+          include:
+            - '**/package.json'
+          exclude:
+            - '**/node_modules/**'
+
+      - name: 'Update GitHub Actions run commands'
+        js-ast-grep:
+          js_file: scripts/rename-openapi-validate-command-ci-yaml.ts
+          language: 'yaml'
+          base_path: '.'
+          include:
+            - '**/.github/workflows/*.yml'
+            - '**/.github/workflows/*.yaml'
+          exclude:
+            - '**/node_modules/**'
+
+      - name: 'Update shell scripts'
+        env:
+          CODEMOD_SCRIPT: 'scripts/rename-openapi-validate-command-shell.mjs'
+          CODEMOD_URL_MODULE: 'node:url'
+        run: 'node -e import(require(process.env.CODEMOD_URL_MODULE).pathToFileURL(process.env.CODEMOD_PATH+String.fromCharCode(47)+process.env.CODEMOD_SCRIPT)) ${{ state.targetDirEncoded }}'
+
+  - id: ai-fixup
+    name: 'Review unresolved schema factories'
+    type: automatic
+    depends_on: [apply-recipe]
+    steps:
+      - name: 'Resolve only provably equivalent residual factories'
+        if: params.aiFixup == true
+        ai:
+          prompt: |
+            Inspect only residual config.schema and TODO(backstage-codemod) in extension
+            options passed to createExtension, createExtensionBlueprint, makeWithOverrides,
+            and override from @backstage/frontend-plugin-api. The AST step already lifts
+            safe inline Zod v4 factories and flags unsupported cases. Preserve validation,
+            defaults, optionality, comments, and config factory usage. Confirm the target
+            package directly declares compatible Zod v4 before using zod/v4. Resolve
+            referenced factories only when the Standard Schema value is clearly equivalent;
+            leave uncertainty marked for human review. Do not modify unrelated .schema or
+            dependency versions. Type-check changed packages and review the diff.
+          max_steps: 30
