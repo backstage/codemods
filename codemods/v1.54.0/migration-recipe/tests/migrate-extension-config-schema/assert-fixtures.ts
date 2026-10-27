@@ -11,7 +11,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, 
 import { join } from 'node:path'
 
 const CONCURRENCY = 4
-const FIXTURE_TIMEOUT_MS = 300_000
+const FIXTURE_TIMEOUT_MS = 120_000
 
 function yarn(args: string[], timeoutMs: number): Promise<{ status: number | null; stdout: string; timedOut: boolean }> {
   return new Promise((resolve) => {
@@ -21,27 +21,41 @@ function yarn(args: string[], timeoutMs: number): Promise<{ status: number | nul
     const execPath = process.env.npm_execpath
     const quote = (arg: string) =>
       process.platform === 'win32' ? `"${arg.replaceAll('"', '""')}"` : `'${arg.replaceAll("'", `'\\''`)}'`
-    const child =
-      execPath !== undefined && /\.(cm?js|mjs)$/i.test(execPath)
-        ? spawn(process.execPath, [execPath, ...args], { stdio: ['ignore', 'pipe', 'inherit'] })
-        : spawn(['yarn', ...args].map(quote).join(' '), { shell: true, stdio: ['ignore', 'pipe', 'inherit'] })
+    const isJs = execPath !== undefined && /\.(cm?js|mjs)$/i.test(execPath)
+    const child = isJs
+      ? spawn(process.execPath, [execPath, ...args], { stdio: ['ignore', 'pipe', 'inherit'] })
+      : spawn(['yarn', ...args].map(quote).join(' '), {
+          shell: true,
+          stdio: ['ignore', 'pipe', 'inherit'],
+          // A process group lets the timeout kill shell grandchildren too.
+          detached: process.platform !== 'win32',
+        })
     let stdout = ''
     let timedOut = false
+    let settled = false
+    const finish = (status: number | null) => {
+      if (settled) {
+        return
+      }
+      settled = true
+      clearTimeout(timer)
+      resolve({ status, stdout, timedOut })
+    }
     const timer = setTimeout(() => {
       timedOut = true
-      child.kill()
+      // 'exit' fires on process termination; waiting for 'close' would hang
+      // forever while a surviving grandchild holds the stdout pipe open.
+      if (process.platform === 'win32' || child.pid === undefined) {
+        child.kill()
+      } else {
+        process.kill(-child.pid, 'SIGKILL')
+      }
     }, timeoutMs)
     child.stdout?.on('data', (chunk: Buffer) => {
       stdout += chunk.toString()
     })
-    child.on('close', (status) => {
-      clearTimeout(timer)
-      resolve({ status, stdout, timedOut })
-    })
-    child.on('error', () => {
-      clearTimeout(timer)
-      resolve({ status: 1, stdout, timedOut })
-    })
+    child.on('exit', (status) => finish(status))
+    child.on('error', () => finish(1))
   })
 }
 
