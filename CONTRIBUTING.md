@@ -96,3 +96,25 @@ Conventions to follow:
 - Use single-quoted scalars in `codemod.yaml` and `workflow.yaml` to match the oxfmt convention.
 
 Use an existing codemod like `catalog-node-alpha-to-stable` as a reference when creating a new one.
+
+## Adding a migration recipe
+
+Each Backstage release publishes a single `migration-recipe` package under `codemods/<version>/migration-recipe/` — the recipe is the only published package for its version, and every workflow step runs a local script instead of a nested registry codemod:
+
+```
+codemods/<version>/migration-recipe/
+  scripts/<name>.ts     # One script per codemod step, kept separately runnable
+  tests/<name>/         # Fixture suite matching scripts/<name>.ts
+  workflow.yaml         # Steps reference the local scripts (js_file: scripts/<name>.ts)
+  codemod.yaml / package.json / README.md
+```
+
+Conventions:
+
+- `package.json` `test` is `bash ../../../scripts/run-recipe-tests.sh`. The runner discovers suites by convention, so adding a step never changes a test command:
+  - `scripts/<name>.ts` + `tests/<name>/<case>/input.<ext>` fixtures run as `codemod jssg test`; the language is inferred from the fixture extension (`ts`/`tsx` → `tsx`, `json`, `yaml`/`yml`). Fixture roots without JSSG input files (e.g. `.sh` suites) are skipped there and covered by their `node --test` suites.
+  - `tests/<name>/assert-fixtures.sh` runs whole-app fixture trees through the recipe workflow (`--list` on the runner prints the plan without executing).
+  - Every `tests/**/tsconfig.json` is type-checked with `tsc`.
+  - Every `tests/**/*.test.mjs` runs under `node --test`.
+- Steps that share workflow state (an indexing step feeding a transform, or a shell step reading state set by another step) must run in the same workflow and in order — keep that coupling when reordering.
+- `scripts/run-recipe-tests.sh` has its own regression test (`scripts/test-run-recipe-tests.sh`, run by CI); update it when changing discovery rules.

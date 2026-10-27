@@ -4,7 +4,7 @@
   "description": "Backstage 1.54.0: Migration recipe that runs every Backstage 1.54.0 codemod script in a safe order.",
   "type": "module",
   "scripts": {
-    "test": "yarn exec codemod jssg test -l tsx ./scripts/move-connections-backend-imports.ts ./tests/move-connections-backend-imports && yarn exec codemod jssg test -l tsx ./scripts/migrate-connections-query.ts ./tests/migrate-connections-query && yarn exec codemod jssg test -l tsx ./scripts/rename-root-connection-auth.ts ./tests/rename-root-connection-auth && bash ./tests/migrate-extension-config-schema/assert-fixtures.sh && yarn exec tsc -p tests/migrate-extension-config-schema/typed-extension/tsconfig.json && yarn exec codemod jssg test -l json ./scripts/rename-openapi-validate-command-package-json.ts ./tests/rename-openapi-validate-command/package-json && yarn exec codemod jssg test -l yaml ./scripts/rename-openapi-validate-command-ci-yaml.ts ./tests/rename-openapi-validate-command/ci-yaml && node --test ./tests/rename-openapi-validate-command/*.test.mjs ./tests/workflow.test.mjs && yarn exec codemod workflow validate -w workflow.yaml"
+    "test": "bash ../../../scripts/run-recipe-tests.sh"
   },
   "devDependencies": {
     "@backstage/frontend-plugin-api": "0.18.1",

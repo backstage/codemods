@@ -21,7 +21,7 @@ test('shell-codemod updates .sh under explicit target only, skipping docs and sy
   try {
     mkdirSync(dirname(positive), { recursive: true })
     mkdirSync(dirname(docs), { recursive: true })
-    const fixture = (caseName, fileName) => readFileSync(join(packageRoot, 'tests', 'rename-openapi-validate-command', 'shell', caseName, fileName), 'utf8')
+    const fixture = (caseName, fileName) => readFileSync(join(packageRoot, 'tests', 'rename-openapi-validate-command-shell', caseName, fileName), 'utf8')
     writeFileSync(positive, fixture('positive', 'input.sh'))
     writeFileSync(negative, fixture('negative', 'input.sh'))
     writeFileSync(docs, fixture('positive', 'input.sh'))
