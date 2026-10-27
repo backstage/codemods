@@ -1,0 +1,12 @@
+{
+  "name": "@backstage/v1-53-0-migration-recipe",
+  "version": "0.2.0",
+  "description": "Backstage 1.53.0: Migration recipe for the deprecated experimental CIMD configuration key.",
+  "type": "module",
+  "scripts": {
+    "test": "yarn exec codemod workflow validate -w workflow.yaml"
+  },
+  "devDependencies": {
+    "codemod": "1.18.3"
+  }
+}

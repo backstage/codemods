@@ -1,0 +1,8 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: component-a
+spec:
+  github:repo:create:
+    input:
+      sourcePath: ./skeleton

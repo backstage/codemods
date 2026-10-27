@@ -1,0 +1,12 @@
+kind: Template
+spec:
+  steps:
+    - id: create
+      action: github:repo:create
+      # TODO(backstage-codemod): github:repo:create input may include removed keys via YAML merge/anchor/expression; review manually
+      input: !!map &shared
+        repoUrl: github.com?repo=anchor&owner=team
+        sourcePath: ./skeleton
+    - id: other
+      action: other:action
+      input: *shared

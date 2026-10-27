@@ -1,0 +1,19 @@
+schema_version: '1.0'
+
+name: '@backstage/v1-53-0-migration-recipe'
+version: '0.2.0'
+description: 'Backstage 1.53.0: Migration recipe for the deprecated experimental CIMD configuration key.'
+author: 'Paul Schultz<pschultz@redhat.com>'
+license: 'Apache-2.0'
+workflow: 'workflow.yaml'
+
+targets:
+  languages: ['yaml']
+
+keywords: ['backstage', 'migration', 'recipe', 'workflow', 'upgrade', '1.53.0']
+
+registry:
+  access: 'public'
+  visibility: 'public'
+
+capabilities: []

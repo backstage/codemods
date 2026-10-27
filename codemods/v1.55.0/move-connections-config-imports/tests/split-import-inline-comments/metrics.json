@@ -1,0 +1,11 @@
+{
+  "move-connections-config-imports": [
+    {
+      "cardinality": {
+        "kind": "import",
+        "symbol": "buildConnectionsFromConfig"
+      },
+      "count": 1
+    }
+  ]
+}

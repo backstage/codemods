@@ -1,0 +1,16 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: service-a
+spec:
+  owner: team-a
+---
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: demo-template
+spec:
+  steps:
+    - action: github:repo:create
+      input:
+        repoUrl: github.com?repo=demo&owner=team

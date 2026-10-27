@@ -1,0 +1,11 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: push-template
+spec:
+  steps:
+    - id: push
+      action: github:repo:push
+      input:
+        sourcePath: ./skeleton
+        protectDefaultBranch: true

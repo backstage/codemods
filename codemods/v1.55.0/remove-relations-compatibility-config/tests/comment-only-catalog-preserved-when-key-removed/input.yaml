@@ -1,0 +1,5 @@
+catalog:
+  enableRelationsCompatibility: true
+  # retain this catalog note
+app:
+  title: Backstage

@@ -1,0 +1,5 @@
+kind: Template
+spec:
+  steps:
+    - action: "github:repo:\u0070ush"
+      input: { "source\u0050ath": ./skeleton }

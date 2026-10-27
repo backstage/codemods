@@ -1,0 +1,18 @@
+name: 'backstage-repo-tools repo schema openapi verify'
+on: push
+jobs:
+  validate:
+    env:
+      run: backstage-repo-tools repo schema openapi verify
+    steps:
+      - env:
+          run: backstage-repo-tools repo schema openapi verify
+      - run: echo 'backstage-repo-tools repo schema openapi verify'
+      - run: tool repo schema openapi verify
+      - run: backstage-repo-tools repo schema openapi test
+      - run: >-
+          backstage-repo-tools repo schema openapi verify
+      - run: |
+          cat <<EOF
+          backstage-repo-tools repo schema openapi verify
+          EOF

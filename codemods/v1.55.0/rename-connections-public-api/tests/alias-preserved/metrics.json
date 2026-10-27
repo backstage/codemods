@@ -1,0 +1,20 @@
+{
+  "rename-connections-public-api": [
+    {
+      "cardinality": {
+        "action": "import-renamed",
+        "from": "ConnectionAuthValue",
+        "to": "ConnectionAuth"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-renamed",
+        "from": "LookupStrategy",
+        "to": "ConnectionLookupStrategy"
+      },
+      "count": 1
+    }
+  ]
+}

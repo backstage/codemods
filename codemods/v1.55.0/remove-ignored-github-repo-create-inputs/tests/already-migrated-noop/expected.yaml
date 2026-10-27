@@ -1,0 +1,11 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: already-migrated
+spec:
+  steps:
+    - id: create
+      action: github:repo:create
+      input:
+        repoUrl: github.com?repo=already&owner=team
+        description: stable
