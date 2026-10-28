@@ -48,10 +48,12 @@ test('run-recipe-tests discovers suites by convention', () => {
 
     const plan = list(fixture)
 
-    // JSSG suites: one per script with a matching fixture root, language inferred
-    // from the input extension; ts and tsx fold into tsx; delta (.sh) and lib.js
-    // are skipped; epsilon and zeta are not jssg suites.
-    const expectedPlan = `== jssg test: alpha (tsx)
+    // Workflow structure comes first; jssg suites follow, one per script with a
+    // matching fixture root, language inferred from the input extension; ts and
+    // tsx fold into tsx; delta (.sh) and lib.js are skipped; epsilon and zeta
+    // are not jssg suites.
+    const expectedPlan = `== workflow structure
+== jssg test: alpha (tsx)
   yarn exec codemod jssg test -l tsx scripts/alpha.ts tests/alpha
 == jssg test: beta (json)
   yarn exec codemod jssg test -l json scripts/beta.ts tests/beta
@@ -79,6 +81,14 @@ test('run-recipe-tests discovers suites by convention', () => {
 
     // Running outside a recipe directory must fail loudly.
     assert.notEqual(list(join(fixture, 'tests')).status, 0)
+
+    // Structural violations must fail loudly.
+    rmSync(join(fixture, 'scripts', 'alpha.ts'))
+    file('workflow.yaml', "version: '1'\nnodes:\n  - id: n\n    steps:\n      - name: 'missing script'\n        js-ast-grep:\n          js_file: scripts/alpha.ts\n      - name: 'registry step'\n        codemod:\n          source: '@backstage/some-codemod'\n")
+    const invalid = runBin('run-recipe-tests.ts', [], { cwd: fixture })
+    assert.notEqual(invalid.status, 0)
+    assert.match(invalid.stderr, /js_file 'scripts\/alpha\.ts' does not exist/)
+    assert.match(invalid.stderr, /registry codemod steps are not allowed/)
   } finally {
     rmSync(fixture, { recursive: true, force: true })
   }

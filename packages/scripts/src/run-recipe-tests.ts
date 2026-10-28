@@ -23,6 +23,7 @@ import { join } from 'node:path'
 import { cli } from 'cleye'
 
 import { runYarn } from './lib/spawn.ts'
+import { validateWorkflow } from './lib/workflow.ts'
 
 const argv = cli({
   name: 'run-recipe-tests',
@@ -53,6 +54,18 @@ function run(command: string, args: string[]): void {
   const result = runYarn(args)
   if (result.status !== 0) {
     process.exit(result.status ?? 1)
+  }
+}
+
+// --- Workflow structure: local step scripts exist, no registry codemod steps
+console.log('== workflow structure')
+if (!listOnly) {
+  const problems = validateWorkflow(recipeDir)
+  if (problems.length > 0) {
+    for (const problem of problems) {
+      console.error(`error: ${problem}`)
+    }
+    process.exit(1)
   }
 }
 

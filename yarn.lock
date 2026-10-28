@@ -777,6 +777,7 @@ __metadata:
   dependencies:
     "@types/node": "npm:^24"
     cleye: "npm:^2.7.0"
+    yaml: "npm:^2.8.1"
   bin:
     check-changed: ./src/check-changed.ts
     format-staged: ./src/format-staged.ts
@@ -2297,7 +2298,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"yaml@npm:^2.9.0, yaml@npm:^2.9.1":
+"yaml@npm:^2.8.1, yaml@npm:^2.9.0, yaml@npm:^2.9.1":
   version: 2.9.1
   resolution: "yaml@npm:2.9.1"
   bin:
