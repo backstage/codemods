@@ -45,13 +45,13 @@ __metadata:
   linkType: soft
 
 "@backstage/config@npm:^1.3.9":
-  version: 1.3.9
-  resolution: "@backstage/config@npm:1.3.9"
+  version: 1.3.10
+  resolution: "@backstage/config@npm:1.3.10"
   dependencies:
-    "@backstage/errors": "npm:^1.3.1"
+    "@backstage/errors": "npm:^1.3.2"
     "@backstage/types": "npm:^1.2.2"
     ms: "npm:^2.1.3"
-  checksum: 10c0/9b3992ff8a0909840a0f12104545f7ecdbccdb1eb97f9cb493daf293609fe639cbafc4b7137ce535463c888e46e57fe9d58645131b90a8e681b4d50facfc5768
+  checksum: 10c0/1f0dfd743316e9e6c612f2ff01a5e4c76701c265f57983df8b0b32dec6e8a35912efe92467f35cb3a91107cc068af38d45d2e500ce75d3c48175fe6b2cb66f4c
   languageName: node
   linkType: hard
 
@@ -65,13 +65,13 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@backstage/errors@npm:^1.3.1":
-  version: 1.3.1
-  resolution: "@backstage/errors@npm:1.3.1"
+"@backstage/errors@npm:^1.3.1, @backstage/errors@npm:^1.3.2":
+  version: 1.3.2
+  resolution: "@backstage/errors@npm:1.3.2"
   dependencies:
     "@backstage/types": "npm:^1.2.2"
     serialize-error: "npm:^8.0.1"
-  checksum: 10c0/b342551f5337f17bcc6d412868f6274509d657cc6037fbb5af96d42156c24c2419e72fd711136e42d05245bd4e5c5d8fe9cd54f89f260d9285a073c28cca0261
+  checksum: 10c0/a60ff2a0ec2226a8f7c961e5cc8047773b85e538ca4e96ca5936c242c9d23e9661f46cd4d59a2343cff0fc1352ab8e91c4ab9f5ad8c5c20e37bd0baeea5ae908
   languageName: node
   linkType: hard
 
@@ -208,27 +208,6 @@ __metadata:
     "@codemod.com/jssg-types": "npm:1.6.3"
     "@jssg/utils": "npm:^0.0.10"
     codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-connections-query@workspace:codemods/v1.54.0/migrate-connections-query":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-connections-query@workspace:codemods/v1.54.0/migrate-connections-query"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-extension-config-schema@workspace:codemods/v1.54.0/migrate-extension-config-schema":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-extension-config-schema@workspace:codemods/v1.54.0/migrate-extension-config-schema"
-  dependencies:
-    "@backstage/frontend-plugin-api": "npm:0.18.1"
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-    typescript: "npm:^7.0.2"
-    zod: "npm:^4.1.0"
   languageName: unknown
   linkType: soft
 
@@ -543,15 +522,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@backstage/move-connections-backend-imports@workspace:codemods/v1.54.0/move-connections-backend-imports":
-  version: 0.0.0-use.local
-  resolution: "@backstage/move-connections-backend-imports@workspace:codemods/v1.54.0/move-connections-backend-imports"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
 "@backstage/move-connections-config-imports@workspace:codemods/v1.55.0/move-connections-config-imports":
   version: 0.0.0-use.local
   resolution: "@backstage/move-connections-config-imports@workspace:codemods/v1.55.0/move-connections-config-imports"
@@ -772,27 +742,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@backstage/rename-openapi-validate-command@workspace:codemods/v1.54.0/rename-openapi-validate-command":
-  version: 0.0.0-use.local
-  resolution: "@backstage/rename-openapi-validate-command@workspace:codemods/v1.54.0/rename-openapi-validate-command"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
 "@backstage/rename-plugin-header-toolbar@workspace:codemods/v1.50.0/rename-plugin-header-toolbar":
   version: 0.0.0-use.local
   resolution: "@backstage/rename-plugin-header-toolbar@workspace:codemods/v1.50.0/rename-plugin-header-toolbar"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/rename-root-connection-auth@workspace:codemods/v1.54.0/rename-root-connection-auth":
-  version: 0.0.0-use.local
-  resolution: "@backstage/rename-root-connection-auth@workspace:codemods/v1.54.0/rename-root-connection-auth"
   dependencies:
     "@codemod.com/jssg-types": "npm:1.6.3"
     codemod: "npm:1.18.3"
@@ -816,6 +768,25 @@ __metadata:
     "@codemod.com/jssg-types": "npm:1.6.3"
     "@jssg/utils": "npm:^0.0.10"
     codemod: "npm:1.18.3"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/scripts@workspace:*, @backstage/scripts@workspace:packages/scripts":
+  version: 0.0.0-use.local
+  resolution: "@backstage/scripts@workspace:packages/scripts"
+  dependencies:
+    "@types/node": "npm:^24"
+    cleye: "npm:^2.7.0"
+    yaml: "npm:^2.8.1"
+  bin:
+    check-changed: ./src/check-changed.ts
+    format-staged: ./src/format-staged.ts
+    generate-readme-codemods: ./src/generate-readme-codemods.ts
+    run-recipe-tests: ./src/run-recipe-tests.ts
+    sync-codemod-versions: ./src/sync-codemod-versions.ts
+    sync-readme-pr: ./src/sync-readme-pr.ts
+    tag-and-publish: ./src/tag-and-publish.ts
+    test-staged: ./src/test-staged.ts
   languageName: unknown
   linkType: soft
 
@@ -895,6 +866,19 @@ __metadata:
   resolution: "@backstage/v1-53-0-migration-recipe@workspace:codemods/v1.53.0/migration-recipe"
   dependencies:
     codemod: "npm:1.18.3"
+  languageName: unknown
+  linkType: soft
+
+"@backstage/v1-54-0-migration-recipe@workspace:codemods/v1.54.0/migration-recipe":
+  version: 0.0.0-use.local
+  resolution: "@backstage/v1-54-0-migration-recipe@workspace:codemods/v1.54.0/migration-recipe"
+  dependencies:
+    "@backstage/frontend-plugin-api": "npm:0.18.1"
+    "@backstage/scripts": "workspace:*"
+    "@codemod.com/jssg-types": "npm:1.6.3"
+    codemod: "npm:1.18.3"
+    typescript: "npm:^7.0.2"
+    zod: "npm:^4.1.0"
   languageName: unknown
   linkType: soft
 
@@ -1539,6 +1523,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/node@npm:^24":
+  version: 24.19.2
+  resolution: "@types/node@npm:24.19.2"
+  dependencies:
+    undici-types: "npm:>=7.24.0 <7.24.7"
+  checksum: 10c0/b51a7f8854007ad579dffdd0633d8addbfeb2c97cceb380f2eba0ed163638ec52e17565385a6cc04d54ac4ff99c70c64aee68a4ca45b6128c035e828794e29c5
+  languageName: node
+  linkType: hard
+
 "@typescript/typescript-aix-ppc64@npm:7.0.2":
   version: 7.0.2
   resolution: "@typescript/typescript-aix-ppc64@npm:7.0.2"
@@ -1679,10 +1672,28 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ansis@npm:4.2.0":
+  version: 4.2.0
+  resolution: "ansis@npm:4.2.0"
+  checksum: 10c0/cd6a7a681ecd36e72e0d79c1e34f1f3bcb1b15bcbb6f0f8969b4228062d3bfebbef468e09771b00d93b2294370b34f707599d4a113542a876de26823b795b5d2
+  languageName: node
+  linkType: hard
+
 "cac@npm:^7.0.0":
   version: 7.0.1
   resolution: "cac@npm:7.0.1"
   checksum: 10c0/82153055748bfc7692cc113cbb38ddd80023fdc691de7ce3297abdd0e746f63fcc55a9a80c20cdb8008866afd1dfea1557084b21c3a28b2138fd273727eca7ca
+  languageName: node
+  linkType: hard
+
+"cleye@npm:^2.7.0":
+  version: 2.7.0
+  resolution: "cleye@npm:2.7.0"
+  dependencies:
+    ansis: "npm:4.2.0"
+    terminal-columns: "npm:^2.0.0"
+    type-flag: "npm:^4.5.2"
+  checksum: 10c0/fb35c5e56a2ec295ecc0d24ff32d9295f8613eb575d1a3ac369d472bf63c8174c2cd5523aa81da04158343fd0c1acb866fe07c79a3bd5eefbe05487e22f8382d
   languageName: node
   linkType: hard
 
@@ -2078,6 +2089,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"terminal-columns@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "terminal-columns@npm:2.0.0"
+  checksum: 10c0/b62c9ea709c787178624cc9c328227be9e731a9ee1d61457780063dcf887e6c8f6e3c2c67ec8f7de52eb4f99dd4c228737bfd46092c1bb06818c6f6786d8a5a5
+  languageName: node
+  linkType: hard
+
 "tinyexec@npm:^1.3.0, tinyexec@npm:^1.3.1":
   version: 1.3.1
   resolution: "tinyexec@npm:1.3.1"
@@ -2106,6 +2124,13 @@ __metadata:
   version: 0.20.2
   resolution: "type-fest@npm:0.20.2"
   checksum: 10c0/dea9df45ea1f0aaa4e2d3bed3f9a0bfe9e5b2592bddb92eb1bf06e50bcf98dbb78189668cd8bc31a0511d3fc25539b4cd5c704497e53e93e2d40ca764b10bfc3
+  languageName: node
+  linkType: hard
+
+"type-flag@npm:^4.5.2":
+  version: 4.5.2
+  resolution: "type-flag@npm:4.5.2"
+  checksum: 10c0/1106c775f455076a107be294f67451f3ee68b1481678b4ba2e13932a9b33b34763e4d9320d432a9808f542af88890fe00f29a76a1de3207e4520200cd9826b46
   languageName: node
   linkType: hard
 
@@ -2251,10 +2276,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"undici-types@npm:>=7.24.0 <7.24.7":
+  version: 7.24.6
+  resolution: "undici-types@npm:7.24.6"
+  checksum: 10c0/d9cd8befb643ac904615c280a095ba4240531f6bb4a5e75a22a7483630ca8d3f1016d2ab6ace6ceda1f63b3a2db2fe037fafe121d6917a0187573aa548ff78ca
+  languageName: node
+  linkType: hard
+
 "useful-codemods@workspace:.":
   version: 0.0.0-use.local
   resolution: "useful-codemods@workspace:."
   dependencies:
+    "@backstage/scripts": "workspace:*"
     "@changesets/cli": "npm:^3.0.3"
     husky: "npm:^9.1.7"
     lint-staged: "npm:^17.6.0"
@@ -2265,7 +2298,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"yaml@npm:^2.9.0, yaml@npm:^2.9.1":
+"yaml@npm:^2.8.1, yaml@npm:^2.9.0, yaml@npm:^2.9.1":
   version: 2.9.1
   resolution: "yaml@npm:2.9.1"
   bin:

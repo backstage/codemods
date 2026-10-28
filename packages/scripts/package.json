@@ -1,0 +1,27 @@
+{
+  "name": "@backstage/scripts",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Repository tooling for backstage/codemods: quality gates, README generation, release helpers and the migration-recipe test runner. Not published.",
+  "bin": {
+    "check-changed": "./src/check-changed.ts",
+    "format-staged": "./src/format-staged.ts",
+    "generate-readme-codemods": "./src/generate-readme-codemods.ts",
+    "run-recipe-tests": "./src/run-recipe-tests.ts",
+    "sync-codemod-versions": "./src/sync-codemod-versions.ts",
+    "sync-readme-pr": "./src/sync-readme-pr.ts",
+    "tag-and-publish": "./src/tag-and-publish.ts",
+    "test-staged": "./src/test-staged.ts"
+  },
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.ts"
+  },
+  "dependencies": {
+    "cleye": "^2.7.0",
+    "yaml": "^2.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24"
+  }
+}

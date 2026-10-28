@@ -1,5 +1,5 @@
 {
-  "*.{ts,tsx,js,jsx,mts,mjs}": ["bash scripts/format-staged.sh", "yarn lint"],
-  "*.{json,yaml,yml,md,css}": ["bash scripts/format-staged.sh"],
-  "codemods/**/scripts/*.{ts,tsx}": "bash scripts/test-staged.sh"
+  "*.{ts,tsx,js,jsx,mts,mjs}": ["format-staged", "yarn lint"],
+  "*.{json,yaml,yml,md,css}": ["format-staged"],
+  "codemods/**/scripts/*.{ts,tsx}": "test-staged"
 }
