@@ -16,9 +16,16 @@ import { exitOnFailure, runGit } from './lib/spawn.ts'
 cli({ name: 'tag-and-publish' })
 
 // Snapshot remote tags once so we don't run `git ls-remote` per codemod.
+// A failed lookup must abort: an empty tag set would re-tag already-released
+// codemods (the original bash aborted via set -euo pipefail).
+const remote = runGit(['ls-remote', '--tags', 'origin'], { capture: true })
+if (remote.status !== 0) {
+  console.error(remote.stderr)
+  process.exit(remote.status ?? 1)
+}
 const remoteTags = new Set(
-  runGit(['ls-remote', '--tags', 'origin'], { capture: true })
-    .stdout.split('\n')
+  remote.stdout
+    .split('\n')
     .filter((line) => line !== '')
     .map((line) => {
       const ref = line.split(/\s+/)[1] ?? ''

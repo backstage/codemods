@@ -85,6 +85,9 @@ if (process.argv[2] === 'lint-staged' && process.env.LINT_STAGED) {
 if (process.env.FAIL_ON === String(id)) {
   process.exit(17)
 }
+if (process.argv[2] === 'test' && process.env.FAIL_TEST_CWD === process.cwd()) {
+  process.exit(17)
+}
 `,
   )
   return stub

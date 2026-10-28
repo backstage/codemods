@@ -102,21 +102,33 @@ test('pre-commit hook runs package tests through lint-staged', { skip: process.p
   git(repo, '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '--allow-empty', '-qm', 'base')
   git(repo, 'add', 'codemods/misc/first/scripts', 'codemods/misc/second/scripts')
 
-  const hook = spawnSync('sh', ['.husky/pre-commit'], {
-    cwd: repo,
-    env: {
-      ...process.env,
-      PATH: `${binDir}:${process.env.PATH}`,
-      npm_execpath: stub,
-      CALLS: callsDir,
-      LINT_STAGED: join(binDir, 'lint-staged'),
-    },
-    encoding: 'utf8',
+  const hookEnv = (extra: NodeJS.ProcessEnv = {}) => ({
+    ...process.env,
+    PATH: `${binDir}:${process.env.PATH}`,
+    npm_execpath: stub,
+    CALLS: callsDir,
+    LINT_STAGED: join(binDir, 'lint-staged'),
+    ...extra,
   })
+  const hook = spawnSync('sh', ['.husky/pre-commit'], { cwd: repo, env: hookEnv(), encoding: 'utf8' })
   assert.equal(hook.status, 0, hook.stderr)
   const calls = readCalls(callsDir).filter((call) => call.command === 'test')
   assert.deepEqual(
     calls.map((call) => call.cwd),
+    [join(repo, 'codemods', 'misc', 'first'), join(repo, 'codemods', 'misc', 'second')],
+  )
+
+  // A failing package test fails the hook (after running both packages).
+  rmSync(join(callsDir, 'count'), { force: true })
+  const failed = spawnSync('sh', ['.husky/pre-commit'], {
+    cwd: repo,
+    env: hookEnv({ FAIL_TEST_CWD: join(repo, 'codemods', 'misc', 'second') }),
+    encoding: 'utf8',
+  })
+  assert.notEqual(failed.status, 0)
+  const retryCalls = readCalls(callsDir).filter((call) => call.command === 'test')
+  assert.deepEqual(
+    retryCalls.map((call) => call.cwd),
     [join(repo, 'codemods', 'misc', 'first'), join(repo, 'codemods', 'misc', 'second')],
   )
   rmSync(fixture, { recursive: true, force: true })

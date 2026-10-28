@@ -27,6 +27,13 @@ function spawn(command: string, args: string[], options: SpawnOptions = {}): Spa
 
 function quote(arg: string): string {
   if (process.platform === 'win32') {
+    // cmd.exe expands %VAR% even inside double quotes, so a literal percent in
+    // an argument would silently reach Yarn as something else. Refuse rather
+    // than corrupt the invocation; the proper fix is resolving Yarn's JS entry
+    // instead of going through a shell.
+    if (arg.includes('%')) {
+      throw new Error(`cannot safely pass '%' through cmd.exe in argument: ${arg}`)
+    }
     return `"${arg.replaceAll('"', '""')}"`
   }
   return `'${arg.replaceAll("'", `'\\''`)}'`

@@ -19,17 +19,31 @@ function yarn(args: string[], timeoutMs: number): Promise<{ status: number | nul
     // set). Corepack points it at a shell shim; only a JS entry can be
     // executed directly, everything else goes through the shell with quoting.
     const execPath = process.env.npm_execpath
-    const quote = (arg: string) =>
-      process.platform === 'win32' ? `"${arg.replaceAll('"', '""')}"` : `'${arg.replaceAll("'", `'\\''`)}'`
-    const isJs = execPath !== undefined && /\.(cm?js|mjs)$/i.test(execPath)
-    const child = isJs
-      ? spawn(process.execPath, [execPath, ...args], { stdio: ['ignore', 'pipe', 'inherit'] })
-      : spawn(['yarn', ...args].map(quote).join(' '), {
-          shell: true,
-          stdio: ['ignore', 'pipe', 'inherit'],
-          // A process group lets the timeout kill shell grandchildren too.
-          detached: process.platform !== 'win32',
-        })
+    const quote = (arg: string) => {
+      if (process.platform === 'win32') {
+        // cmd.exe expands %VAR% even inside double quotes; refuse rather than
+        // silently rewriting the invocation.
+        if (arg.includes('%')) {
+          throw new Error(`cannot safely pass '%' through cmd.exe in argument: ${arg}`)
+        }
+        return `"${arg.replaceAll('"', '""')}"`
+      }
+      return `'${arg.replaceAll("'", `'\\''`)}'`
+    }
+    const jsEntry = execPath !== undefined && /\.(cm?js|mjs)$/i.test(execPath) ? execPath : undefined
+    const child =
+      jsEntry !== undefined
+        ? spawn(process.execPath, [jsEntry, ...args], {
+            stdio: ['ignore', 'pipe', 'inherit'],
+            // A process group in every branch lets the timeout kill shell and
+            // JS grandchildren alike on unix.
+            detached: process.platform !== 'win32',
+          })
+        : spawn(['yarn', ...args].map(quote).join(' '), {
+            shell: true,
+            stdio: ['ignore', 'pipe', 'inherit'],
+            detached: process.platform !== 'win32',
+          })
     let stdout = ''
     let timedOut = false
     let settled = false
@@ -45,10 +59,15 @@ function yarn(args: string[], timeoutMs: number): Promise<{ status: number | nul
       timedOut = true
       // 'exit' fires on process termination; waiting for 'close' would hang
       // forever while a surviving grandchild holds the stdout pipe open.
-      if (process.platform === 'win32' || child.pid === undefined) {
+      try {
+        if (process.platform === 'win32' || child.pid === undefined) {
+          child.kill()
+        } else {
+          process.kill(-child.pid, 'SIGKILL')
+        }
+      } catch {
+        // The process already exited between the timer and the kill.
         child.kill()
-      } else {
-        process.kill(-child.pid, 'SIGKILL')
       }
     }, timeoutMs)
     child.stdout?.on('data', (chunk: Buffer) => {
