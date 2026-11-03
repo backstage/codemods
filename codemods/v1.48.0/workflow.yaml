@@ -1,0 +1,184 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+params:
+  schema:
+    aiFixup:
+      type: boolean
+      default: false
+      description: 'Run optional AI fixups after all local AST transforms for edge cases they cannot handle mechanically.'
+
+nodes:
+  - id: apply-recipe
+    name: Run every Backstage 1.48.0 codemod in order
+    type: automatic
+    steps:
+      # --- BREAKING: BUI CSS token renames — run first so downstream component
+      #     codemods see updated token names in any inline styles.
+      - name: 'Rename deprecated BUI CSS tokens and selectors'
+        js-ast-grep:
+          js_file: scripts/rename-bui-css-tokens-v1-48.ts
+          language: 'tsx'
+          semantic_analysis: file
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+
+      - name: 'Rename deprecated BUI CSS tokens in CSS/SCSS files'
+        js-ast-grep:
+          js_file: scripts/codemod-css.ts
+          language: 'css'
+          include:
+            - '**/*.css'
+            - '**/*.scss'
+          exclude:
+            - '**/node_modules/**'
+
+      # --- BREAKING: BUI Alert surface prop removal
+      - name: 'Remove deprecated surface prop from Alert component'
+        js-ast-grep:
+          js_file: scripts/remove-alert-surface-prop.ts
+          language: 'tsx'
+          semantic_analysis: file
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+
+      # --- BREAKING: BUI surface/onSurface → bg provider/consumer system
+      - name: 'Migrate surface/onSurface props to bg system on @backstage/ui components'
+        js-ast-grep:
+          js_file: scripts/migrate-surface-to-bg-system.ts
+          language: 'tsx'
+          semantic_analysis: file
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+
+      # --- BREAKING: BUI ColumnConfig cell/header must return ReactElement
+      - name: 'Wrap ColumnConfig cell and header returns in CellText/Column'
+        js-ast-grep:
+          js_file: scripts/migrate-column-config-to-react-element.ts
+          language: 'tsx'
+          semantic_analysis: file
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+
+      # --- BREAKING: BUI Header → PluginHeader rename
+      - name: 'Rename Header to PluginHeader in @backstage/ui'
+        js-ast-grep:
+          js_file: scripts/rename-header-to-plugin-header.ts
+          language: 'tsx'
+          semantic_analysis: file
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+
+      # --- BREAKING: Frontend plugin API blueprint exports moved
+      - name: 'Move blueprint imports from @backstage/frontend-plugin-api to @backstage/plugin-app-react'
+        js-ast-grep:
+          js_file: scripts/migrate-blueprints-to-plugin-app-react.ts
+          language: 'tsx'
+          semantic_analysis: file
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+
+      # --- Config: app.experimental.packages removed
+      - name: 'Migrate app.experimental.packages to app.packages in app-config YAML'
+        js-ast-grep:
+          js_file: scripts/migrate-app-experimental-packages.ts
+          language: 'yaml'
+          include:
+            - '**/app-config.yaml'
+            - '**/app-config.*.yaml'
+          exclude:
+            - '**/node_modules/**'
+
+  - id: ai-fixup
+    name: 'AI fixup for edge cases'
+    type: automatic
+    depends_on: [apply-recipe]
+    steps:
+      - name: 'Fix remaining surface-to-bg edge cases'
+        if: params.aiFixup == true
+        ai:
+          model: 'claude-sonnet-4-6'
+          system_prompt: |
+            You are a Backstage migration expert. You are fixing edge cases left over
+            from an AST-based codemod that migrated the surface/onSurface prop system
+            to the bg provider/consumer architecture in @backstage/ui v0.13.0
+            (Backstage 1.48.0).
+
+            The AST codemod already handled:
+            - Static surface="N" → bg="neutral-N" on Box, Card, Flex, Grid
+            - surface="0" removal (transparent by default)
+            - surface="auto" → bg="neutral-auto"
+            - onSurface prop removal on consumer components
+            - Added TODO for dynamic surface values
+
+            Your job is ONLY to fix complex patterns the AST codemod could not handle.
+          prompt: |
+            Search the codebase for remaining migration issues:
+
+            ## 1. Dynamic surface values
+            Find TODO comments from the codemod about dynamic surface values. Where the
+            value can be determined statically from context, apply the mapping. Otherwise
+            leave the TODO.
+
+            ## 2. Surface type references
+            Find remaining references to the `Surface` type from `@backstage/ui` and
+            replace with `ProviderBg | ContainerBg` as appropriate.
+
+            ## 3. Provider/consumer patterns
+            Check for custom wrapper components that forward surface props to BUI
+            components and update their prop types and forwarding logic.
+
+            After making changes, verify the files are syntactically valid.
+          max_steps: 30
+      - name: 'Fix remaining ColumnConfig cell/header edge cases'
+        if: params.aiFixup == true
+        ai:
+          model: 'claude-sonnet-4-6'
+          system_prompt: |
+            You are a Backstage migration expert. You are fixing edge cases left over
+            from an AST-based codemod that wrapped ColumnConfig cell and header returns
+            in CellText/Column components for ReactElement compliance in @backstage/ui
+            v0.13.0 (Backstage 1.48.0).
+
+            The AST codemod already handled:
+            - Arrow function cells returning bare expressions → wrapped in <CellText title={value} />
+            - Arrow function headers returning bare strings → wrapped in <Column>string</Column>
+            - Added CellText/Column imports to @backstage/ui
+
+            Your job is ONLY to fix complex patterns the AST codemod could not handle.
+          prompt: |
+            Search the codebase for remaining migration issues:
+
+            ## 1. Complex cell returns
+            Find ColumnConfig cell functions that return complex expressions (ternaries,
+            function calls, template literals) that need wrapping in CellText or other
+            ReactElement wrappers.
+
+            ## 2. Block body cell functions
+            Find cell/header functions with block bodies (return statements) that return
+            non-JSX values and need wrapping.
+
+            ## 3. Verify CellText/Column imports
+            Ensure all files using CellText or Column have proper imports from @backstage/ui.
+
+            After making changes, verify the files are syntactically valid.
+          max_steps: 25
