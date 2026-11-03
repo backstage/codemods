@@ -1,0 +1,12 @@
+{
+  "migrate-catalog-filters-to-query": [
+    {
+      "cardinality": {
+        "action": "getCatalogQuery-added",
+        "context": "class",
+        "result": "literal"
+      },
+      "count": 1
+    }
+  ]
+}

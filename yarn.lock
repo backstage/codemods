@@ -219,6 +219,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@backstage/v1-56-0-migration-recipe@workspace:codemods/v1.56.0":
+  version: 0.0.0-use.local
+  resolution: "@backstage/v1-56-0-migration-recipe@workspace:codemods/v1.56.0"
+  dependencies:
+    "@backstage/scripts": "workspace:*"
+    "@codemod.com/jssg-types": "npm:1.6.3"
+    "@jssg/utils": "patch:@jssg/utils@npm%3A0.0.11#~/.yarn/patches/@jssg-utils-npm-0.0.11-19369c37c8.patch"
+    codemod: "npm:1.18.3"
+  languageName: unknown
+  linkType: soft
+
 "@backstage/version-bridge@npm:^1.0.12":
   version: 1.0.12
   resolution: "@backstage/version-bridge@npm:1.0.12"

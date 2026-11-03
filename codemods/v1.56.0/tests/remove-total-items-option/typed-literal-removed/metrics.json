@@ -1,0 +1,11 @@
+{
+  "remove-total-items-option": [
+    {
+      "cardinality": {
+        "action": "totalItems-removed",
+        "context": "typed-literal"
+      },
+      "count": 1
+    }
+  ]
+}

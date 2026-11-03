@@ -1,0 +1,17 @@
+{
+  "remove-atlassian-username-resolver": [
+    {
+      "cardinality": {
+        "action": "collection-import-kept"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "resolver-replaced",
+        "form": "namespace"
+      },
+      "count": 1
+    }
+  ]
+}

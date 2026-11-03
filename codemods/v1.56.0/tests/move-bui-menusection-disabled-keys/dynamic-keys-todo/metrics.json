@@ -1,0 +1,11 @@
+{
+  "move-bui-menusection-disabled-keys": [
+    {
+      "cardinality": {
+        "action": "todo-manual-review",
+        "reason": "dynamic-keys"
+      },
+      "count": 1
+    }
+  ]
+}

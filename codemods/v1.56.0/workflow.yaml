@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+nodes:
+  - id: apply-recipe
+    name: 'Run every Backstage 1.56.0 codemod in order'
+    type: automatic
+    steps:
+      # --- DEPRECATION: EntityFilter.getCatalogQuery alongside getCatalogFilters
+      - name: 'Add getCatalogQuery to custom EntityFilter implementations'
+        js-ast-grep:
+          js_file: scripts/migrate-catalog-filters-to-query.ts
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+
+      # --- BREAKING: removed Atlassian username sign-in resolver
+      - name: 'Replace removed Atlassian username resolver'
+        js-ast-grep:
+          js_file: scripts/remove-atlassian-username-resolver.ts
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+
+      - name: 'Flag removed Atlassian username resolver in app-config'
+        js-ast-grep:
+          js_file: scripts/remove-atlassian-username-resolver-yaml.ts
+          language: 'yaml'
+          include:
+            - '**/app-config.yaml'
+            - '**/app-config.*.yaml'
+            - '**/app-config.yml'
+            - '**/app-config.*.yml'
+          exclude:
+            - '**/node_modules/**'
+
+      # --- DEPRECATION: ignored totalItems option of StreamEntitiesRequest
+      - name: 'Remove ignored totalItems option from streamEntities requests'
+        js-ast-grep:
+          js_file: scripts/remove-total-items-option.ts
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+
+      # --- BREAKING: BUI MenuSection no longer accepts disabledKeys
+      - name: 'Move BUI MenuSection disabledKeys to Menu'
+        js-ast-grep:
+          js_file: scripts/move-bui-menusection-disabled-keys.ts
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'

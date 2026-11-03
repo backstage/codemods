@@ -1,0 +1,10 @@
+{
+  "remove-atlassian-username-resolver-yaml": [
+    {
+      "cardinality": {
+        "action": "resolver-flagged"
+      },
+      "count": 1
+    }
+  ]
+}

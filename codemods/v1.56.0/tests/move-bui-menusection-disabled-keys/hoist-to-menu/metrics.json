@@ -1,0 +1,10 @@
+{
+  "move-bui-menusection-disabled-keys": [
+    {
+      "cardinality": {
+        "action": "disabledKeys-hoisted-to-menu"
+      },
+      "count": 1
+    }
+  ]
+}
