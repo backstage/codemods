@@ -1,0 +1,6 @@
+auth:
+  providers:
+    atlassian:
+      signIn:
+        # TODO(backstage-codemod): replace usernameMatchingUserEntityName with emailLocalPartMatchingUserEntityName or emailMatchingUserEntityProfileEmail
+        resolver: usernameMatchingUserEntityName
