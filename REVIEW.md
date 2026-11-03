@@ -27,4 +27,4 @@ What failure looks like in this repo, for AI reviewers. A PR that passes CI can 
 
 ## What good looks like
 
-`yarn format`, `yarn lint`, `yarn test` pass locally — and `yarn check:changed` reproduces exactly what CI runs, so local and remote gates cannot drift. The pre-commit (`yarn lint-staged`) and pre-push (`yarn check:changed`) hooks fail loudly rather than silently skipping.
+`yarn format`, `yarn lint`, `yarn test` pass locally — and `yarn check:changed` runs the same changed-file gate CI runs (format, lint, package-name, affected recipe tests), so that gate cannot drift. CI additionally runs `yarn test:scripts` (the `packages/scripts` regression tests) and a Changeset Check job — run `yarn test:scripts` locally before pushing tooling changes. The pre-commit (`yarn lint-staged`) and pre-push (`yarn check:changed`) hooks fail loudly rather than silently skipping.

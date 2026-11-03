@@ -11,7 +11,7 @@ The repo started as npm-style standalone codemod packages with no shared formatt
 ## Decision
 
 - Yarn 4 via Corepack; `yarn.lock` committed (lockfile v9), `.yarn/install-state.gz` untracked.
-- oxfmt + oxlint (not Prettier/ESLint), with a single shared TypeScript config; no per-codemod typescript dependency.
+- oxfmt + oxlint (not Prettier/ESLint) as root tooling; recipes keep recipe-local `tsconfig.json` files, and the newer recipes (`v1.54.0+`) declare their own `typescript` devDependency.
 - husky pre-commit runs `yarn lint-staged`; pre-push runs `yarn check:changed`; CI runs the same `check-changed` bin from the private `@backstage/scripts` package, so local and remote gates cannot drift.
 - Changed-file checks batch paths and skip ignored test fixtures.
 

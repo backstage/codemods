@@ -6,7 +6,7 @@
 
 ## Context
 
-Recipe workflows originally used AI fixup steps for fuzzy transformations (renames scoped to a receiver type, import handling, duck-typed object matching). AI steps are nondeterministic, hard to test, and produced false positives on unrelated receivers and return values — a long series of follow-up fixes (`d12b8fc`, `8b709dc`, `38f173a`).
+Recipe workflows originally used AI fixup steps for fuzzy transformations (renames scoped to a receiver type, import handling, duck-typed object matching). AI steps are nondeterministic and hard to test. Moving the patterns into deterministic AST transforms then required a series of follow-up fixes to tighten receiver and type scoping (`d12b8fc` guard on call arguments, `8b709dc` narrowing to return types, `38f173a` scoping renames to `DialogApi` receivers) — the cost of getting deterministic detection right.
 
 ## Decision
 
