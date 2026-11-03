@@ -106,7 +106,7 @@ Conventions:
   - `scripts/<name>.ts` + `tests/<name>/<case>/input.<ext>` fixtures run as `codemod jssg test`; the language is inferred from the fixture extension (`ts`/`tsx` → `tsx`, `json`, `yaml`/`yml`). Fixture roots without JSSG input files (e.g. `.sh` suites) are skipped there and covered by their `node --test` suites.
   - `tests/<name>/assert-fixtures.ts` runs whole-app fixture trees through the recipe workflow (`run-recipe-tests --list` prints the plan without executing).
   - Every `tests/**/tsconfig.json` is type-checked with `tsc`.
-  - Every `tests/**/*.test.mjs` runs under `node --test`.
+  - Every `tests/**/*.test.mjs` and `tests/**/*.test.ts` runs under `node --test`.
   - The workflow itself is structurally validated: every `js-ast-grep` step's `js_file` and every run step's `CODEMOD_SCRIPT` must exist locally, and registry `codemod:` steps are rejected. Recipe-specific concerns (step ordering, parameter bindings) stay in the recipe's own `tests/workflow.test.mjs`.
 - Steps that share workflow state (an indexing step feeding a transform, or a shell step reading state set by another step) must run in the same workflow and in order — keep that coupling when reordering.
 - Repository tooling (gates, generators, release helpers, the recipe runner) lives in [`packages/scripts`](../../packages/scripts) as TypeScript bins with `node:test` regression tests in `tests/`; run them with `yarn test:scripts`. Update them when changing discovery or gate rules.
