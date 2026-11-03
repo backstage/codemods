@@ -1,5 +1,14 @@
 # @backstage/v1-48-0-migration-recipe
 
+## 0.3.0
+
+### Minor Changes
+
+- 6e77d34: Include app-config.yml and app-config.*.yml files in app-config migrations, matching existing YAML coverage.
+- 138ae39: Consolidate all seven Backstage 1.48.0 codemods into the flattened migration recipe with local scripts, preserved fixture suites, and optional post-transform AI fixups.
+- cdbb212: Metric identifiers were renamed to match logical migration stems, shared across language variants. Sub-action metrics now use stem-derived names. Consumers must update dashboards tracking the old identifiers.
+- d3ba1e5: Align recipe target languages with the inputs actually scanned by their workflows, including shell scripts in the 1.54.0 recipe. Workflow selectors and transform scope are unchanged.
+
 ## 0.2.4
 
 ### Patch Changes

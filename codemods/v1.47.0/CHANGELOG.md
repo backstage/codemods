@@ -1,5 +1,12 @@
 # @backstage/v1-47-0-migration-recipe
 
+## 0.2.0
+
+### Minor Changes
+
+- f585c23: Consolidate standalone codemods into flattened migration recipes with bundled local scripts, preserved fixture suites, and optional post-transform AI fixups.
+- cdbb212: Metric identifiers were renamed to match logical migration stems, shared across language variants. Sub-action metrics now use stem-derived names. Consumers must update dashboards tracking the old identifiers.
+
 ## 0.1.3
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @backstage/v1-52-0-migration-recipe
 
+## 0.3.0
+
+### Minor Changes
+
+- 6e77d34: Include app-config.yml and app-config.*.yml files in app-config migrations, matching existing YAML coverage.
+- e53eaab: Consolidate all four Backstage v1.52.0 codemods into the flattened migration recipe, bundling local scripts and preserving TypeScript, YAML, and CSS fixture coverage instead of resolving nested registry packages.
+- d3ba1e5: Align recipe target languages with the inputs actually scanned by their workflows, including shell scripts in the 1.54.0 recipe. Workflow selectors and transform scope are unchanged.
+
 ## 0.2.4
 
 ### Patch Changes
