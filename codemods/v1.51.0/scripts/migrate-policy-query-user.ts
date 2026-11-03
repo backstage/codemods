@@ -1,3 +1,4 @@
+import { listImports } from '@jssg/utils/javascript/imports'
 import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
@@ -26,23 +27,8 @@ function getDirectPropertyNames(objectNode: SgNode<TSX>): string[] {
     .map((key) => key.text())
 }
 
-function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode<TSX, 'import_statement'>[] {
-  return rootNode.findAll({
-    rule: {
-      kind: 'import_statement',
-      has: {
-        kind: 'string',
-        has: {
-          kind: 'string_fragment',
-          regex: exactMatchRegex(source),
-        },
-      },
-    },
-  })
-}
-
-function importsFromPermissionNode(rootNode: SgNode<TSX>): boolean {
-  return findImportStatementsFrom(rootNode, PERMISSION_NODE).length > 0
+function importsFromPermissionNode(rootNode: SgNode<TSX, 'program'>): boolean {
+  return listImports(rootNode, { from: PERMISSION_NODE }).length > 0
 }
 
 function getLineIndent(source: string, startIndex: number): string {

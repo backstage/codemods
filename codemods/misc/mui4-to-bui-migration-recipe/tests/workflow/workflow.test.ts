@@ -25,7 +25,10 @@ test('bootstrap precedes transforms and dependency cleanup follows them', () => 
 })
 
 test('styles transform writes expected CSS module goldens', async t => {
-  const workflowDir = mkdtempSync(join(tmpdir(), 'mui-styles-workflow-'))
+  // Stage the workflow inside the package tree: the styles script imports
+  // @jssg/utils, which resolves through the repo root node_modules and would
+  // not resolve from an OS temp directory.
+  const workflowDir = mkdtempSync(join(fileURLToPath(root), '.mui-styles-workflow-'))
   try {
     mkdirSync(join(workflowDir, 'scripts'))
     copyFileSync(new URL('scripts/migrate-mui-styles-to-bui-css-modules.ts', root), join(workflowDir, 'scripts/migrate-mui-styles-to-bui-css-modules.ts'))

@@ -1,6 +1,14 @@
-import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
+import { addImport, listImports, removeImport } from '@jssg/utils/javascript/imports'
+import { parse } from 'codemod:ast-grep'
+import type { Codemod, Edit, SgNode, SgRoot } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
+
+const TSX_LANG = 'tsx'
+
+function parseTsx(source: string): SgRoot<TSX> {
+  return parse<TSX>(TSX_LANG, source)
+}
 
 const migrationMetric = useMetricAtom('humanize-entity-ref-to-presentation')
 
@@ -18,60 +26,10 @@ interface DeprecatedImportInfo {
 }
 
 /**
- * Find import statements from a specific source.
+ * List ESM import statements from a specific source via @jssg/utils.
  */
-function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode<TSX, 'import_statement'>[] {
-  return rootNode.findAll<'import_statement'>({
-    rule: {
-      kind: 'import_statement',
-      has: {
-        kind: 'string',
-        has: {
-          kind: 'string_fragment',
-          regex: escapeRegex(source),
-        },
-      },
-    },
-  })
-}
-
-/**
- * Extract import specifier info from an import statement.
- */
-function extractSpecifiers(importNode: SgNode<TSX>): {
-  importedName: string
-  localName: string
-  specText: string
-}[] {
-  const specifiers = importNode.findAll({ rule: { kind: 'import_specifier' } })
-  const result: {
-    importedName: string
-    localName: string
-    specText: string
-  }[] = []
-
-  for (const spec of specifiers) {
-    const identifiers = spec.findAll({
-      rule: {
-        any: [{ kind: 'identifier' }, { kind: 'type_identifier' }],
-      },
-    })
-    const [importedNameNode] = identifiers
-    if (!importedNameNode) {
-      continue
-    }
-    const importedName = importedNameNode.text()
-    const localNameNode = identifiers[1] ?? importedNameNode
-    const localName = localNameNode.text()
-
-    result.push({
-      importedName,
-      localName,
-      specText: spec.text(),
-    })
-  }
-
-  return result
+function listImportStatementsFrom(rootNode: SgNode<TSX, 'program'>) {
+  return listImports(rootNode, { from: SOURCE_PKG }).filter((item) => item.node.is('import_statement'))
 }
 
 /**
@@ -287,7 +245,8 @@ function optionsToJsxProps(optionsNode: SgNode<TSX>): string | null {
 }
 
 /**
- * Build a named import/export statement.
+ * Build a named import/export statement. Used for re-exports (no util
+ * equivalent) and the no-imports fallback header in the transform below.
  */
 function buildNamedStatement(
   keyword: 'import' | 'export',
@@ -396,71 +355,39 @@ const transform: Codemod<TSX> = async (root) => {
   // Track which replacement APIs we need to import
   const neededImports = new Set<string>()
 
-  // Find all import statements from the source package
-  const importStatements = findImportStatementsFrom(rootNode, SOURCE_PKG)
+  // List all import statements from the source package via @jssg/utils
+  const sourceImports = listImportStatementsFrom(rootNode)
 
   // Collect deprecated import info (named imports)
   const deprecatedImports: DeprecatedImportInfo[] = []
 
-  // Track namespace import statements that reference deprecated functions
-  const namespaceImportStmts: {
-    stmt: SgNode<TSX, 'import_statement'>
-    alias: string
-  }[] = []
+  // Deprecated specifier names to remove from import statements
+  const deprecatedNames = new Set<string>()
 
-  // Track which import statements contain deprecated imports and their kept specs
-  const importAnalysis: {
-    stmt: SgNode<TSX, 'import_statement'>
-    deprecated: { importedName: string; localName: string; specText: string }[]
-    kept: { importedName: string; localName: string; specText: string }[]
-    isTypeOnly: boolean
-  }[] = []
+  // Track namespace import aliases that reference deprecated functions
+  const namespaceImportAliases: string[] = []
 
-  for (const importStmt of importStatements) {
+  for (const importStmt of sourceImports) {
     // Handle namespace imports: extract alias for later call-site resolution
-    const namespaceNode = importStmt.find({
-      rule: { kind: 'namespace_import' },
-    })
-    if (namespaceNode) {
-      const aliasNode = namespaceNode.find({
-        rule: { kind: 'identifier' },
-      })
-      if (aliasNode) {
-        namespaceImportStmts.push({
-          stmt: importStmt,
-          alias: aliasNode.text(),
-        })
-      }
+    if (importStmt.namespaceName) {
+      namespaceImportAliases.push(importStmt.namespaceName)
       continue
     }
 
-    const specifiers = extractSpecifiers(importStmt)
-    const deprecated: { importedName: string; localName: string; specText: string }[] = []
-    const kept: { importedName: string; localName: string; specText: string }[] = []
-
-    for (const spec of specifiers) {
+    for (const spec of importStmt.specifiers) {
       if (spec.importedName === 'humanizeEntityRef' || spec.importedName === 'humanizeEntity') {
-        deprecated.push(spec)
+        deprecatedNames.add(spec.importedName)
         deprecatedImports.push({
           importedName: spec.importedName,
           alias: spec.localName,
         })
-      } else {
-        kept.push(spec)
       }
     }
-
-    if (deprecated.length === 0) {
-      continue
-    }
-
-    const isTypeOnly = importStmt.children().some((c) => c.text() === 'type')
-    importAnalysis.push({ stmt: importStmt, deprecated, kept, isTypeOnly })
   }
 
   // Handle namespace import call sites: find CatalogReact.humanizeEntityRef(...) patterns
   let hasNamespaceMigrations = false
-  for (const { alias } of namespaceImportStmts) {
+  for (const alias of namespaceImportAliases) {
     const deprecatedCalls = rootNode.findAll({
       rule: {
         kind: 'call_expression',
@@ -598,39 +525,62 @@ const transform: Codemod<TSX> = async (root) => {
     }
   }
 
-  // Handle named import statement replacements
-  // Strategy: replace the import statement in-place with new specifiers
-  for (const { stmt, kept, isTypeOnly } of importAnalysis) {
-    const newSpecTexts = [...neededImports]
-    const allSpecs = [...kept.map((s) => s.specText), ...newSpecTexts]
+  // Phase 1 result: call sites rewritten; import statements untouched so the
+  // next phase can merge replacement specifiers into the surviving clauses
+  // in place (preserving each statement's original position in the file).
+  const phase1Source = edits.length > 0 ? rootNode.commitEdits(edits) : rootNode.text()
 
-    if (allSpecs.length > 0) {
-      const replacement = buildNamedStatement('import', allSpecs, SOURCE_PKG, isTypeOnly)
-      edits.push(stmt.replace(replacement))
-    } else {
-      // No specifiers left and no new ones needed - remove import
-      edits.push(stmt.replace(''))
-    }
-  }
+  let out = phase1Source
 
-  // For namespace imports, add a separate named import for the needed APIs
-  // (the namespace import stays intact since it may reference other members)
-  if (hasNamespaceMigrations && neededImports.size > 0) {
-    const newImportText = buildNamedStatement('import', [...neededImports], SOURCE_PKG, false)
+  // Phase 2: add the needed replacement imports. addImport merges into the
+  // existing source-package clause in place, or appends a new statement after
+  // the last import.
+  if (neededImports.size > 0) {
+    const specifiers = [...neededImports].map((name) => ({ name }))
+    /**
+     * `addImport` against a freshly parsed program that contains no imports
+     * AND has leading whitespace tickles a quickjs-level crash inside
+     * `@jssg/utils`. When the file has no import or require statements, skip
+     * the util-based add step and prepend the new statement verbatim.
+     */
+    const phase2HasImports = /^\s*(?:import\s|const\s+[^=]+=\s*require\b)/m.test(phase1Source)
 
-    // Insert after the last namespace import statement from SOURCE_PKG
-    const lastNsImport = namespaceImportStmts.at(-1)
-    if (lastNsImport) {
-      const endPos = lastNsImport.stmt.range().end.index
-      edits.push({
-        startPos: endPos,
-        endPos,
-        insertedText: `\n${newImportText}`,
+    if (phase2HasImports) {
+      const phase2Root = parseTsx(phase1Source).root()
+      const addEdit = addImport(phase2Root, {
+        type: 'named',
+        specifiers,
+        from: SOURCE_PKG,
       })
+      out = addEdit ? phase2Root.commitEdits([addEdit]) : phase1Source
+    } else {
+      out = `${buildNamedStatement('import', [...neededImports], SOURCE_PKG, false)}\n${phase1Source.replace(/^\s+/, '')}`
     }
   }
 
-  const result = await Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
+  // Phase 3: drop the deprecated specifiers (removeImport removes ONE
+  // specifier per call, so loop) on a fresh parse of the post-add source.
+  // When a statement keeps only deprecated specifiers and none were needed,
+  // this removes the whole statement including its trailing newline.
+  if (deprecatedNames.size > 0) {
+    const phase3Root = parseTsx(out).root()
+    const removeEdits: Edit[] = []
+    for (const name of deprecatedNames) {
+      const edit = removeImport(phase3Root, {
+        type: 'named',
+        specifiers: [name],
+        from: SOURCE_PKG,
+      })
+      if (edit) {
+        removeEdits.push(...edit)
+      }
+    }
+    if (removeEdits.length > 0) {
+      out = phase3Root.commitEdits(removeEdits)
+    }
+  }
+
+  const result = await Promise.resolve(out)
   return result
 }
 

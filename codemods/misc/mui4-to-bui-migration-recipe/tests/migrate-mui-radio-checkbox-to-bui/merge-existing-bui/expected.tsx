@@ -1,6 +1,3 @@
-
-
-
 import { Button, Radio, RadioGroup } from '@backstage/ui';
 
 const MyComponent = () => (

@@ -37,7 +37,7 @@ interface InertAnalysis {
 }
 
 interface ImportRemoval {
-  edit: Edit
+  edits: Edit[]
   localName: string
   importType: 'named' | 'default' | 'namespace'
 }
@@ -781,7 +781,7 @@ function findUnusedCandidateImportRemoval(
       })
 
       if (edit) {
-        return { edit, localName, importType: 'named' }
+        return { edits: edit, localName, importType: 'named' }
       }
     }
 
@@ -797,7 +797,7 @@ function findUnusedCandidateImportRemoval(
           })
 
           if (edit) {
-            return { edit, localName, importType: 'default' }
+            return { edits: edit, localName, importType: 'default' }
           }
         }
       }
@@ -820,7 +820,7 @@ function findUnusedCandidateImportRemoval(
           })
 
           if (edit) {
-            return { edit, localName, importType: 'namespace' }
+            return { edits: edit, localName, importType: 'namespace' }
           }
         }
       }
@@ -1013,7 +1013,7 @@ const transform: Codemod<TSX> = async (root) => {
       break
     }
 
-    out = phaseRoot.commitEdits([removal.edit])
+    out = phaseRoot.commitEdits(removal.edits)
     migrationMetric.increment({
       action: 'unused-import-removed',
       importType: removal.importType,

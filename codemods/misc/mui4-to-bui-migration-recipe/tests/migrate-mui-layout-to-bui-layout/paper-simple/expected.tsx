@@ -1,4 +1,3 @@
-
 import { Box } from '@backstage/ui';
 
 const MyComponent = () => (

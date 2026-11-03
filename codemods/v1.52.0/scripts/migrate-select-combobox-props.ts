@@ -1,3 +1,4 @@
+import { getAllImports } from '@jssg/utils/javascript/imports'
 import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
@@ -13,69 +14,6 @@ const ALL_COMPONENTS = new Set([...SELECT_COMPONENTS, ...COMBOBOX_COMPONENTS])
 const SELECT_SEARCH_PROPS = new Set(['searchable', 'searchPlaceholder'])
 /** Combobox deprecated search props */
 const COMBOBOX_SEARCH_PROPS = new Set(['inputValue', 'onInputChange'])
-
-function escapeRegex(str: string): string {
-  return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
-// ---------------------------------------------------------------------------
-// Import analysis (mirrors loading-to-is-pending pattern)
-// ---------------------------------------------------------------------------
-
-function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode<TSX, 'import_statement'>[] {
-  return rootNode.findAll({
-    rule: {
-      kind: 'import_statement',
-      has: {
-        kind: 'string',
-        has: {
-          kind: 'string_fragment',
-          regex: `^${escapeRegex(source)}$`,
-        },
-      },
-    },
-  })
-}
-
-interface ImportedComponents {
-  /** Map of localName → originalName (e.g. "MySelect" → "Select") */
-  localNames: Map<string, string>
-  namespaceAliases: string[]
-}
-
-function collectImportedComponents(importStatements: SgNode<TSX, 'import_statement'>[]): ImportedComponents {
-  const localNames = new Map<string, string>()
-  const namespaceAliases: string[] = []
-
-  for (const imp of importStatements) {
-    const nsImport = imp.find({ rule: { kind: 'namespace_import' } })
-    if (nsImport) {
-      const aliasNode = nsImport.find({ rule: { kind: 'identifier' } })
-      if (aliasNode) {
-        namespaceAliases.push(aliasNode.text())
-      }
-      continue
-    }
-
-    for (const spec of imp.findAll({ rule: { kind: 'import_specifier' } })) {
-      const identifiers = spec.findAll({
-        rule: {
-          any: [{ kind: 'identifier' }, { kind: 'type_identifier' }],
-        },
-      })
-
-      const [importedNameNode] = identifiers
-      if (!importedNameNode || !ALL_COMPONENTS.has(importedNameNode.text())) {
-        continue
-      }
-
-      const localNameNode = identifiers[1] ?? importedNameNode
-      localNames.set(localNameNode.text(), importedNameNode.text())
-    }
-  }
-
-  return { localNames, namespaceAliases }
-}
 
 // ---------------------------------------------------------------------------
 // JSX element helpers (mirrors loading-to-is-pending pattern)
@@ -340,12 +278,20 @@ const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
-  const uiImports = findImportStatementsFrom(rootNode, UI_SOURCE)
-  if (uiImports.length === 0) {
-    return null
+  // Collect imported Select / Combobox local names and namespace aliases
+  // (`import * as UI`) from @backstage/ui imports
+  const localNames = new Map<string, string>()
+  for (const name of ALL_COMPONENTS) {
+    for (const binding of getAllImports(rootNode, { type: 'named', name, from: UI_SOURCE })) {
+      if (!binding.isNamespace) {
+        localNames.set(binding.alias, name)
+      }
+    }
   }
+  const namespaceAliases = getAllImports(rootNode, { type: 'default', from: UI_SOURCE })
+    .filter((binding) => binding.isNamespace)
+    .map((binding) => binding.alias)
 
-  const { localNames, namespaceAliases } = collectImportedComponents(uiImports)
   if (localNames.size === 0 && namespaceAliases.length === 0) {
     return null
   }

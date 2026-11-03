@@ -1,7 +1,3 @@
-
-
-
-
 import { Button, Tab, TabList, TabPanel, Tabs } from '@backstage/ui';
 
 const MyComponent = () => (

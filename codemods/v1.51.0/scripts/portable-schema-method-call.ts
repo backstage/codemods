@@ -1,4 +1,5 @@
-import type { RefineNode, Codemod, Edit, SgNode } from 'codemod:ast-grep'
+import { getAllImports } from '@jssg/utils/javascript/imports'
+import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
 
@@ -46,52 +47,26 @@ function escapeRegex(str: string): string {
   return str.replaceAll(/[.*+?^${}()|[\]\\/]/g, '\\$&')
 }
 
-function findStatementsFrom<K extends 'import_statement' | 'export_statement'>(
-  rootNode: SgNode<TSX>,
-  kind: K,
-  source: string,
-): RefineNode<TSX, K>[] {
-  return rootNode.findAll<K>({
-    rule: {
-      kind,
-      has: {
-        kind: 'string',
-        has: {
-          kind: 'string_fragment',
-          regex: `^${escapeRegex(source)}$`,
-        },
-      },
-    },
-  })
+function portableSchemaImports(rootNode: SgNode<TSX, 'program'>) {
+  return getAllImports(rootNode, {
+    type: 'named',
+    name: PORTABLE_SCHEMA_TYPE,
+    from: FRONTEND_PLUGIN_API,
+  }).filter((imp) => !imp.isNamespace)
 }
 
-function resolvePortableSchemaLocalNames(rootNode: SgNode<TSX>): Set<string> {
+function resolvePortableSchemaLocalNames(rootNode: SgNode<TSX, 'program'>): Set<string> {
   const names = new Set<string>([PORTABLE_SCHEMA_TYPE])
 
-  for (const imp of findStatementsFrom(rootNode, 'import_statement', FRONTEND_PLUGIN_API)) {
-    for (const spec of imp.findAll({ rule: { kind: 'import_specifier' } })) {
-      const importedName = spec.field('name')?.text()
-      if (importedName !== PORTABLE_SCHEMA_TYPE) {
-        continue
-      }
-
-      names.add(spec.field('alias')?.text() ?? importedName)
-    }
+  for (const imp of portableSchemaImports(rootNode)) {
+    names.add(imp.alias)
   }
 
   return names
 }
 
-function importsPortableSchema(rootNode: SgNode<TSX>): boolean {
-  for (const imp of findStatementsFrom(rootNode, 'import_statement', FRONTEND_PLUGIN_API)) {
-    for (const spec of imp.findAll({ rule: { kind: 'import_specifier' } })) {
-      if (spec.field('name')?.text() === PORTABLE_SCHEMA_TYPE) {
-        return true
-      }
-    }
-  }
-
-  return false
+function importsPortableSchema(rootNode: SgNode<TSX, 'program'>): boolean {
+  return portableSchemaImports(rootNode).length > 0
 }
 
 function referencesPortableSchemaType(rootNode: SgNode<TSX>, portableSchemaNames: Set<string>): boolean {
@@ -117,7 +92,7 @@ function referencesPortableSchemaType(rootNode: SgNode<TSX>, portableSchemaNames
 /**
  * Returns true when the file likely contains PortableSchema usage.
  */
-function hasPortableSchemaContext(rootNode: SgNode<TSX>): boolean {
+function hasPortableSchemaContext(rootNode: SgNode<TSX, 'program'>): boolean {
   const portableSchemaNames = resolvePortableSchemaLocalNames(rootNode)
   return importsPortableSchema(rootNode) || referencesPortableSchemaType(rootNode, portableSchemaNames)
 }

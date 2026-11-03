@@ -7,7 +7,7 @@
     "test": "run-recipe-tests"
   },
   "dependencies": {
-    "@jssg/utils": "^0.0.10"
+    "@jssg/utils": "patch:@jssg/utils@npm%3A0.0.11#~/.yarn/patches/@jssg-utils-npm-0.0.11-19369c37c8.patch"
   },
   "devDependencies": {
     "@backstage/scripts": "workspace:*",

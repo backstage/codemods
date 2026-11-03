@@ -1,4 +1,3 @@
-
 import { Alert, Button } from '@backstage/ui';
 
 const MyComponent = () => (

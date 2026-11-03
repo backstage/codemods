@@ -1,3 +1,4 @@
+import { getLineIndent } from '@jssg/utils/javascript/style'
 import type { RefineNode, Codemod, Edit, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
@@ -39,13 +40,11 @@ function deferDeclarationWithDirective(
   if (
     !comments.some((comment) => comment.range().end.line === anchor.range().start.line - 1 && comment.text() === todo)
   ) {
-    const prefix = rootNode
-      .text()
-      .slice(rootNode.text().lastIndexOf('\n', anchor.range().start.index - 1) + 1, anchor.range().start.index)
+    const indent = getLineIndent(rootNode.text(), anchor)
     edits.push({
       startPos: anchor.range().start.index,
       endPos: anchor.range().start.index,
-      insertedText: `${todo}\n${/^[ \t]*$/.test(prefix) ? prefix : ''}`,
+      insertedText: `${todo}\n${indent}`,
     })
     migrationMetric.increment({ kind, action: 'todo' })
   }
@@ -390,16 +389,13 @@ function handleNamespaceImports(rootNode: SgNode<TSX>, edits: Edit[], filename: 
           child.text() === todoComment,
       )
     if (!hasAdjacentTodo) {
-      const prefix = source.slice(
-        source.lastIndexOf('\n', statement.range().start.index - 1) + 1,
-        statement.range().start.index,
-      )
+      const indent = getLineIndent(source, statement)
       const lineEnd = source.indexOf('\n', statement.range().end.index)
       const insertPos = lineEnd === -1 ? source.length : lineEnd + 1
       edits.push({
         startPos: insertPos,
         endPos: insertPos,
-        insertedText: `${lineEnd === -1 ? '\n' : ''}${/^[ \t]*$/.test(prefix) ? prefix : ''}${todoComment}${lineEnd === -1 ? '' : '\n'}`,
+        insertedText: `${lineEnd === -1 ? '\n' : ''}${indent}${todoComment}${lineEnd === -1 ? '' : '\n'}`,
       })
       migrationMetric.increment({
         kind: 'namespace-import',

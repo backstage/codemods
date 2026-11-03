@@ -1,4 +1,3 @@
-
 import { Button, Tag } from '@backstage/ui';
 
 const MyComponent = () => (

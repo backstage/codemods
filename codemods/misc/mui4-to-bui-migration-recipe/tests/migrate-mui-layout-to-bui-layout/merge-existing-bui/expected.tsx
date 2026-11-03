@@ -1,4 +1,3 @@
-
 import { Flex, Grid } from '@backstage/ui';
 
 const MyComponent = () => (

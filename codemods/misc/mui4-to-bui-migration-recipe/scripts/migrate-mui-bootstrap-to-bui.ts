@@ -1,3 +1,4 @@
+import { getAllImports, listImports } from '@jssg/utils/javascript/imports'
 import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
@@ -6,21 +7,6 @@ const migrationMetric = useMetricAtom('migrate-mui-bootstrap-to-bui')
 
 const BUI_CSS_IMPORT = '@backstage/ui/css/styles.css'
 
-function findImportStatementsMatching(rootNode: SgNode<TSX>, pattern: string): SgNode<TSX>[] {
-  return rootNode.findAll({
-    rule: {
-      kind: 'import_statement',
-      has: {
-        kind: 'string',
-        has: {
-          kind: 'string_fragment',
-          regex: pattern,
-        },
-      },
-    },
-  })
-}
-
 function normalizeFilePath(filename: string): string {
   return filename.replace(/^\\\\\?\\/, '').replaceAll('\\', '/')
 }
@@ -28,7 +14,7 @@ function normalizeFilePath(filename: string): string {
 /**
  * Match Backstage app/plugin entry files where the global BUI stylesheet belongs.
  */
-function isAppEntryFile(filename: string, rootNode: SgNode<TSX>): boolean {
+function isAppEntryFile(filename: string, rootNode: SgNode<TSX, 'program'>): boolean {
   const normalized = normalizeFilePath(filename)
 
   if (/(?:^|\/)packages\/app\/src\/App\.tsx?$/.test(normalized)) {
@@ -42,33 +28,19 @@ function isAppEntryFile(filename: string, rootNode: SgNode<TSX>): boolean {
   }
 
   // Typical app bootstrap entry when the filename is index.tsx content (e.g. jssg fixtures).
-  const createRootImports = findImportStatementsMatching(rootNode, '^react-dom/client$')
-  for (const imp of createRootImports) {
-    const createRootSpecifier = imp.find({
-      rule: {
-        kind: 'import_specifier',
-        has: {
-          kind: 'identifier',
-          regex: '^createRoot$',
-        },
-      },
-    })
-    if (createRootSpecifier) {
-      return true
-    }
+  if (getAllImports(rootNode, { type: 'named', name: 'createRoot', from: 'react-dom/client' }).length > 0) {
+    return true
   }
 
   return false
 }
 
-function hasMuiImports(rootNode: SgNode<TSX>): boolean {
-  const muiImports = findImportStatementsMatching(rootNode, '^@material-ui/')
-  return muiImports.length > 0
+function hasMuiImports(rootNode: SgNode<TSX, 'program'>): boolean {
+  return listImports(rootNode).some((item) => item.source.startsWith('@material-ui/'))
 }
 
-function hasBuiCssImport(rootNode: SgNode<TSX>): boolean {
-  const cssImports = findImportStatementsMatching(rootNode, '^@backstage/ui/css/styles\\.css$')
-  return cssImports.length > 0
+function hasBuiCssImport(rootNode: SgNode<TSX, 'program'>): boolean {
+  return listImports(rootNode, { from: BUI_CSS_IMPORT }).length > 0
 }
 
 const transform: Codemod<TSX> = (root) => {

@@ -1,3 +1,4 @@
+import { addImport, getImport, removeImport } from '@jssg/utils/javascript/imports'
 import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
@@ -8,149 +9,6 @@ const BUI_SOURCE = '@backstage/ui'
 
 function escapeRegex(str: string): string {
   return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
-function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode<TSX>[] {
-  return rootNode.findAll({
-    rule: {
-      kind: 'import_statement',
-      has: {
-        kind: 'string',
-        has: {
-          kind: 'string_fragment',
-          regex: `^${escapeRegex(source)}$`,
-        },
-      },
-    },
-  })
-}
-
-function getDefaultImportName(imp: SgNode<TSX>): string | null {
-  const clause = imp.find({ rule: { kind: 'import_clause' } })
-  if (!clause) {
-    return null
-  }
-  for (const child of clause.children()) {
-    if (child.is('identifier')) {
-      return child.text()
-    }
-  }
-  return null
-}
-
-function getNamedImportLocalName(imp: SgNode<TSX>, targetName: string): string | null {
-  for (const spec of imp.findAll({ rule: { kind: 'import_specifier' } })) {
-    const identifiers = spec.findAll({
-      rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
-    })
-    const [importedNameNode] = identifiers
-    if (importedNameNode?.text() === targetName) {
-      const localNameNode = identifiers[1] ?? importedNameNode
-      return localNameNode.text()
-    }
-  }
-  return null
-}
-
-function getImportedName(spec: SgNode<TSX>): string | null {
-  const identifiers = spec.findAll({
-    rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
-  })
-  return identifiers[0]?.text() ?? null
-}
-
-function collectIconButtonImports(rootNode: SgNode<TSX>): {
-  iconButtonLocalName: string | null
-  importNodesToRemove: SgNode<TSX>[]
-  importSpecifiersToRemove: Map<SgNode<TSX>, string[]>
-} {
-  let iconButtonLocalName: string | null = null
-  const importNodesToRemove: SgNode<TSX>[] = []
-  const importSpecifiersToRemove = new Map<SgNode<TSX>, string[]>()
-
-  // Default import: import IconButton from '@material-ui/core/IconButton'
-  for (const imp of findImportStatementsFrom(rootNode, '@material-ui/core/IconButton')) {
-    iconButtonLocalName = getDefaultImportName(imp)
-    importNodesToRemove.push(imp)
-  }
-
-  // Named import from barrel: import { IconButton } from '@material-ui/core'
-  for (const imp of findImportStatementsFrom(rootNode, '@material-ui/core')) {
-    const localName = getNamedImportLocalName(imp, 'IconButton')
-    if (localName) {
-      iconButtonLocalName = localName
-      const allSpecifiers = imp.findAll({ rule: { kind: 'import_specifier' } })
-      if (allSpecifiers.length <= 1) {
-        importNodesToRemove.push(imp)
-      } else {
-        importSpecifiersToRemove.set(imp, ['IconButton'])
-      }
-    }
-  }
-
-  return { iconButtonLocalName, importNodesToRemove, importSpecifiersToRemove }
-}
-
-function pruneBarrelImportSpecifiers(imp: SgNode<TSX>, namesToRemove: string[], edits: Edit[]): void {
-  const remainingSpecs = imp.findAll({ rule: { kind: 'import_specifier' } }).filter((spec) => {
-    const importedName = getImportedName(spec)
-    return importedName !== null && !namesToRemove.includes(importedName)
-  })
-
-  if (remainingSpecs.length === 0) {
-    edits.push(imp.replace(''))
-  } else {
-    const specTexts = remainingSpecs.map((spec) => spec.text()).join(', ')
-    edits.push(imp.replace(`import { ${specTexts} } from '@material-ui/core';`))
-  }
-  migrationMetric.increment({ action: 'import-removed' })
-}
-
-function addButtonIconToBuiImport(rootNode: SgNode<TSX>, importNodesToRemove: SgNode<TSX>[], edits: Edit[]): boolean {
-  const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
-  const existingImport = existingImports[0] ?? null
-
-  if (existingImport) {
-    const specifiers = existingImport.findAll({ rule: { kind: 'import_specifier' } })
-    const hasButtonIcon = specifiers.some((spec) => getImportedName(spec) === 'ButtonIcon')
-    if (!hasButtonIcon) {
-      const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
-      if (namedImports) {
-        const names = specifiers.map((spec) => spec.text())
-        names.push('ButtonIcon')
-        names.sort()
-        edits.push(namedImports.replace(`{ ${names.join(', ')} }`))
-        migrationMetric.increment({ action: 'import-merged' })
-      } else {
-        edits.push(existingImport.replace(`${existingImport.text()}\nimport { ButtonIcon } from '${BUI_SOURCE}';`))
-        migrationMetric.increment({ action: 'import-added' })
-      }
-    }
-    return false
-  }
-
-  const removableIds = new Set(importNodesToRemove.map((imp) => imp.id()))
-  const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
-  const anchorImport = [...allImports].reverse().find((imp) => !removableIds.has(imp.id())) ?? null
-
-  if (anchorImport) {
-    edits.push(anchorImport.replace(`${anchorImport.text()}\nimport { ButtonIcon } from '${BUI_SOURCE}';`))
-  } else if (importNodesToRemove.length > 0) {
-    const [importNode] = importNodesToRemove
-    if (importNode) {
-      edits.push(importNode.replace(`import { ButtonIcon } from '${BUI_SOURCE}';`))
-      migrationMetric.increment({ action: 'import-added' })
-      return true
-    }
-  } else if (allImports.length > 0) {
-    const lastImport = allImports.at(-1)
-    if (lastImport) {
-      edits.push(lastImport.replace(`${lastImport.text()}\nimport { ButtonIcon } from '${BUI_SOURCE}';`))
-    }
-  }
-
-  migrationMetric.increment({ action: 'import-added' })
-  return false
 }
 
 function withTodoComment(comment: string, elementText: string): string {
@@ -416,7 +274,9 @@ const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
-  const { iconButtonLocalName, importNodesToRemove, importSpecifiersToRemove } = collectIconButtonImports(rootNode)
+  const iconButtonDefault = getImport(rootNode, { type: 'default', from: '@material-ui/core/IconButton' })
+  const iconButtonBarrelNamed = getImport(rootNode, { type: 'named', name: 'IconButton', from: '@material-ui/core' })
+  const iconButtonLocalName = iconButtonBarrelNamed?.alias ?? iconButtonDefault?.alias ?? null
 
   if (!iconButtonLocalName) {
     return null
@@ -424,22 +284,47 @@ const transform: Codemod<TSX> = async (root) => {
 
   const { preserveImport, migrated } = transformIconButtonElements(rootNode, iconButtonLocalName, edits)
 
-  let replacedImport = false
   if (migrated) {
-    replacedImport = addButtonIconToBuiImport(rootNode, importNodesToRemove, edits)
+    const addEdit = addImport(rootNode, {
+      type: 'named',
+      specifiers: [{ name: 'ButtonIcon' }],
+      from: BUI_SOURCE,
+    })
+    if (addEdit) {
+      edits.push(addEdit)
+      const hasBuiNamedImport =
+        rootNode.find({
+          rule: {
+            kind: 'import_statement',
+            all: [
+              {
+                has: {
+                  kind: 'string',
+                  has: { kind: 'string_fragment', regex: `^${escapeRegex(BUI_SOURCE)}$` },
+                },
+              },
+              { has: { kind: 'import_clause', has: { kind: 'named_imports' } } },
+            ],
+          },
+        }) !== null
+      migrationMetric.increment({ action: hasBuiNamedImport ? 'import-merged' : 'import-added' })
+    }
   }
 
   if (!preserveImport) {
-    for (const imp of importNodesToRemove) {
-      if (replacedImport && imp.id() === importNodesToRemove[0]?.id()) {
+    if (iconButtonBarrelNamed) {
+      const edit = removeImport(rootNode, { type: 'named', specifiers: ['IconButton'], from: '@material-ui/core' })
+      if (edit) {
+        edits.push(...edit)
         migrationMetric.increment({ action: 'import-removed' })
-        continue
       }
-      edits.push(imp.replace(''))
-      migrationMetric.increment({ action: 'import-removed' })
     }
-    for (const [imp, namesToRemove] of importSpecifiersToRemove) {
-      pruneBarrelImportSpecifiers(imp, namesToRemove, edits)
+    if (iconButtonDefault) {
+      const edit = removeImport(rootNode, { type: 'default', from: '@material-ui/core/IconButton' })
+      if (edit) {
+        edits.push(...edit)
+        migrationMetric.increment({ action: 'import-removed' })
+      }
     }
   }
 

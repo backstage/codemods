@@ -1,3 +1,4 @@
+import { addImport, getImport, removeImport } from '@jssg/utils/javascript/imports'
 import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
@@ -11,6 +12,8 @@ const VARIANT_MAP: Record<string, string> = {
 }
 
 const BUI_SOURCE = '@backstage/ui'
+const MUI_BUTTON_SOURCE = '@material-ui/core/Button'
+const MUI_BARREL_SOURCE = '@material-ui/core'
 
 /** Props that need TODO markers because their semantics don't map mechanically. */
 const TODO_PROPS = new Set(['component', 'fullWidth', 'disableElevation', 'disableRipple', 'disableFocusRipple'])
@@ -22,168 +25,6 @@ const ICON_PROP_RENAMES: Record<string, string> = {
 
 function escapeRegex(str: string): string {
   return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
-function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode<TSX>[] {
-  return rootNode.findAll({
-    rule: {
-      kind: 'import_statement',
-      has: {
-        kind: 'string',
-        has: {
-          kind: 'string_fragment',
-          regex: `^${escapeRegex(source)}$`,
-        },
-      },
-    },
-  })
-}
-
-function getDefaultImportName(imp: SgNode<TSX>): string | null {
-  const clause = imp.find({ rule: { kind: 'import_clause' } })
-  if (!clause) {
-    return null
-  }
-  for (const child of clause.children()) {
-    if (child.is('identifier')) {
-      return child.text()
-    }
-  }
-  return null
-}
-
-function getNamedImportLocalName(imp: SgNode<TSX>, targetName: string): string | null {
-  for (const spec of imp.findAll({ rule: { kind: 'import_specifier' } })) {
-    const identifiers = spec.findAll({
-      rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
-    })
-    const [importedNameNode] = identifiers
-    if (importedNameNode?.text() === targetName) {
-      const localNameNode = identifiers[1] ?? importedNameNode
-      return localNameNode.text()
-    }
-  }
-  return null
-}
-
-function getImportedName(spec: SgNode<TSX>): string | null {
-  const identifiers = spec.findAll({
-    rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
-  })
-  return identifiers[0]?.text() ?? null
-}
-
-function collectButtonImports(rootNode: SgNode<TSX>): {
-  buttonLocalName: string | null
-  importNodesToRemove: SgNode<TSX>[]
-  importSpecifiersToRemove: Map<SgNode<TSX>, string[]>
-} {
-  let buttonLocalName: string | null = null
-  const importNodesToRemove: SgNode<TSX>[] = []
-  const importSpecifiersToRemove = new Map<SgNode<TSX>, string[]>()
-
-  // Default import: import Button from '@material-ui/core/Button'
-  for (const imp of findImportStatementsFrom(rootNode, '@material-ui/core/Button')) {
-    buttonLocalName = getDefaultImportName(imp)
-    importNodesToRemove.push(imp)
-  }
-
-  // Named import from barrel: import { Button } from '@material-ui/core'
-  for (const imp of findImportStatementsFrom(rootNode, '@material-ui/core')) {
-    const localName = getNamedImportLocalName(imp, 'Button')
-    if (localName) {
-      buttonLocalName = localName
-      const allSpecifiers = imp.findAll({ rule: { kind: 'import_specifier' } })
-      if (allSpecifiers.length <= 1) {
-        importNodesToRemove.push(imp)
-      } else {
-        importSpecifiersToRemove.set(imp, ['Button'])
-      }
-    }
-  }
-
-  return { buttonLocalName, importNodesToRemove, importSpecifiersToRemove }
-}
-
-function pruneBarrelImportSpecifiers(imp: SgNode<TSX>, namesToRemove: string[], edits: Edit[]): void {
-  const remainingSpecs = imp.findAll({ rule: { kind: 'import_specifier' } }).filter((spec) => {
-    const importedName = getImportedName(spec)
-    return importedName !== null && !namesToRemove.includes(importedName)
-  })
-
-  if (remainingSpecs.length === 0) {
-    edits.push(imp.replace(''))
-  } else {
-    const specTexts = remainingSpecs.map((spec) => spec.text()).join(', ')
-    edits.push(imp.replace(`import { ${specTexts} } from '@material-ui/core';`))
-  }
-  migrationMetric.increment({ action: 'import-removed' })
-}
-
-function addBuiImport(
-  rootNode: SgNode<TSX>,
-  names: string[],
-  importNodesToRemove: SgNode<TSX>[],
-  edits: Edit[],
-): boolean {
-  const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
-  const existingImport = existingImports[0] ?? null
-  const sortedNames = [...names].sort()
-
-  if (existingImport) {
-    const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
-    if (namedImports) {
-      const specifiers = existingImport.findAll({ rule: { kind: 'import_specifier' } })
-      const existingImported = new Set<string>()
-      const existingTexts: string[] = []
-      for (const spec of specifiers) {
-        const imported = getImportedName(spec)
-        if (imported) {
-          existingImported.add(imported)
-        }
-        existingTexts.push(spec.text())
-      }
-      for (const name of names) {
-        if (!existingImported.has(name)) {
-          existingTexts.push(name)
-          existingImported.add(name)
-        }
-      }
-      existingTexts.sort()
-      edits.push(namedImports.replace(`{ ${existingTexts.join(', ')} }`))
-      migrationMetric.increment({ action: 'import-merged' })
-    } else {
-      edits.push(
-        existingImport.replace(`${existingImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`),
-      )
-      migrationMetric.increment({ action: 'import-added' })
-    }
-    return false
-  }
-
-  const buiImport = `import { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`
-  const removableIds = new Set(importNodesToRemove.map((imp) => imp.id()))
-  const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
-  const anchorImport = [...allImports].reverse().find((imp) => !removableIds.has(imp.id())) ?? null
-
-  if (anchorImport) {
-    edits.push(anchorImport.replace(`${anchorImport.text()}\n${buiImport}`))
-  } else if (importNodesToRemove.length > 0) {
-    const [importNode] = importNodesToRemove
-    if (importNode) {
-      edits.push(importNode.replace(buiImport))
-      migrationMetric.increment({ action: 'import-added' })
-      return true
-    }
-  } else if (allImports.length > 0) {
-    const lastImport = allImports.at(-1)
-    if (lastImport) {
-      edits.push(lastImport.replace(`${lastImport.text()}\n${buiImport}`))
-    }
-  }
-
-  migrationMetric.increment({ action: 'import-added' })
-  return false
 }
 
 function withTodoComment(comment: string, elementText: string): string {
@@ -512,30 +353,56 @@ const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
-  const { buttonLocalName, importNodesToRemove, importSpecifiersToRemove } = collectButtonImports(rootNode)
-
+  const defaultImport = getImport(rootNode, { type: 'default', from: MUI_BUTTON_SOURCE })
+  const namedImport = getImport(rootNode, { type: 'named', name: 'Button', from: MUI_BARREL_SOURCE })
+  const buttonLocalName = defaultImport?.alias ?? namedImport?.alias ?? null
   if (!buttonLocalName) {
     return null
   }
 
   const { preserveImport, migrated, buiNames } = transformButtonElements(rootNode, buttonLocalName, edits)
 
-  let replacedImport = false
   if (migrated) {
-    replacedImport = addBuiImport(rootNode, [...buiNames], importNodesToRemove, edits)
+    const addEdit = addImport(rootNode, {
+      type: 'named',
+      specifiers: [...buiNames].map((name) => ({ name })),
+      from: BUI_SOURCE,
+    })
+    if (addEdit) {
+      edits.push(addEdit)
+    }
+    const hasBuiNamedImport =
+      rootNode.find({
+        rule: {
+          kind: 'import_statement',
+          all: [
+            {
+              has: {
+                kind: 'string',
+                has: { kind: 'string_fragment', regex: `^${escapeRegex(BUI_SOURCE)}$` },
+              },
+            },
+            { has: { kind: 'import_clause', has: { kind: 'named_imports' } } },
+          ],
+        },
+      }) !== null
+    migrationMetric.increment({ action: hasBuiNamedImport ? 'import-merged' : 'import-added' })
   }
 
   if (!preserveImport) {
-    for (const imp of importNodesToRemove) {
-      if (replacedImport && imp.id() === importNodesToRemove[0]?.id()) {
+    if (defaultImport) {
+      const edit = removeImport(rootNode, { type: 'default', from: MUI_BUTTON_SOURCE })
+      if (edit) {
+        edits.push(...edit)
         migrationMetric.increment({ action: 'import-removed' })
-        continue
       }
-      edits.push(imp.replace(''))
-      migrationMetric.increment({ action: 'import-removed' })
     }
-    for (const [imp, namesToRemove] of importSpecifiersToRemove) {
-      pruneBarrelImportSpecifiers(imp, namesToRemove, edits)
+    if (namedImport) {
+      const edit = removeImport(rootNode, { type: 'named', specifiers: ['Button'], from: MUI_BARREL_SOURCE })
+      if (edit) {
+        edits.push(...edit)
+        migrationMetric.increment({ action: 'import-removed' })
+      }
     }
   }
 

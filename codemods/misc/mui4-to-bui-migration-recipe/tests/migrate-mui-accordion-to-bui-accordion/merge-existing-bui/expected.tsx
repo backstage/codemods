@@ -1,7 +1,4 @@
-
-
-
-import { Accordion, AccordionPanel, AccordionTrigger, Button } from '@backstage/ui';
+import { Button, Accordion, AccordionPanel, AccordionTrigger } from '@backstage/ui';
 
 const MyComponent = () => (
   <>

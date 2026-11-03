@@ -1,3 +1,4 @@
+import { addImport, listImports } from '@jssg/utils/javascript/imports'
 import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
@@ -103,34 +104,6 @@ function escapeRegex(str: string): string {
   return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode<TSX>[] {
-  return rootNode.findAll({
-    rule: {
-      kind: 'import_statement',
-      has: {
-        kind: 'string',
-        has: {
-          kind: 'string_fragment',
-          regex: `^${escapeRegex(source)}$`,
-        },
-      },
-    },
-  })
-}
-
-function getDefaultImportName(imp: SgNode<TSX>): string | null {
-  const clause = imp.find({ rule: { kind: 'import_clause' } })
-  if (!clause) {
-    return null
-  }
-  for (const child of clause.children()) {
-    if (child.is('identifier')) {
-      return child.text()
-    }
-  }
-  return null
-}
-
 interface IconImportInfo {
   localName: string
   muiIconName: string
@@ -138,75 +111,42 @@ interface IconImportInfo {
   importNode: SgNode<TSX>
 }
 
-function collectIconImports(rootNode: SgNode<TSX>): {
+function collectIconImports(rootNode: SgNode<TSX, 'program'>): {
   icons: IconImportInfo[]
   namespaceImports: SgNode<TSX>[]
 } {
   const icons: IconImportInfo[] = []
   const namespaceImports: SgNode<TSX>[] = []
 
-  const allImports = rootNode.findAll({
-    rule: {
-      kind: 'import_statement',
-      has: {
-        kind: 'string',
-        has: {
-          kind: 'string_fragment',
-          regex: '^@material-ui/icons',
-        },
-      },
-    },
-  })
-
-  for (const imp of allImports) {
-    const nsImport = imp.find({ rule: { kind: 'namespace_import' } })
-    if (nsImport) {
-      namespaceImports.push(imp)
+  for (const item of listImports(rootNode)) {
+    if (item.node.kind() !== 'import_statement' || !item.source.startsWith('@material-ui/icons')) {
       continue
     }
 
-    const stringFrag = imp.find({
-      rule: {
-        kind: 'string_fragment',
-        regex: '^@material-ui/icons',
-      },
-    })
-    if (!stringFrag) {
+    if (item.namespaceName !== null) {
+      namespaceImports.push(item.node)
       continue
     }
 
-    const sourcePath = stringFrag.text()
-
-    if (sourcePath !== '@material-ui/icons') {
-      const muiIconName = sourcePath.replace('@material-ui/icons/', '')
-      const localName = getDefaultImportName(imp)
-      if (localName) {
+    if (item.source !== '@material-ui/icons') {
+      const muiIconName = item.source.replace('@material-ui/icons/', '')
+      if (item.defaultName) {
         icons.push({
-          localName,
+          localName: item.defaultName,
           muiIconName,
           remixName: ICON_MAP[muiIconName] ?? null,
-          importNode: imp,
+          importNode: item.node,
         })
       }
       continue
     }
 
-    const specifiers = imp.findAll({ rule: { kind: 'import_specifier' } })
-    for (const spec of specifiers) {
-      const identifiers = spec.findAll({
-        rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
-      })
-      const [importedNameNode] = identifiers
-      if (!importedNameNode) {
-        continue
-      }
-      const muiIconName = importedNameNode.text()
-      const localNameNode = identifiers[1] ?? importedNameNode
+    for (const spec of item.specifiers) {
       icons.push({
-        localName: localNameNode.text(),
-        muiIconName,
-        remixName: ICON_MAP[muiIconName] ?? null,
-        importNode: imp,
+        localName: spec.localName,
+        muiIconName: spec.importedName,
+        remixName: ICON_MAP[spec.importedName] ?? null,
+        importNode: item.node,
       })
     }
   }
@@ -214,59 +154,20 @@ function collectIconImports(rootNode: SgNode<TSX>): {
   return { icons, namespaceImports }
 }
 
-function addRemixImports(
-  rootNode: SgNode<TSX>,
-  remixImports: Map<string, string>,
-  excludedImportIds: Set<number>,
-  edits: Edit[],
-): void {
+function addRemixImports(rootNode: SgNode<TSX, 'program'>, remixImports: Map<string, string>, edits: Edit[]): void {
   if (remixImports.size === 0) {
     return
   }
 
-  const existingImports = findImportStatementsFrom(rootNode, REMIX_SOURCE)
-  const existingImport = existingImports[0] ?? null
-
-  const specifiers: string[] = []
-  for (const [remixName, localName] of remixImports) {
-    if (remixName === localName) {
-      specifiers.push(remixName)
-    } else {
-      specifiers.push(`${remixName} as ${localName}`)
-    }
-  }
-  specifiers.sort()
-
-  if (existingImport) {
-    const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
-    if (namedImports) {
-      const text = namedImports.text()
-      const inner = text.slice(1, -1).trim()
-      const existing = inner
-        .split(',')
-        .map((n) => n.trim())
-        .filter(Boolean)
-      for (const spec of specifiers) {
-        if (!existing.includes(spec)) {
-          existing.push(spec)
-        }
-      }
-      existing.sort()
-      edits.push(namedImports.replace(`{ ${existing.join(', ')} }`))
-    }
-  } else {
-    const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
-    const anchorImport =
-      [...allImports].reverse().find((imp) => !excludedImportIds.has(imp.id())) ?? allImports.at(-1) ?? null
-
-    if (anchorImport) {
-      const insertAt = anchorImport.range().end.index
-      edits.push({
-        startPos: insertAt,
-        endPos: insertAt,
-        insertedText: `\nimport { ${specifiers.join(', ')} } from '${REMIX_SOURCE}';`,
-      })
-    }
+  const addEdit = addImport(rootNode, {
+    type: 'named',
+    specifiers: [...remixImports.entries()]
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([remixName, localName]) => ({ name: remixName, alias: localName !== remixName ? localName : undefined })),
+    from: REMIX_SOURCE,
+  })
+  if (addEdit) {
+    edits.push(addEdit)
   }
 
   migrationMetric.increment({ action: 'remix-import-added' })
@@ -306,7 +207,7 @@ function getPropStringValue(opening: SgNode<TSX>, propName: string): string | nu
   return null
 }
 
-function transformIconJsx(rootNode: SgNode<TSX>, iconLocalNames: Set<string>, edits: Edit[]): void {
+function transformIconJsx(rootNode: SgNode<TSX, 'program'>, iconLocalNames: Set<string>, edits: Edit[]): void {
   const jsxElements = rootNode.findAll({
     rule: {
       kind: 'jsx_self_closing_element',
@@ -395,7 +296,11 @@ function isExtensionConfigIconPair(pair: SgNode<TSX>): boolean {
   return false
 }
 
-function transformExtensionIconSlots(rootNode: SgNode<TSX>, iconLocalNames: Set<string>, edits: Edit[]): void {
+function transformExtensionIconSlots(
+  rootNode: SgNode<TSX, 'program'>,
+  iconLocalNames: Set<string>,
+  edits: Edit[],
+): void {
   const iconPairs = rootNode.findAll({
     rule: {
       kind: 'pair',
@@ -448,7 +353,6 @@ const transform: Codemod<TSX> = (root) => {
   const remixImports = new Map<string, string>()
   const iconLocalNames = new Set<string>()
   const processedImportIds = new Set<number>()
-  const excludedImportIds = new Set<number>()
 
   for (const icon of icons) {
     if (icon.remixName) {
@@ -456,7 +360,6 @@ const transform: Codemod<TSX> = (root) => {
       iconLocalNames.add(icon.localName)
 
       if (!processedImportIds.has(icon.importNode.id())) {
-        excludedImportIds.add(icon.importNode.id())
         edits.push(icon.importNode.replace(''))
         processedImportIds.add(icon.importNode.id())
       }
@@ -471,7 +374,7 @@ const transform: Codemod<TSX> = (root) => {
     }
   }
 
-  addRemixImports(rootNode, remixImports, excludedImportIds, edits)
+  addRemixImports(rootNode, remixImports, edits)
   transformIconJsx(rootNode, iconLocalNames, edits)
   transformExtensionIconSlots(rootNode, iconLocalNames, edits)
 

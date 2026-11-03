@@ -1,3 +1,4 @@
+import { listImports, removeImport } from '@jssg/utils/javascript/imports'
 import { parse, type Codemod, type Edit, type SgNode } from 'codemod:ast-grep'
 import type CSS from 'codemod:ast-grep/langs/css'
 import type TSX from 'codemod:ast-grep/langs/tsx'
@@ -45,89 +46,47 @@ function escapeRegex(str: string): string {
   return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode<TSX>[] {
-  return rootNode.findAll({
-    rule: {
-      kind: 'import_statement',
-      has: {
-        kind: 'string',
-        has: {
-          kind: 'string_fragment',
-          regex: `^${escapeRegex(source)}$`,
-        },
-      },
-    },
-  })
-}
-
-function getDefaultImportName(imp: SgNode<TSX>): string | null {
-  const clause = imp.find({ rule: { kind: 'import_clause' } })
-  if (!clause) {
-    return null
-  }
-  for (const child of clause.children()) {
-    if (child.is('identifier')) {
-      return child.text()
-    }
-  }
-  return null
-}
-
-function getNamedImportLocalName(imp: SgNode<TSX>, targetName: string): string | null {
-  for (const spec of imp.findAll({ rule: { kind: 'import_specifier' } })) {
-    const identifiers = spec.findAll({
-      rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
-    })
-    const [importedNameNode] = identifiers
-    if (importedNameNode?.text() === targetName) {
-      const localNameNode = identifiers[1] ?? importedNameNode
-      return localNameNode.text()
-    }
-  }
-  return null
-}
-
 interface StylesImportInfo {
   makeStylesLocal: string | null
   withStylesLocal: string | null
-  importNodesToRemove: SgNode<TSX>[]
+  styleSources: string[]
 }
 
-function collectStylesImports(rootNode: SgNode<TSX>): StylesImportInfo {
+const MUI_STYLE_SOURCES = ['@material-ui/core/styles', '@material-ui/core', '@material-ui/styles']
+
+function collectStylesImports(rootNode: SgNode<TSX, 'program'>): StylesImportInfo {
   let makeStylesLocal: string | null = null
   let withStylesLocal: string | null = null
-  const importNodesToRemove: SgNode<TSX>[] = []
+  const styleSources: string[] = []
 
-  const sources = ['@material-ui/core/styles', '@material-ui/core', '@material-ui/styles']
-
-  for (const source of sources) {
-    for (const imp of findImportStatementsFrom(rootNode, source)) {
-      const ms = getNamedImportLocalName(imp, 'makeStyles')
-      const cs = getNamedImportLocalName(imp, 'createStyles')
-      const ws = getNamedImportLocalName(imp, 'withStyles')
-
-      if (ms) {
-        makeStylesLocal = ms
-      }
-      if (ws) {
-        withStylesLocal = ws
+  for (const source of MUI_STYLE_SOURCES) {
+    for (const item of listImports(rootNode, { from: source })) {
+      const names = new Set(['makeStyles', 'createStyles', 'withStyles'])
+      const targetSpecs = item.specifiers.filter((spec) => names.has(spec.importedName))
+      if (targetSpecs.length === 0) {
+        continue
       }
 
-      if (ms || cs || ws) {
-        if (getDefaultImportName(imp)) {
-          continue
+      for (const spec of targetSpecs) {
+        if (spec.importedName === 'makeStyles') {
+          makeStylesLocal = spec.localName
         }
+        if (spec.importedName === 'withStyles') {
+          withStylesLocal = spec.localName
+        }
+      }
 
-        const allSpecifiers = imp.findAll({ rule: { kind: 'import_specifier' } })
-        const targetCount = (ms ? 1 : 0) + (cs ? 1 : 0) + (ws ? 1 : 0)
-        if (targetCount >= allSpecifiers.length) {
-          importNodesToRemove.push(imp)
-        }
+      if (item.defaultName) {
+        continue
+      }
+
+      if (targetSpecs.length >= item.specifiers.length && !styleSources.includes(source)) {
+        styleSources.push(source)
       }
     }
   }
 
-  return { makeStylesLocal, withStylesLocal, importNodesToRemove }
+  return { makeStylesLocal, withStylesLocal, styleSources }
 }
 
 /**
@@ -317,7 +276,7 @@ function deriveCssModuleFilePath(filename: string): string {
   return normalized.replace(/\.[^.]+$/, '.module.css')
 }
 
-function hasCssModuleImport(rootNode: SgNode<TSX>, cssModuleImportPath: string): boolean {
+function hasCssModuleImport(rootNode: SgNode<TSX, 'program'>, cssModuleImportPath: string): boolean {
   const imports = rootNode.findAll({ rule: { kind: 'import_statement' } })
   for (const imp of imports) {
     const stringFrag = imp.find({ rule: { kind: 'string_fragment' } })
@@ -493,7 +452,7 @@ const transform: Codemod<TSX> = (root, options) => {
   const edits: Edit[] = []
   const dryRun = Boolean(options.dryRun)
 
-  const { makeStylesLocal, withStylesLocal, importNodesToRemove } = collectStylesImports(rootNode)
+  const { makeStylesLocal, withStylesLocal, styleSources } = collectStylesImports(rootNode)
 
   if (!makeStylesLocal && !withStylesLocal) {
     return Promise.resolve(null)
@@ -644,17 +603,16 @@ const transform: Codemod<TSX> = (root, options) => {
     migrationMetric.increment({ action: 'makeStyles-removed' })
 
     // Add CSS module import after existing imports (avoid mutating imports slated for removal)
-    const importsToRemoveIds = new Set(importNodesToRemove.map((imp) => imp.id()))
-    const survivingImports = rootNode
-      .findAll({ rule: { kind: 'import_statement' } })
-      .filter((imp) => !importsToRemoveIds.has(imp.id()))
+    const survivingImports = listImports(rootNode).filter(
+      (item) => item.node.kind() === 'import_statement' && !styleSources.includes(item.source),
+    )
     const cssImportLine = `import styles from '${cssModuleImportPath}';`
 
     if (!hasCssModuleImport(rootNode, cssModuleImportPath)) {
       if (survivingImports.length > 0) {
         const lastSurvivingImport = survivingImports.at(-1)
         if (lastSurvivingImport) {
-          const insertAt = lastSurvivingImport.range().end.index
+          const insertAt = lastSurvivingImport.node.range().end.index
           edits.push({
             startPos: insertAt,
             endPos: insertAt,
@@ -728,9 +686,22 @@ const transform: Codemod<TSX> = (root, options) => {
   }
 
   // Remove the MUI styles imports
-  for (const imp of importNodesToRemove) {
-    edits.push(imp.replace(''))
-    migrationMetric.increment({ action: 'import-removed' })
+  for (const source of styleSources) {
+    const names = new Set(['makeStyles', 'createStyles', 'withStyles'])
+    for (const item of listImports(rootNode, { from: source })) {
+      const targetSpecs = item.specifiers.filter((spec) => names.has(spec.importedName))
+      if (targetSpecs.length > 0 && targetSpecs.length >= item.specifiers.length && !item.defaultName) {
+        migrationMetric.increment({ action: 'import-removed' })
+      }
+    }
+    const edit = removeImport(rootNode, {
+      type: 'named',
+      specifiers: ['makeStyles', 'createStyles', 'withStyles'],
+      from: source,
+    })
+    if (edit) {
+      edits.push(...edit)
+    }
   }
 
   return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)

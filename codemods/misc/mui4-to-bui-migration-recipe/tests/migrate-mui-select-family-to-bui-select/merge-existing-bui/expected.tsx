@@ -1,7 +1,3 @@
-
-
-
-
 import { Button, Select } from '@backstage/ui';
 
 const MyComponent = () => (

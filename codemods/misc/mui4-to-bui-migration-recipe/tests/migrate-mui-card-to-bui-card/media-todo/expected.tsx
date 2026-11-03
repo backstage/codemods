@@ -1,7 +1,5 @@
-
 import CardMedia from '@material-ui/core/CardMedia';
 import { Card, CardBody } from '@backstage/ui';
-
 
 const MyCard = () => (
   <Card><>

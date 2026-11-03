@@ -1,4 +1,3 @@
-
 import { Flex } from '@backstage/ui';
 
 const MyComponent = () => (

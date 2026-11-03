@@ -1,3 +1,4 @@
+import { getAllImports } from '@jssg/utils/javascript/imports'
 import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
@@ -6,77 +7,6 @@ const migrationMetric = useMetricAtom('migrate-bui-props-to-intersection')
 
 const TARGET_TYPES = new Set(['ComboboxProps', 'SelectProps'])
 const UI_SOURCE = '@backstage/ui'
-
-function escapeRegex(str: string): string {
-  return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
-/**
- * Find import statements from a given source module.
- */
-function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode<TSX>[] {
-  return rootNode.findAll({
-    rule: {
-      kind: 'import_statement',
-      has: {
-        kind: 'string',
-        has: {
-          kind: 'string_fragment',
-          regex: `^${escapeRegex(source)}$`,
-        },
-      },
-    },
-  })
-}
-
-interface ImportedTypes {
-  /** Named imports: local name → original name */
-  localNames: Set<string>
-  /** Namespace aliases from `import * as UI from '@backstage/ui'` */
-  namespaceAliases: string[]
-}
-
-/**
- * Collect locally imported type names that match our target types
- * (ComboboxProps, SelectProps) from @backstage/ui import statements.
- * Also collects namespace aliases for `import * as UI` patterns.
- */
-function collectTargetTypeNames(importStatements: SgNode<TSX>[]): ImportedTypes {
-  const localNames = new Set<string>()
-  const namespaceAliases: string[] = []
-
-  for (const imp of importStatements) {
-    // Handle namespace imports: import * as UI from '@backstage/ui'
-    const nsImport = imp.find({ rule: { kind: 'namespace_import' } })
-    if (nsImport) {
-      const aliasNode = nsImport.find({ rule: { kind: 'identifier' } })
-      if (aliasNode) {
-        namespaceAliases.push(aliasNode.text())
-      }
-      continue
-    }
-
-    // Handle named imports: import { ComboboxProps } from '@backstage/ui'
-    for (const spec of imp.findAll({ rule: { kind: 'import_specifier' } })) {
-      const identifiers = spec.findAll({
-        rule: {
-          any: [{ kind: 'identifier' }, { kind: 'type_identifier' }],
-        },
-      })
-
-      const [importedNameNode] = identifiers
-      if (!importedNameNode || !TARGET_TYPES.has(importedNameNode.text())) {
-        continue
-      }
-
-      // If aliased (import { ComboboxProps as CP }), use the local alias
-      const localNameNode = identifiers[1] ?? importedNameNode
-      localNames.add(localNameNode.text())
-    }
-  }
-
-  return { localNames, namespaceAliases }
-}
 
 /**
  * Build the type alias replacement text from interface declaration parts.
@@ -232,14 +162,20 @@ const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
-  // Step 1: Find imports from @backstage/ui
-  const uiImports = findImportStatementsFrom(rootNode, UI_SOURCE)
-  if (uiImports.length === 0) {
-    return null
+  // Step 1+2: Collect locally imported ComboboxProps / SelectProps names and
+  // namespace aliases (`import * as UI`) from @backstage/ui imports
+  const localNames = new Set<string>()
+  for (const name of TARGET_TYPES) {
+    for (const binding of getAllImports(rootNode, { type: 'named', name, from: UI_SOURCE })) {
+      if (!binding.isNamespace) {
+        localNames.add(binding.alias)
+      }
+    }
   }
+  const namespaceAliases = getAllImports(rootNode, { type: 'default', from: UI_SOURCE })
+    .filter((binding) => binding.isNamespace)
+    .map((binding) => binding.alias)
 
-  // Step 2: Collect locally imported ComboboxProps / SelectProps names + namespace aliases
-  const { localNames, namespaceAliases } = collectTargetTypeNames(uiImports)
   if (localNames.size === 0 && namespaceAliases.length === 0) {
     return null
   }

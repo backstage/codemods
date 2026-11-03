@@ -1,5 +1,4 @@
-
-import { Avatar, Button } from '@backstage/ui';
+import { Button, Avatar } from '@backstage/ui';
 
 const MyComponent = () => (
   <>

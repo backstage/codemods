@@ -1,4 +1,3 @@
-
 import { Button, TextField } from '@backstage/ui';
 
 const MyComponent = () => (

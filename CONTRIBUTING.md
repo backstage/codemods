@@ -87,6 +87,14 @@ Conventions to follow:
 
 Use `codemods/v1.54.0/` as a reference when adding a script and workflow step.
 
+### Prefer shared codemod utils
+
+Before hand-rolling a common transformation — import add/remove/rename/resolve, import binding resolution, reference renaming, indent or quote-style detection — check `@jssg/utils` first: every recipe can import it (`@jssg/utils/javascript/imports`, `.../bindings`, `.../style`; read the source under `node_modules/@jssg/utils/src/javascript/exports/` for the exact API). The utils handle edge cases (aliases, CJS `require`, dynamic `import()`, multi-line clause layout) that bespoke scans miss, and they are maintained upstream.
+
+When a util you need seems to be missing, prefer bumping `@jssg/utils` to a newer release over recreating the logic locally — it ships new helpers frequently (0.0.11 added `listImports`, the `bindings` module, and the `style` module). Keep bespoke logic only where no util models the transformation (e.g. collision-aware rename orchestration), and say so in the PR description.
+
+`@jssg/utils` 0.0.11 ships raw `.ts` source that does not type-check under this repo's TypeScript 7 toolchain (two assertion sites in `imports.ts`). Until upstream ships compiled declarations or a fix, the repo carries a temporary patch at `.yarn/patches/` (registered in the root `package.json` `resolutions.patchedDependencies`); it is type-only and changes no runtime behavior. Drop the patch when a newer `@jssg/utils` release type-checks cleanly.
+
 ## Adding a migration recipe
 
 Each Backstage release publishes a single `migration-recipe` package directly under `codemods/<version>/` — the recipe is the only published package for its version, and every workflow step runs a local script instead of a nested registry codemod:

@@ -1,3 +1,4 @@
+import { renameReferences } from '@jssg/utils/javascript/bindings'
 import type { RefineNode, Codemod, Edit, GetSelector, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
@@ -583,8 +584,9 @@ function processImports(
     }
 
     for (const rename of pendingRenames) {
-      for (const refNode of collectBodyReferences(rename.bindingNode, filename)) {
-        edits.push(refNode.replace(rename.newName))
+      const referenceEdits = renameReferences(rename.bindingNode, rename.newName, filename)
+      for (const referenceEdit of referenceEdits) {
+        edits.push(referenceEdit)
         migrationMetric.increment({ action: 'reference-renamed', from: rename.oldName, to: rename.newName })
       }
     }
