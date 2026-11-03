@@ -33,5 +33,7 @@ nodes:
           include:
             - '**/app-config.yaml'
             - '**/app-config.*.yaml'
+            - '**/app-config.yml'
+            - '**/app-config.*.yml'
           exclude:
             - '**/node_modules/**'

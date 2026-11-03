@@ -33,7 +33,11 @@ yarn dlx codemod@latest workflow run \
   --dry-run
 ```
 
-## AI fixup
+## Running a single script
+
+To run one transform, copy its `js-ast-grep` step from `workflow.yaml` into a minimal workflow, preserving `js_file`, `language`, selectors, and any step options. Point `js_file` at the bundled script, then run `codemod workflow run -w <your-workflow.yaml> --target /path/to/backstage-app --dry-run` before applying. Keep related passes in recipe order when selecting more than one step. CSS/SCSS passes are separate steps from source passes; select both where the migration spans both languages.
+
+## AI behavior and review
 
 The optional `ai-fixup` node runs after all AST transforms when `aiFixup=true`. By default it is `false`. AI fixups are not covered by fixture tests.
 
@@ -44,7 +48,9 @@ yarn dlx codemod@latest run @backstage/v1-47-0-migration-recipe \
   --param aiFixup=true
 ```
 
-## Out of scope (document only)
+- Several of the codemods insert `TODO(backstage-codemod)` markers where a value needs a human review. After the recipe finishes, grep for `TODO(backstage-codemod)` in your repo to find everything that still needs attention.
+
+### Out of scope (document only)
 
 The following v1.47.0 changes are not covered by codemods and require manual attention:
 
@@ -53,8 +59,12 @@ The following v1.47.0 changes are not covered by codemods and require manual att
 - **Blueprints moving to `@backstage/plugin-app-react`** - deprecated, not yet removed
 - **Color token tint replacements are approximate** - the `--bui-bg-tint*` tokens have "no direct replacement" per changelog; the `--bui-bg-neutral-on-surface-0*` set is the recommended equivalent
 
+## Development
+
+- `yarn test` runs fixture suites and workflow structure validation through `run-recipe-tests`.
+
+The package-root `tsconfig.json` checks production scripts and excludes `tests/`; repository-wide `yarn lint` includes source type checking.
+
 ## Notes
 
 - Each step runs a bundled local script in workflow order; no registry codemods are resolved.
-- Several of the codemods insert `TODO(backstage-codemod)` markers where a value needs a human review. After the recipe finishes, grep for `TODO(backstage-codemod)` in your repo to find everything that still needs attention.
-- `yarn test` runs fixture suites and workflow structure validation through `run-recipe-tests`.

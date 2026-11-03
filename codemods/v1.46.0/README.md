@@ -2,7 +2,7 @@
 
 Runs bundled local scripts in a single ordered run.
 
-## Codemods included
+## What it runs
 
 | #   | Local script                          | Domain         |
 | --- | ------------------------------------- | -------------- |
@@ -24,7 +24,15 @@ npx codemod workflow run \
   --target /path/to/backstage-app
 ```
 
-## Out of scope (document only)
+## Running a single script
+
+To run one transform, copy its `js-ast-grep` step from `workflow.yaml` into a minimal workflow, preserving `js_file`, `language`, selectors, and any step options. Point `js_file` at the bundled script, then run `codemod workflow run -w <your-workflow.yaml> --target /path/to/backstage-app --dry-run` before applying. Keep related passes in recipe order when selecting more than one step.
+
+## AI behavior and review
+
+The recipe has no AI fixup parameter. Review the manual migration items below.
+
+### Out of scope (document only)
 
 These changes require manual attention and are not covered by the recipe:
 
@@ -34,3 +42,13 @@ These changes require manual attention and are not covered by the recipe:
 - **`getBitbucketCloudRequestOptions` now returns Promise** — narrow internal API
 - **CLI `moduleResolution` → `bundler` default** — tsconfig defaults, not consumer code
 - **Node.js 22/24 requirement** — runtime environment
+
+## Development
+
+`yarn test` runs bundled fixtures and workflow checks through `run-recipe-tests`.
+
+The package-root `tsconfig.json` checks production scripts and excludes `tests/`; repository-wide `yarn lint` includes source type checking.
+
+## Notes
+
+Each workflow step uses a bundled local script; no standalone registry codemod packages are required.

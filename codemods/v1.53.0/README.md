@@ -23,11 +23,15 @@ yarn dlx codemod@latest run @backstage/v1-53-0-migration-recipe \
   --target /path/to/backstage-app
 ```
 
-The workflow runs its local script. `yarn test` in this package runs the bundled YAML fixtures and validates the workflow structure and schema. The migration needs no AI fixup, so this recipe exposes no AI fixup flag.
+## Running a single script
 
-If upgrading across releases, first run the existing [`@backstage/remove-bootstrap-env-proxy`](https://go.codemod.com/registry?q=backstage+remove-bootstrap-env-proxy) migration from 1.50.0 for the removed `bootstrapEnvProxyAgents` export. Do not expect this recipe to repeat it.
+To run one transform, copy its `js-ast-grep` step from `workflow.yaml` into a minimal workflow, preserving `js_file`, `language`, selectors, and any step options. Point `js_file` at the bundled script, then run `codemod workflow run -w <your-workflow.yaml> --target /path/to/backstage-app --dry-run` before applying. Keep related passes in recipe order when selecting more than one step.
 
-## Manual migration
+## AI behavior and review
+
+The migration needs no AI fixup, so this recipe exposes no AI fixup flag.
+
+### Manual migration
 
 These 1.53.0 changes require project-specific work rather than a blanket source rewrite:
 
@@ -39,3 +43,13 @@ These 1.53.0 changes require project-specific work rather than a blanket source 
 - **Configuration schema imports:** Configuration schemas now validate imported types. Correct invalid schema imports on a case-by-case basis, not through a source-wide syntax rewrite.
 - **Connections auth labels:** Supply a meaningful human-readable `title` for each custom Connections auth method.
 - **Client identity/security:** Moving from Dynamic Client Registration to Client ID Metadata Documents (CIMD) is a security and operational decision. The recipe only renames a deprecated config key; it does not make that decision or migrate an entire DCR deployment.
+
+## Development
+
+`yarn test` in this package runs the bundled YAML fixtures and validates the workflow structure and schema.
+
+The package-root `tsconfig.json` checks production scripts and excludes `tests/`; repository-wide `yarn lint` includes source type checking.
+
+## Notes
+
+If upgrading across releases, first run the existing [`@backstage/remove-bootstrap-env-proxy`](https://go.codemod.com/registry?q=backstage+remove-bootstrap-env-proxy) migration from 1.50.0 for the removed `bootstrapEnvProxyAgents` export. Do not expect this recipe to repeat it.

@@ -37,7 +37,11 @@ yarn dlx codemod@latest workflow run \
   --dry-run
 ```
 
-## AI fixup
+## Running a single script
+
+To run one transform, copy its `js-ast-grep` step from `workflow.yaml` into a minimal workflow, preserving `js_file`, `language`, selectors, and any step options. Point `js_file` at the bundled script, then run `codemod workflow run -w <your-workflow.yaml> --target /path/to/backstage-app --dry-run` before applying. Keep related passes in recipe order when selecting more than one step. CSS/SCSS passes are separate steps from source passes; select both where the migration spans both languages.
+
+## AI behavior and review
 
 The recipe defaults to AST-only transforms. Set `aiFixup=true` to run an optional AI fixup after all transforms for `createPublicSignInApp` edge cases:
 
@@ -47,7 +51,9 @@ yarn dlx codemod@latest run @backstage/v1-49-0-migration-recipe \
   --param aiFixup=true
 ```
 
-## Out of scope (document only)
+- Some codemods insert `TODO(backstage-codemod)` markers where a value needs human review. After the recipe finishes, grep for `TODO(backstage-codemod)` in your repo to find everything that still needs attention.
+
+### Out of scope (document only)
 
 The following changes in Backstage 1.49.0 are not covered by codemods and require manual attention:
 
@@ -63,9 +69,13 @@ The following changes in Backstage 1.49.0 are not covered by codemods and requir
 - **`ExtensionAttachTo` array form removed** — runtime still supports
 - **PluginWrapper promoted from alpha** — additive import path
 
+## Development
+
+`yarn test` runs bundled transform fixtures, workflow order and AI-gating assertions, and workflow schema validation through `run-recipe-tests`.
+
+The package-root `tsconfig.json` checks production scripts and excludes `tests/`; repository-wide `yarn lint` includes source type checking.
+
 ## Notes
 
 - Each step runs a bundled local script (`scripts/<name>.ts`) in workflow order; no nested registry packages are resolved.
 - The recipe does not reorder edits across steps; check the step list in `workflow.yaml` for the details of any single transform.
-- Some codemods insert `TODO(backstage-codemod)` markers where a value needs human review. After the recipe finishes, grep for `TODO(backstage-codemod)` in your repo to find everything that still needs attention.
-- This recipe is orchestration only — it has no transform script of its own, so there are no fixture tests. Running `yarn test` in this package validates the workflow schema via `codemod workflow validate`.

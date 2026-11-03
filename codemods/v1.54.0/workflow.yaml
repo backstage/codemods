@@ -25,6 +25,9 @@ nodes:
             - '**/*.tsx'
           exclude:
             - '**/node_modules/**'
+            - '**/dist/**'
+            - '**/build/**'
+            - '**/coverage/**'
 
       # --- BREAKING: built-in Connections URL lookups moved into query objects
       - name: 'Move built-in URL lookups into query objects'
@@ -38,6 +41,9 @@ nodes:
             - '**/*.tsx'
           exclude:
             - '**/node_modules/**'
+            - '**/dist/**'
+            - '**/build/**'
+            - '**/coverage/**'
 
       # --- BREAKING: RootConnectionAuth renamed to ConfiguredConnectionAuth
       - name: 'Rename imports, re-exports and bound type references'
@@ -65,6 +71,9 @@ nodes:
             - '**/package.json'
           exclude:
             - '**/node_modules/**'
+            - '**/dist/**'
+            - '**/build/**'
+            - '**/coverage/**'
 
       - name: 'Lift safe Zod v4 factories to configSchema'
         js-ast-grep:
@@ -76,6 +85,9 @@ nodes:
             - '**/*.tsx'
           exclude:
             - '**/node_modules/**'
+            - '**/dist/**'
+            - '**/build/**'
+            - '**/coverage/**'
 
       # --- BREAKING: repo schema openapi verify renamed to validate
       - name: 'Update package scripts'
@@ -87,6 +99,9 @@ nodes:
             - '**/package.json'
           exclude:
             - '**/node_modules/**'
+            - '**/dist/**'
+            - '**/build/**'
+            - '**/coverage/**'
 
       - name: 'Update GitHub Actions run commands'
         js-ast-grep:
@@ -98,6 +113,9 @@ nodes:
             - '**/.github/workflows/*.yaml'
           exclude:
             - '**/node_modules/**'
+            - '**/dist/**'
+            - '**/build/**'
+            - '**/coverage/**'
 
       - name: 'Update shell scripts'
         env:

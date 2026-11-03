@@ -42,7 +42,11 @@ yarn dlx codemod@latest workflow run \
   --dry-run
 ```
 
-## AI fixup
+## Running a single script
+
+To run one transform, copy its `js-ast-grep` step from `workflow.yaml` into a minimal workflow, preserving `js_file`, `language`, selectors, and any step options. Point `js_file` at the bundled script, then run `codemod workflow run -w <your-workflow.yaml> --target /path/to/backstage-app --dry-run` before applying. Keep related passes in recipe order when selecting more than one step. CSS/SCSS passes are separate steps from source passes; select both where the migration spans both languages.
+
+## AI behavior and review
 
 Ten transforms include optional AI fixups for edge cases requiring contextual review. Enable them together after all AST steps:
 
@@ -50,9 +54,15 @@ Ten transforms include optional AI fixups for edge cases requiring contextual re
 yarn dlx codemod@latest run @backstage/v1-50-0-migration-recipe   --target /path/to/backstage-app   --param aiFixup=true
 ```
 
+- After running, review remaining `TODO(backstage-codemod)` markers.
+
+## Development
+
+- `yarn test` runs fixture suites, CSS regression tests, and workflow validation through `run-recipe-tests`.
+
+The package-root `tsconfig.json` checks production scripts and excludes `tests/`; repository-wide `yarn lint` includes source type checking.
+
 ## Notes
 
 - All transforms run from bundled local scripts; no nested registry packages are resolved.
 - The toolbar rename includes both JS/TS and CSS/SCSS transforms (`scripts/rename-plugin-header-toolbar-css.ts`).
-- After running, review remaining `TODO(backstage-codemod)` markers.
-- `yarn test` runs fixture suites, CSS regression tests, and workflow validation through `run-recipe-tests`.
