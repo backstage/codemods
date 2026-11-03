@@ -4,13 +4,13 @@ Run the eligible Backstage 1.53.0 config migration from the [Codemod Registry](h
 
 ## What it runs
 
-| #   | Registry package                                                                                                            | Scope                                                            |
-| --- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| 1   | [`@backstage/rename-experimental-cimd-config`](https://go.codemod.com/registry?q=backstage+rename-experimental-cimd-config) | Deprecated `auth.experimentalClientIdMetadataDocuments` YAML key |
+| #   | Local script                                 | Scope                                                            |
+| --- | -------------------------------------------- | ---------------------------------------------------------------- |
+| 1   | `scripts/rename-experimental-cimd-config.ts` | Deprecated `auth.experimentalClientIdMetadataDocuments` YAML key |
 
 ## Usage
 
-The recipe requires registry-sourced `@backstage/rename-experimental-cimd-config`, published at version 0.2.1.
+The recipe bundles its migration script; no standalone registry codemod is required.
 
 ```bash
 # Dry-run first
@@ -23,7 +23,7 @@ yarn dlx codemod@latest run @backstage/v1-53-0-migration-recipe \
   --target /path/to/backstage-app
 ```
 
-The workflow resolves its single `codemod:` step from the registry. It has no transform script or fixtures of its own; `yarn test` in this package validates the workflow schema. No 1.53.0 codemod has an `aiFixup` parameter, so this recipe exposes no AI fixup flag.
+The workflow runs its local script. `yarn test` in this package runs the bundled YAML fixtures and validates the workflow structure and schema. The migration needs no AI fixup, so this recipe exposes no AI fixup flag.
 
 If upgrading across releases, first run the existing [`@backstage/remove-bootstrap-env-proxy`](https://go.codemod.com/registry?q=backstage+remove-bootstrap-env-proxy) migration from 1.50.0 for the removed `bootstrapEnvProxyAgents` export. Do not expect this recipe to repeat it.
 
