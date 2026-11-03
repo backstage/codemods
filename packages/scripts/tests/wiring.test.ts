@@ -26,7 +26,7 @@ test('release workflow calls the bins', () => {
 
 test('root package.json scripts and devDependency use the bins', () => {
   const manifest = JSON.parse(read('package.json')) as { scripts: Record<string, string>; devDependencies: Record<string, string> }
-  assert.equal(manifest.scripts['version-packages'], 'changeset version && sync-codemod-versions')
+  assert.equal(manifest.scripts['version-packages'], 'changeset version && sync-codemod-versions && generate-readme-codemods')
   assert.equal(manifest.scripts['readme'], 'generate-readme-codemods')
   assert.equal(manifest.scripts['check:changed'], 'check-changed')
   assert.ok(manifest.devDependencies['@backstage/scripts'] !== undefined)
