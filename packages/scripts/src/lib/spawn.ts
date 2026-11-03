@@ -54,7 +54,7 @@ function spawnShell(command: string, args: string[], options: SpawnOptions = {})
 
 /**
  * Runs `yarn <args>`. When Yarn's JS entry point is known (npm_execpath points
- * at a .js/.cjs/.mjs file, e.g. Yarn installed through npm), it is executed
+ * at a .js/.cjs/.mjs or .ts file, e.g. Yarn installed through npm), it is executed
  * directly with argument-array safety on every platform. Corepack installs
  * point npm_execpath at a shell shim, in which case Yarn runs through the
  * shell with explicit per-argument quoting.
@@ -62,7 +62,7 @@ function spawnShell(command: string, args: string[], options: SpawnOptions = {})
 export function runYarn(args: string[], options: SpawnOptions = {}): SpawnResult {
   const env = options.env ?? process.env
   const execPath = env.npm_execpath
-  if (execPath !== undefined && /\.(cm?js|mjs)$/i.test(execPath)) {
+  if (execPath !== undefined && /\.(cm?js|mjs|ts)$/i.test(execPath)) {
     return spawn(process.execPath, [execPath, ...args], options)
   }
   return spawnShell('yarn', args, options)
@@ -71,11 +71,6 @@ export function runYarn(args: string[], options: SpawnOptions = {}): SpawnResult
 /** Runs a git command; git is a native executable on every supported platform. */
 export function runGit(args: string[], options: SpawnOptions = {}): SpawnResult {
   return spawn('git', args, options)
-}
-
-/** Runs a GitHub CLI command; gh is a native executable on every supported platform. */
-export function runGh(args: string[], options: SpawnOptions = {}): SpawnResult {
-  return spawn('gh', args, options)
 }
 
 /** Exits the process with the command's status when it failed. */

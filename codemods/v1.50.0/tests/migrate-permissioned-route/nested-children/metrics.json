@@ -1,0 +1,10 @@
+{
+  "migrate-permissioned-route": [
+    {
+      "cardinality": {
+        "pattern": "with-children"
+      },
+      "count": 1
+    }
+  ]
+}

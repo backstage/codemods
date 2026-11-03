@@ -1,12 +1,14 @@
 {
   "name": "@backstage/mui4-to-bui-migration-recipe",
   "version": "0.3.1",
-  "description": "MUI 4 to BUI: Migration recipe that runs every deterministic MUI→BUI codemod from the registry in a safe order.",
+  "description": "MUI 4 to BUI: Migration recipe that runs every deterministic MUI→BUI codemod from bundled local scripts in a safe order.",
   "type": "module",
   "scripts": {
-    "test": "bash scripts/validate-workflows.sh"
+    "test": "run-recipe-tests"
   },
   "devDependencies": {
+    "@backstage/scripts": "workspace:*",
+    "@codemod.com/jssg-types": "1.6.3",
     "codemod": "1.18.3"
   }
 }

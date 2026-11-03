@@ -1,0 +1,18 @@
+{
+  "migrate-signals-service": [
+    {
+      "cardinality": {
+        "from": "SignalService",
+        "to": "SignalsService"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "from": "SignalServiceOptions",
+        "to": "SignalsServiceOptions"
+      },
+      "count": 1
+    }
+  ]
+}

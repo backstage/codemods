@@ -1,0 +1,11 @@
+{
+  "rename-header-main-class": [
+    {
+      "cardinality": {
+        "action": "renamed-with-todo",
+        "type": "css-descendant-selector"
+      },
+      "count": 2
+    }
+  ]
+}

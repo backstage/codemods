@@ -1,0 +1,12 @@
+{
+  "catalog-node-alpha-to-stable": [
+    {
+      "cardinality": {
+        "export": "CatalogPermissionRuleInput",
+        "outcome": "manual-required",
+        "reason": "dangling-type-reference"
+      },
+      "count": 1
+    }
+  ]
+}

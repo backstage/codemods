@@ -1,0 +1,16 @@
+{
+  "render-test-app-nav-migration": [
+    {
+      "cardinality": {
+        "pattern": "sidebar-assertions"
+      },
+      "count": 1
+    }
+  ],
+  "render-test-app-nav-migration-manual-follow-up": [
+    {
+      "cardinality": {},
+      "count": 1
+    }
+  ]
+}

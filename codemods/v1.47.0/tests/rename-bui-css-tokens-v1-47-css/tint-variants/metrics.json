@@ -1,0 +1,11 @@
+{
+  "rename-bui-css-tokens-v1-47": [
+    {
+      "cardinality": {
+        "action": "renamed",
+        "type": "css-property-name"
+      },
+      "count": 5
+    }
+  ]
+}

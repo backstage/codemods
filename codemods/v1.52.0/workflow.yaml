@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+nodes:
+  - id: apply-recipe
+    name: 'Run every Backstage 1.52.0 codemod in order'
+    type: automatic
+    steps:
+      # --- BREAKING: @backstage/ui ComboboxProps/SelectProps union type change
+      - name: 'Migrate interface extends ComboboxProps/SelectProps to type intersection'
+        js-ast-grep:
+          js_file: scripts/migrate-bui-props-to-intersection.ts
+          language: 'tsx'
+          semantic_analysis: file
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+
+      - name: 'Add TODO comments to .bui-SelectPopover > CSS selectors'
+        js-ast-grep:
+          js_file: scripts/migrate-bui-props-to-intersection-css.ts
+          language: 'css'
+          include:
+            - '**/*.css'
+            - '**/*.scss'
+          exclude:
+            - '**/node_modules/**'
+
+      # --- BREAKING: catalog config cleanup
+      - name: 'Remove deprecated catalog.stitchingStrategy.mode from app-config'
+        js-ast-grep:
+          js_file: scripts/remove-stitching-strategy-mode.ts
+          language: 'yaml'
+          include:
+            - '**/app-config.yaml'
+            - '**/app-config.*.yaml'
+            - '**/app-config.yml'
+            - '**/app-config.*.yml'
+          exclude:
+            - '**/node_modules/**'
+
+      # --- Deprecations (non-breaking in 1.52.0, but recommended to migrate now).
+      - name: 'Rename deprecated BUI semantic color tokens'
+        js-ast-grep:
+          js_file: scripts/rename-bui-css-tokens-v1-52.ts
+          language: 'tsx'
+          semantic_analysis: file
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+
+      - name: 'Rename deprecated BUI semantic color tokens in CSS/SCSS files'
+        js-ast-grep:
+          js_file: scripts/rename-bui-css-tokens-v1-52-css.ts
+          language: 'css'
+          include:
+            - '**/*.css'
+            - '**/*.scss'
+          exclude:
+            - '**/node_modules/**'
+
+      - name: 'Migrate deprecated Select/Combobox search props and option value to id'
+        js-ast-grep:
+          js_file: scripts/migrate-select-combobox-props.ts
+          language: 'tsx'
+          semantic_analysis: file
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'

@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process'
 import { existsSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
-// Repo-wide test runner for migration recipes (codemods/<version>/migration-recipe).
+// Repo-wide test runner for migration recipes (codemods/<version>/).
 // Invoked by a recipe's package.json test script as `run-recipe-tests`, run from
 // the recipe directory.
 //
@@ -11,12 +11,12 @@ import { join } from 'node:path'
 // no change to any test command:
 //
 //   scripts/<name>.ts  +  tests/<name>/<case>/input.<ext>  -> codemod jssg test
-//     (ext ts/tsx -> language tsx, json -> json, yaml/yml -> yaml; fixture roots
+//     (ext ts/tsx -> language tsx, json -> json, yaml/yml -> yaml, css/scss -> css; fixture roots
 //      without JSSG input files, e.g. .sh suites, are skipped here and covered
 //      by their node --test suites)
 //   tests/<name>/assert-fixtures.ts                        -> node tests/<name>/assert-fixtures.ts
 //   tests/**/tsconfig.json                                  -> tsc -p
-//   tests/**/*.test.mjs                                     -> node --test
+//   tests/**/*.test.{mjs,ts}                                     -> node --test
 // plus codemod workflow validate.
 //
 // --list prints the planned suites and commands without running them.
@@ -102,6 +102,8 @@ function collectFiles(root: string, match: (name: string) => boolean): string[] 
 }
 
 const languages: Record<string, string> = {
+  css: 'css',
+  scss: 'css',
   ts: 'tsx',
   tsx: 'tsx',
   json: 'json',
@@ -165,7 +167,7 @@ for (const tsconfig of collectFiles('tests', (name) => name === 'tsconfig.json')
 }
 
 // --- Node unit tests
-for (const testFile of collectFiles('tests', (name) => name.endsWith('.test.mjs'))) {
+for (const testFile of collectFiles('tests', (name) => name.endsWith('.test.ts'))) {
   const path = testFile.replaceAll('\\', '/')
   console.log(`== node --test: ${path}`)
   run('node', ['--test', path])

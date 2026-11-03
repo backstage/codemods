@@ -1,0 +1,11 @@
+{
+  "remove-catalog-card-variant-props": [
+    {
+      "cardinality": {
+        "component": "OwnershipCard",
+        "prop": "maxScrollHeight"
+      },
+      "count": 1
+    }
+  ]
+}

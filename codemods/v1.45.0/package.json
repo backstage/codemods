@@ -1,0 +1,14 @@
+{
+  "name": "@backstage/v1-45-0-migration-recipe",
+  "version": "0.2.3",
+  "description": "Backstage 1.45.0: Migration recipe that runs local codemod scripts in a safe order.",
+  "type": "module",
+  "scripts": {
+    "test": "run-recipe-tests"
+  },
+  "devDependencies": {
+    "@backstage/scripts": "workspace:*",
+    "@codemod.com/jssg-types": "1.6.3",
+    "codemod": "1.18.3"
+  }
+}

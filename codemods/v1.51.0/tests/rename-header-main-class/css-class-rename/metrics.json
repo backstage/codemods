@@ -1,0 +1,11 @@
+{
+  "rename-header-main-class": [
+    {
+      "cardinality": {
+        "action": "renamed",
+        "type": "class-name"
+      },
+      "count": 2
+    }
+  ]
+}

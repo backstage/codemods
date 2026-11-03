@@ -1,0 +1,11 @@
+{
+  "header-tab-to-nav-tab-item": [
+    {
+      "cardinality": {
+        "action": "import-renamed",
+        "specifier": "HeaderTab as MyTab"
+      },
+      "count": 1
+    }
+  ]
+}

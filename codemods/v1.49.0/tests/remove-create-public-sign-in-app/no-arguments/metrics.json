@@ -1,0 +1,10 @@
+{
+  "remove-create-public-sign-in-app": [
+    {
+      "cardinality": {
+        "action": "replaced"
+      },
+      "count": 1
+    }
+  ]
+}

@@ -61,7 +61,7 @@ export function readCalls(callsDir: string): RecordedCall[] {
  * `yarn lint-staged` to a real executable via LINT_STAGED.
  */
 export function writeYarnStub(directory: string): string {
-  const stub = join(directory, 'yarn-stub.mjs')
+  const stub = join(directory, 'yarn-stub.ts')
   writeFileSync(
     stub,
     `import { spawnSync } from 'node:child_process'

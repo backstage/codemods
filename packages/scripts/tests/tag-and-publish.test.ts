@@ -13,13 +13,13 @@ function git(cwd: string, ...args: string[]): string {
   return result.stdout.replace(/\n$/, '')
 }
 
-function makeCodemodRepo(directory: string): void {
-  mkdirSync(join(directory, 'codemods', 'misc', 'fixture'), { recursive: true })
+function makeCodemodRepo(directory: string, recipe = 'codemods/misc/mui4-to-bui-migration-recipe'): void {
+  mkdirSync(join(directory, recipe), { recursive: true })
   writeFileSync(
-    join(directory, 'codemods', 'misc', 'fixture', 'package.json'),
+    join(directory, recipe, 'package.json'),
     JSON.stringify({ name: '@backstage/fixture', version: '1.2.3' }),
   )
-  writeFileSync(join(directory, 'codemods', 'misc', 'fixture', 'codemod.yaml'), "name: '@backstage/fixture'\nversion: '1.2.3'\n")
+  writeFileSync(join(directory, recipe, 'codemod.yaml'), "name: '@backstage/fixture'\nversion: '1.2.3'\n")
   git(directory, 'init', '-q')
   git(directory, 'add', '-A')
   git(directory, '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'base')
@@ -41,10 +41,11 @@ test('tag-and-publish aborts when the remote tag lookup fails', () => {
   }
 })
 
-test('tag-and-publish creates, pushes and reports changed directories', () => {
+for (const recipe of ['codemods/v1.54.0', 'codemods/misc/mui4-to-bui-migration-recipe']) {
+test(`tag-and-publish creates, pushes and reports ${recipe}`, () => {
   const fixture = tempDir('tag-publish-ok-')
   try {
-    makeCodemodRepo(fixture)
+    makeCodemodRepo(fixture, recipe)
     const remote = join(fixture, 'remote.git')
     git(fixture, 'init', '-q', '--bare', remote)
     git(fixture, 'remote', 'add', 'origin', remote)
@@ -55,7 +56,7 @@ test('tag-and-publish creates, pushes and reports changed directories', () => {
 
     assert.equal(git(fixture, 'tag', '-l'), '@backstage/fixture@v1.2.3')
     assert.equal(git(remote, 'tag', '-l'), '@backstage/fixture@v1.2.3')
-    assert.equal(readFileSync(output, 'utf8'), 'changed_dirs=["codemods/misc/fixture"]\n')
+    assert.equal(readFileSync(output, 'utf8'), `changed_dirs=${JSON.stringify([recipe])}\n`)
 
     // Idempotent: a second run skips the already-released tag.
     rmSync(output)
@@ -66,3 +67,5 @@ test('tag-and-publish creates, pushes and reports changed directories', () => {
     rmSync(fixture, { recursive: true, force: true })
   }
 })
+
+}

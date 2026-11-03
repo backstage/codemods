@@ -1,0 +1,11 @@
+{
+  "migrate-gerrit-gitiles-functions": [
+    {
+      "cardinality": {
+        "from": "parseGerritGitilesUrl",
+        "to": "parseGitilesUrlRef"
+      },
+      "count": 1
+    }
+  ]
+}

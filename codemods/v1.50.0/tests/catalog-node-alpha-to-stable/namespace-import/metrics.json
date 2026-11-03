@@ -1,0 +1,12 @@
+{
+  "catalog-node-alpha-to-stable": [
+    {
+      "cardinality": {
+        "export": "*",
+        "outcome": "manual-required",
+        "reason": "namespace-import"
+      },
+      "count": 1
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "migrate-nav-item-to-page": [
+    {
+      "cardinality": {
+        "outcome": "todo-unpaired"
+      },
+      "count": 1
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+# v1.53.0-migration-recipe
+
+Run the eligible Backstage 1.53.0 config migration from the [Codemod Registry](https://go.codemod.com/registry). This recipe covers the mechanical rename only; not every breaking change in 1.53.0 needs or supports a codemod. Review the [Backstage 1.53.0 release notes](https://backstage.io/docs/releases/v1.53.0/) and the manual steps below.
+
+## What it runs
+
+| #   | Local script                                 | Scope                                                            |
+| --- | -------------------------------------------- | ---------------------------------------------------------------- |
+| 1   | `scripts/rename-experimental-cimd-config.ts` | Deprecated `auth.experimentalClientIdMetadataDocuments` YAML key |
+
+## Usage
+
+The recipe bundles its migration script; no standalone registry codemod is required.
+
+```bash
+# Dry-run first
+yarn dlx codemod@latest run @backstage/v1-53-0-migration-recipe \
+  --target /path/to/backstage-app \
+  --dry-run
+
+# Apply after reviewing the dry-run
+yarn dlx codemod@latest run @backstage/v1-53-0-migration-recipe \
+  --target /path/to/backstage-app
+```
+
+## Running a single script
+
+To run one transform, copy its `js-ast-grep` step from `workflow.yaml` into a minimal workflow, preserving `js_file`, `language`, selectors, and any step options. Point `js_file` at the bundled script, then run `codemod workflow run -w <your-workflow.yaml> --target /path/to/backstage-app --dry-run` before applying. Keep related passes in recipe order when selecting more than one step.
+
+## AI behavior and review
+
+The migration needs no AI fixup, so this recipe exposes no AI fixup flag.
+
+### Manual migration
+
+These 1.53.0 changes require project-specific work rather than a blanket source rewrite:
+
+- **OpenAPI test server:** Update actual `wrapInOpenApiTestServer` callers and tests to the async `wrapServer` contract. No consumer matches were found in the checked upstream/plugin repositories; there is no safe call-site rewrite to include here.
+- **OpenAPI tooling:** Replace Optic CLI installation and root dependency with oasdiff, review changed diff output, and remove or rethink OpenAPI `init` and `test` commands. Those commands have no direct replacement.
+- **MCP transport:** Migrate SSE clients to Streamable HTTP endpoints, including client configuration outside this repository.
+- **Proxy deployments:** After removing the legacy bootstrap proxy call, configure Node's `NODE_USE_ENV_PROXY=1` and any corporate proxy deployment settings as appropriate. The 1.50.0 codemod removes the old call; it does not configure runtime environments.
+- **Catalog alpha UI:** Customize entity headers and context menus using BUI/data output and suitable icons; this requires UI design. Previous source-level `icon`/`useProps` patterns remain, so blanket AST rewrites are unsafe. Add new translations where localized messages are supplied.
+- **Configuration schema imports:** Configuration schemas now validate imported types. Correct invalid schema imports on a case-by-case basis, not through a source-wide syntax rewrite.
+- **Connections auth labels:** Supply a meaningful human-readable `title` for each custom Connections auth method.
+- **Client identity/security:** Moving from Dynamic Client Registration to Client ID Metadata Documents (CIMD) is a security and operational decision. The recipe only renames a deprecated config key; it does not make that decision or migrate an entire DCR deployment.
+
+## Development
+
+`yarn test` in this package runs the bundled YAML fixtures and validates the workflow structure and schema.
+
+The package-root `tsconfig.json` checks production scripts and excludes `tests/`; repository-wide `yarn lint` includes source type checking.
+
+## Notes
+
+If upgrading across releases, first run the existing [`@backstage/remove-bootstrap-env-proxy`](https://go.codemod.com/registry?q=backstage+remove-bootstrap-env-proxy) migration from 1.50.0 for the removed `bootstrapEnvProxyAgents` export. Do not expect this recipe to repeat it.

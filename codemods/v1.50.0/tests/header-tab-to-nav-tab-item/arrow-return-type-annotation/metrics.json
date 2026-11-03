@@ -1,0 +1,17 @@
+{
+  "header-tab-to-nav-tab-item": [
+    {
+      "cardinality": {
+        "action": "body-reference-renamed"
+      },
+      "count": 2
+    },
+    {
+      "cardinality": {
+        "action": "import-renamed",
+        "specifier": "HeaderTab"
+      },
+      "count": 1
+    }
+  ]
+}

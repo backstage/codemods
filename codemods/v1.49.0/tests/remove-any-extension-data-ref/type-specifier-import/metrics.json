@@ -1,0 +1,11 @@
+{
+  "remove-any-extension-data-ref": [
+    {
+      "cardinality": {
+        "from": "AnyExtensionDataRef",
+        "to": "ExtensionDataRef"
+      },
+      "count": 1
+    }
+  ]
+}

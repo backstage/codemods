@@ -12,15 +12,14 @@
     "test:scripts": "yarn workspace @backstage/scripts run test",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
-    "lint": "oxlint --type-aware --type-check --deny-warnings --no-error-on-unmatched-pattern",
-    "lint:fix": "oxlint --type-aware --type-check --fix --no-error-on-unmatched-pattern",
+    "lint": "oxlint --type-aware --type-check --deny-warnings --no-error-on-unmatched-pattern --ignore-pattern .worktrees",
+    "lint:fix": "oxlint --type-aware --type-check --fix --no-error-on-unmatched-pattern --ignore-pattern .worktrees",
     "prepare": "husky",
     "changeset": "changeset",
     "version-packages": "changeset version && sync-codemod-versions",
     "readme": "generate-readme-codemods",
     "check:changed": "check-changed",
-    "tag-and-publish": "tag-and-publish",
-    "sync-readme-pr": "sync-readme-pr"
+    "tag-and-publish": "tag-and-publish"
   },
   "devDependencies": {
     "@backstage/scripts": "workspace:*",

@@ -1,0 +1,17 @@
+{
+  "header-tab-to-nav-tab-item": [
+    {
+      "cardinality": {
+        "action": "matchStrategy-removed"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "namespace-property-renamed",
+        "alias": "UI"
+      },
+      "count": 3
+    }
+  ]
+}

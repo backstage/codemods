@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+nodes:
+  - id: apply-recipe
+    name: 'Run the Backstage 1.53.0 config migration'
+    type: automatic
+    steps:
+      - name: 'Rename deprecated auth.experimentalClientIdMetadataDocuments config key'
+        js-ast-grep:
+          js_file: scripts/rename-experimental-cimd-config.ts
+          language: 'yaml'
+          include:
+            - '**/app-config*.yaml'
+            - '**/app-config*.yml'
+          exclude:
+            - '**/node_modules/**'

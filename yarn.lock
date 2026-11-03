@@ -5,45 +5,6 @@ __metadata:
   version: 10
   cacheKey: 10c0
 
-"@backstage/add-entity-ref-to-location@workspace:codemods/v1.50.0/add-entity-ref-to-location":
-  version: 0.0.0-use.local
-  resolution: "@backstage/add-entity-ref-to-location@workspace:codemods/v1.50.0/add-entity-ref-to-location"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    "@jssg/utils": "npm:^0.0.10"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/add-jest-peer-dependency@workspace:codemods/v1.46.0/add-jest-peer-dependency":
-  version: 0.0.0-use.local
-  resolution: "@backstage/add-jest-peer-dependency@workspace:codemods/v1.46.0/add-jest-peer-dependency"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/add-update-location-method@workspace:codemods/v1.50.0/add-update-location-method":
-  version: 0.0.0-use.local
-  resolution: "@backstage/add-update-location-method@workspace:codemods/v1.50.0/add-update-location-method"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    "@jssg/utils": "npm:^0.0.10"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/catalog-node-alpha-to-stable@workspace:codemods/v1.50.0/catalog-node-alpha-to-stable":
-  version: 0.0.0-use.local
-  resolution: "@backstage/catalog-node-alpha-to-stable@workspace:codemods/v1.50.0/catalog-node-alpha-to-stable"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    "@jssg/utils": "npm:^0.0.10"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
 "@backstage/config@npm:^1.3.9":
   version: 1.3.10
   resolution: "@backstage/config@npm:1.3.10"
@@ -55,16 +16,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@backstage/dialog-api-show-to-open@workspace:codemods/v1.50.0/dialog-api-show-to-open":
-  version: 0.0.0-use.local
-  resolution: "@backstage/dialog-api-show-to-open@workspace:codemods/v1.50.0/dialog-api-show-to-open"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    "@jssg/utils": "npm:^0.0.10"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
 "@backstage/errors@npm:^1.3.1, @backstage/errors@npm:^1.3.2":
   version: 1.3.2
   resolution: "@backstage/errors@npm:1.3.2"
@@ -74,15 +25,6 @@ __metadata:
   checksum: 10c0/a60ff2a0ec2226a8f7c961e5cc8047773b85e538ca4e96ca5936c242c9d23e9661f46cd4d59a2343cff0fc1352ab8e91c4ab9f5ad8c5c20e37bd0baeea5ae908
   languageName: node
   linkType: hard
-
-"@backstage/experimental-form-decorators-to-stable@workspace:codemods/v1.51.0/experimental-form-decorators-to-stable":
-  version: 0.0.0-use.local
-  resolution: "@backstage/experimental-form-decorators-to-stable@workspace:codemods/v1.51.0/experimental-form-decorators-to-stable"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
 
 "@backstage/filter-predicates@npm:^0.1.5":
   version: 0.1.5
@@ -119,654 +61,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@backstage/header-tab-to-nav-tab-item@workspace:codemods/v1.50.0/header-tab-to-nav-tab-item":
-  version: 0.0.0-use.local
-  resolution: "@backstage/header-tab-to-nav-tab-item@workspace:codemods/v1.50.0/header-tab-to-nav-tab-item"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/humanize-entity-ref-to-presentation@workspace:codemods/v1.50.0/humanize-entity-ref-to-presentation":
-  version: 0.0.0-use.local
-  resolution: "@backstage/humanize-entity-ref-to-presentation@workspace:codemods/v1.50.0/humanize-entity-ref-to-presentation"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/loading-to-is-pending@workspace:codemods/v1.51.0/loading-to-is-pending":
-  version: 0.0.0-use.local
-  resolution: "@backstage/loading-to-is-pending@workspace:codemods/v1.51.0/loading-to-is-pending"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-app-experimental-packages@workspace:codemods/v1.48.0/migrate-app-experimental-packages":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-app-experimental-packages@workspace:codemods/v1.48.0/migrate-app-experimental-packages"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-avatar-to-custom@workspace:codemods/v1.45.0/migrate-avatar-to-custom":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-avatar-to-custom@workspace:codemods/v1.45.0/migrate-avatar-to-custom"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-blueprints-to-plugin-app-react@workspace:codemods/v1.48.0/migrate-blueprints-to-plugin-app-react":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-blueprints-to-plugin-app-react@workspace:codemods/v1.48.0/migrate-blueprints-to-plugin-app-react"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    "@jssg/utils": "npm:^0.0.10"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-bui-props-to-intersection@workspace:codemods/v1.52.0/migrate-bui-props-to-intersection":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-bui-props-to-intersection@workspace:codemods/v1.52.0/migrate-bui-props-to-intersection"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-checkbox-to-react-aria@workspace:codemods/v1.45.0/migrate-checkbox-to-react-aria":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-checkbox-to-react-aria@workspace:codemods/v1.45.0/migrate-checkbox-to-react-aria"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-collapsible-to-accordion@workspace:codemods/v1.45.0/migrate-collapsible-to-accordion":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-collapsible-to-accordion@workspace:codemods/v1.45.0/migrate-collapsible-to-accordion"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-column-config-to-react-element@workspace:codemods/v1.48.0/migrate-column-config-to-react-element":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-column-config-to-react-element@workspace:codemods/v1.48.0/migrate-column-config-to-react-element"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    "@jssg/utils": "npm:^0.0.10"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-gerrit-gitiles-functions@workspace:codemods/v1.49.0/migrate-gerrit-gitiles-functions":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-gerrit-gitiles-functions@workspace:codemods/v1.49.0/migrate-gerrit-gitiles-functions"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    "@jssg/utils": "npm:^0.0.10"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-mui-accordion-to-bui-accordion@workspace:codemods/misc/migrate-mui-accordion-to-bui-accordion":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-mui-accordion-to-bui-accordion@workspace:codemods/misc/migrate-mui-accordion-to-bui-accordion"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-mui-alert-to-bui-alert@workspace:codemods/misc/migrate-mui-alert-to-bui-alert":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-mui-alert-to-bui-alert@workspace:codemods/misc/migrate-mui-alert-to-bui-alert"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-mui-autocomplete-to-combobox@workspace:codemods/misc/migrate-mui-autocomplete-to-combobox":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-mui-autocomplete-to-combobox@workspace:codemods/misc/migrate-mui-autocomplete-to-combobox"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-mui-avatar-to-bui-avatar@workspace:codemods/misc/migrate-mui-avatar-to-bui-avatar":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-mui-avatar-to-bui-avatar@workspace:codemods/misc/migrate-mui-avatar-to-bui-avatar"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-mui-bootstrap-to-bui@workspace:codemods/misc/migrate-mui-bootstrap-to-bui":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-mui-bootstrap-to-bui@workspace:codemods/misc/migrate-mui-bootstrap-to-bui"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-mui-button-to-bui-button@workspace:codemods/misc/migrate-mui-button-to-bui-button":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-mui-button-to-bui-button@workspace:codemods/misc/migrate-mui-button-to-bui-button"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-mui-card-to-bui-card@workspace:codemods/misc/migrate-mui-card-to-bui-card":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-mui-card-to-bui-card@workspace:codemods/misc/migrate-mui-card-to-bui-card"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-mui-chip-to-tag@workspace:codemods/misc/migrate-mui-chip-to-tag":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-mui-chip-to-tag@workspace:codemods/misc/migrate-mui-chip-to-tag"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-mui-dialog-to-bui-dialog@workspace:codemods/misc/migrate-mui-dialog-to-bui-dialog":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-mui-dialog-to-bui-dialog@workspace:codemods/misc/migrate-mui-dialog-to-bui-dialog"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-mui-icon-button-to-button-icon@workspace:codemods/misc/migrate-mui-icon-button-to-button-icon":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-mui-icon-button-to-button-icon@workspace:codemods/misc/migrate-mui-icon-button-to-button-icon"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-mui-icons-to-remix-icons@workspace:codemods/misc/migrate-mui-icons-to-remix-icons":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-mui-icons-to-remix-icons@workspace:codemods/misc/migrate-mui-icons-to-remix-icons"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-mui-layout-to-bui-layout@workspace:codemods/misc/migrate-mui-layout-to-bui-layout":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-mui-layout-to-bui-layout@workspace:codemods/misc/migrate-mui-layout-to-bui-layout"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-mui-link-to-bui-link@workspace:codemods/misc/migrate-mui-link-to-bui-link":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-mui-link-to-bui-link@workspace:codemods/misc/migrate-mui-link-to-bui-link"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-mui-list-family-to-bui-list@workspace:codemods/misc/migrate-mui-list-family-to-bui-list":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-mui-list-family-to-bui-list@workspace:codemods/misc/migrate-mui-list-family-to-bui-list"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-mui-menu-popover-to-bui-menu@workspace:codemods/misc/migrate-mui-menu-popover-to-bui-menu":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-mui-menu-popover-to-bui-menu@workspace:codemods/misc/migrate-mui-menu-popover-to-bui-menu"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-mui-radio-checkbox-to-bui@workspace:codemods/misc/migrate-mui-radio-checkbox-to-bui":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-mui-radio-checkbox-to-bui@workspace:codemods/misc/migrate-mui-radio-checkbox-to-bui"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-mui-select-family-to-bui-select@workspace:codemods/misc/migrate-mui-select-family-to-bui-select":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-mui-select-family-to-bui-select@workspace:codemods/misc/migrate-mui-select-family-to-bui-select"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-mui-skeleton-to-bui-skeleton@workspace:codemods/misc/migrate-mui-skeleton-to-bui-skeleton":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-mui-skeleton-to-bui-skeleton@workspace:codemods/misc/migrate-mui-skeleton-to-bui-skeleton"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-mui-slider-to-bui-slider@workspace:codemods/misc/migrate-mui-slider-to-bui-slider":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-mui-slider-to-bui-slider@workspace:codemods/misc/migrate-mui-slider-to-bui-slider"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-mui-styles-to-bui-css-modules@workspace:codemods/misc/migrate-mui-styles-to-bui-css-modules":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-mui-styles-to-bui-css-modules@workspace:codemods/misc/migrate-mui-styles-to-bui-css-modules"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-mui-switch-to-bui-switch@workspace:codemods/misc/migrate-mui-switch-to-bui-switch":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-mui-switch-to-bui-switch@workspace:codemods/misc/migrate-mui-switch-to-bui-switch"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-mui-tabs-to-bui-tabs@workspace:codemods/misc/migrate-mui-tabs-to-bui-tabs":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-mui-tabs-to-bui-tabs@workspace:codemods/misc/migrate-mui-tabs-to-bui-tabs"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-mui-textfield-to-bui-textfield@workspace:codemods/misc/migrate-mui-textfield-to-bui-textfield":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-mui-textfield-to-bui-textfield@workspace:codemods/misc/migrate-mui-textfield-to-bui-textfield"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-mui-tooltip-to-bui-tooltip@workspace:codemods/misc/migrate-mui-tooltip-to-bui-tooltip":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-mui-tooltip-to-bui-tooltip@workspace:codemods/misc/migrate-mui-tooltip-to-bui-tooltip"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-mui-typography-to-text@workspace:codemods/misc/migrate-mui-typography-to-text":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-mui-typography-to-text@workspace:codemods/misc/migrate-mui-typography-to-text"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-nav-item-to-page@workspace:codemods/v1.51.0/migrate-nav-item-to-page":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-nav-item-to-page@workspace:codemods/v1.51.0/migrate-nav-item-to-page"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    "@jssg/utils": "npm:^0.0.10"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-permissioned-route@workspace:codemods/v1.50.0/migrate-permissioned-route":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-permissioned-route@workspace:codemods/v1.50.0/migrate-permissioned-route"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    "@jssg/utils": "npm:^0.0.10"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-policy-query-user@workspace:codemods/v1.51.0/migrate-policy-query-user":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-policy-query-user@workspace:codemods/v1.51.0/migrate-policy-query-user"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    "@jssg/utils": "npm:^0.0.10"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-select-combobox-props@workspace:codemods/v1.52.0/migrate-select-combobox-props":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-select-combobox-props@workspace:codemods/v1.52.0/migrate-select-combobox-props"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-signals-service@workspace:codemods/v1.50.0/migrate-signals-service":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-signals-service@workspace:codemods/v1.50.0/migrate-signals-service"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    "@jssg/utils": "npm:^0.0.10"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-surface-to-bg-system@workspace:codemods/v1.48.0/migrate-surface-to-bg-system":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-surface-to-bg-system@workspace:codemods/v1.48.0/migrate-surface-to-bg-system"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-table-to-use-table-hook@workspace:codemods/v1.47.0/migrate-table-to-use-table-hook":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-table-to-use-table-hook@workspace:codemods/v1.47.0/migrate-table-to-use-table-hook"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/migrate-valkey-config@workspace:codemods/v1.46.0/migrate-valkey-config":
-  version: 0.0.0-use.local
-  resolution: "@backstage/migrate-valkey-config@workspace:codemods/v1.46.0/migrate-valkey-config"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/move-connections-config-imports@workspace:codemods/v1.55.0/move-connections-config-imports":
-  version: 0.0.0-use.local
-  resolution: "@backstage/move-connections-config-imports@workspace:codemods/v1.55.0/move-connections-config-imports"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
 "@backstage/mui4-to-bui-migration-recipe@workspace:codemods/misc/mui4-to-bui-migration-recipe":
   version: 0.0.0-use.local
   resolution: "@backstage/mui4-to-bui-migration-recipe@workspace:codemods/misc/mui4-to-bui-migration-recipe"
   dependencies:
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/portable-schema-method-call@workspace:codemods/v1.51.0/portable-schema-method-call":
-  version: 0.0.0-use.local
-  resolution: "@backstage/portable-schema-method-call@workspace:codemods/v1.51.0/portable-schema-method-call"
-  dependencies:
+    "@backstage/scripts": "workspace:*"
     "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/remove-alert-surface-prop@workspace:codemods/v1.48.0/remove-alert-surface-prop":
-  version: 0.0.0-use.local
-  resolution: "@backstage/remove-alert-surface-prop@workspace:codemods/v1.48.0/remove-alert-surface-prop"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/remove-allow-unknown-extension-config@workspace:codemods/v1.49.0/remove-allow-unknown-extension-config":
-  version: 0.0.0-use.local
-  resolution: "@backstage/remove-allow-unknown-extension-config@workspace:codemods/v1.49.0/remove-allow-unknown-extension-config"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    "@jssg/utils": "npm:^0.0.10"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/remove-any-extension-data-ref@workspace:codemods/v1.49.0/remove-any-extension-data-ref":
-  version: 0.0.0-use.local
-  resolution: "@backstage/remove-any-extension-data-ref@workspace:codemods/v1.49.0/remove-any-extension-data-ref"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    "@jssg/utils": "npm:^0.0.10"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/remove-bootstrap-env-proxy@workspace:codemods/v1.50.0/remove-bootstrap-env-proxy":
-  version: 0.0.0-use.local
-  resolution: "@backstage/remove-bootstrap-env-proxy@workspace:codemods/v1.50.0/remove-bootstrap-env-proxy"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    "@jssg/utils": "npm:^0.0.10"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/remove-bui-anchor-render-props@workspace:codemods/v1.55.0/remove-bui-anchor-render-props":
-  version: 0.0.0-use.local
-  resolution: "@backstage/remove-bui-anchor-render-props@workspace:codemods/v1.55.0/remove-bui-anchor-render-props"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/remove-catalog-card-variant-props@workspace:codemods/v1.49.0/remove-catalog-card-variant-props":
-  version: 0.0.0-use.local
-  resolution: "@backstage/remove-catalog-card-variant-props@workspace:codemods/v1.49.0/remove-catalog-card-variant-props"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    "@jssg/utils": "npm:^0.0.10"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/remove-create-public-sign-in-app@workspace:codemods/v1.49.0/remove-create-public-sign-in-app":
-  version: 0.0.0-use.local
-  resolution: "@backstage/remove-create-public-sign-in-app@workspace:codemods/v1.49.0/remove-create-public-sign-in-app"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    "@jssg/utils": "npm:^0.0.10"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/remove-ignored-repo-create-inputs@workspace:codemods/v1.55.0/remove-ignored-github-repo-create-inputs":
-  version: 0.0.0-use.local
-  resolution: "@backstage/remove-ignored-repo-create-inputs@workspace:codemods/v1.55.0/remove-ignored-github-repo-create-inputs"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/remove-immediate-stitching-mode@workspace:codemods/v1.51.0/remove-immediate-stitching-mode":
-  version: 0.0.0-use.local
-  resolution: "@backstage/remove-immediate-stitching-mode@workspace:codemods/v1.51.0/remove-immediate-stitching-mode"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/remove-kubernetes-implicit-children@workspace:codemods/v1.55.0/remove-kubernetes-implicit-children":
-  version: 0.0.0-use.local
-  resolution: "@backstage/remove-kubernetes-implicit-children@workspace:codemods/v1.55.0/remove-kubernetes-implicit-children"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/remove-mui-dependencies@workspace:codemods/misc/remove-mui-dependencies":
-  version: 0.0.0-use.local
-  resolution: "@backstage/remove-mui-dependencies@workspace:codemods/misc/remove-mui-dependencies"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/remove-relations-compatibility-config@workspace:codemods/v1.55.0/remove-relations-compatibility-config":
-  version: 0.0.0-use.local
-  resolution: "@backstage/remove-relations-compatibility-config@workspace:codemods/v1.55.0/remove-relations-compatibility-config"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/remove-stitching-strategy-mode@workspace:codemods/v1.52.0/remove-stitching-strategy-mode":
-  version: 0.0.0-use.local
-  resolution: "@backstage/remove-stitching-strategy-mode@workspace:codemods/v1.52.0/remove-stitching-strategy-mode"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/rename-bui-css-tokens-v1-47@workspace:codemods/v1.47.0/rename-bui-css-tokens-v1-47":
-  version: 0.0.0-use.local
-  resolution: "@backstage/rename-bui-css-tokens-v1-47@workspace:codemods/v1.47.0/rename-bui-css-tokens-v1-47"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/rename-bui-css-tokens-v1-48@workspace:codemods/v1.48.0/rename-bui-css-tokens-v1-48":
-  version: 0.0.0-use.local
-  resolution: "@backstage/rename-bui-css-tokens-v1-48@workspace:codemods/v1.48.0/rename-bui-css-tokens-v1-48"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/rename-bui-css-tokens-v1-52@workspace:codemods/v1.52.0/rename-bui-css-tokens-v1-52":
-  version: 0.0.0-use.local
-  resolution: "@backstage/rename-bui-css-tokens-v1-52@workspace:codemods/v1.52.0/rename-bui-css-tokens-v1-52"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/rename-bui-header-css-classes@workspace:codemods/v1.49.0/rename-bui-header-css-classes":
-  version: 0.0.0-use.local
-  resolution: "@backstage/rename-bui-header-css-classes@workspace:codemods/v1.49.0/rename-bui-header-css-classes"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/rename-connections-public-api@workspace:codemods/v1.55.0/rename-connections-public-api":
-  version: 0.0.0-use.local
-  resolution: "@backstage/rename-connections-public-api@workspace:codemods/v1.55.0/rename-connections-public-api"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/rename-experimental-cimd-config@workspace:codemods/v1.53.0/rename-experimental-cimd-config":
-  version: 0.0.0-use.local
-  resolution: "@backstage/rename-experimental-cimd-config@workspace:codemods/v1.53.0/rename-experimental-cimd-config"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/rename-header-main-class@workspace:codemods/v1.51.0/rename-header-main-class":
-  version: 0.0.0-use.local
-  resolution: "@backstage/rename-header-main-class@workspace:codemods/v1.51.0/rename-header-main-class"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/rename-header-to-plugin-header@workspace:codemods/v1.48.0/rename-header-to-plugin-header":
-  version: 0.0.0-use.local
-  resolution: "@backstage/rename-header-to-plugin-header@workspace:codemods/v1.48.0/rename-header-to-plugin-header"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/rename-plugin-header-toolbar@workspace:codemods/v1.50.0/rename-plugin-header-toolbar":
-  version: 0.0.0-use.local
-  resolution: "@backstage/rename-plugin-header-toolbar@workspace:codemods/v1.50.0/rename-plugin-header-toolbar"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/render-test-app-nav-migration@workspace:codemods/v1.51.0/render-test-app-nav-migration":
-  version: 0.0.0-use.local
-  resolution: "@backstage/render-test-app-nav-migration@workspace:codemods/v1.51.0/render-test-app-nav-migration"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    "@jssg/utils": "npm:^0.0.10"
-    codemod: "npm:1.18.3"
-  languageName: unknown
-  linkType: soft
-
-"@backstage/replace-create-schema-from-zod@workspace:codemods/v1.50.0/replace-create-schema-from-zod":
-  version: 0.0.0-use.local
-  resolution: "@backstage/replace-create-schema-from-zod@workspace:codemods/v1.50.0/replace-create-schema-from-zod"
-  dependencies:
-    "@codemod.com/jssg-types": "npm:1.6.3"
-    "@jssg/utils": "npm:^0.0.10"
     codemod: "npm:1.18.3"
   languageName: unknown
   linkType: soft
@@ -784,7 +84,6 @@ __metadata:
     generate-readme-codemods: ./src/generate-readme-codemods.ts
     run-recipe-tests: ./src/run-recipe-tests.ts
     sync-codemod-versions: ./src/sync-codemod-versions.ts
-    sync-readme-pr: ./src/sync-readme-pr.ts
     tag-and-publish: ./src/tag-and-publish.ts
     test-staged: ./src/test-staged.ts
   languageName: unknown
@@ -797,96 +96,123 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@backstage/v1-45-0-migration-recipe@workspace:codemods/v1.45.0/migration-recipe":
+"@backstage/v1-45-0-migration-recipe@workspace:codemods/v1.45.0":
   version: 0.0.0-use.local
-  resolution: "@backstage/v1-45-0-migration-recipe@workspace:codemods/v1.45.0/migration-recipe"
+  resolution: "@backstage/v1-45-0-migration-recipe@workspace:codemods/v1.45.0"
   dependencies:
+    "@backstage/scripts": "workspace:*"
+    "@codemod.com/jssg-types": "npm:1.6.3"
     codemod: "npm:1.18.3"
   languageName: unknown
   linkType: soft
 
-"@backstage/v1-46-0-migration-recipe@workspace:codemods/v1.46.0/migration-recipe":
+"@backstage/v1-46-0-migration-recipe@workspace:codemods/v1.46.0":
   version: 0.0.0-use.local
-  resolution: "@backstage/v1-46-0-migration-recipe@workspace:codemods/v1.46.0/migration-recipe"
+  resolution: "@backstage/v1-46-0-migration-recipe@workspace:codemods/v1.46.0"
   dependencies:
+    "@backstage/scripts": "workspace:*"
+    "@codemod.com/jssg-types": "npm:1.6.3"
     codemod: "npm:1.18.3"
   languageName: unknown
   linkType: soft
 
-"@backstage/v1-47-0-migration-recipe@workspace:codemods/v1.47.0/migration-recipe":
+"@backstage/v1-47-0-migration-recipe@workspace:codemods/v1.47.0":
   version: 0.0.0-use.local
-  resolution: "@backstage/v1-47-0-migration-recipe@workspace:codemods/v1.47.0/migration-recipe"
+  resolution: "@backstage/v1-47-0-migration-recipe@workspace:codemods/v1.47.0"
   dependencies:
+    "@backstage/scripts": "workspace:*"
+    "@codemod.com/jssg-types": "npm:1.6.3"
     codemod: "npm:1.18.3"
   languageName: unknown
   linkType: soft
 
-"@backstage/v1-48-0-migration-recipe@workspace:codemods/v1.48.0/migration-recipe":
+"@backstage/v1-48-0-migration-recipe@workspace:codemods/v1.48.0":
   version: 0.0.0-use.local
-  resolution: "@backstage/v1-48-0-migration-recipe@workspace:codemods/v1.48.0/migration-recipe"
+  resolution: "@backstage/v1-48-0-migration-recipe@workspace:codemods/v1.48.0"
   dependencies:
+    "@backstage/scripts": "workspace:*"
+    "@codemod.com/jssg-types": "npm:1.6.3"
+    "@jssg/utils": "npm:^0.0.10"
     codemod: "npm:1.18.3"
   languageName: unknown
   linkType: soft
 
-"@backstage/v1-49-0-migration-recipe@workspace:codemods/v1.49.0/migration-recipe":
+"@backstage/v1-49-0-migration-recipe@workspace:codemods/v1.49.0":
   version: 0.0.0-use.local
-  resolution: "@backstage/v1-49-0-migration-recipe@workspace:codemods/v1.49.0/migration-recipe"
+  resolution: "@backstage/v1-49-0-migration-recipe@workspace:codemods/v1.49.0"
   dependencies:
+    "@backstage/scripts": "workspace:*"
+    "@codemod.com/jssg-types": "npm:1.6.3"
+    "@jssg/utils": "npm:^0.0.10"
     codemod: "npm:1.18.3"
   languageName: unknown
   linkType: soft
 
-"@backstage/v1-50-0-migration-recipe@workspace:codemods/v1.50.0/migration-recipe":
+"@backstage/v1-50-0-migration-recipe@workspace:codemods/v1.50.0":
   version: 0.0.0-use.local
-  resolution: "@backstage/v1-50-0-migration-recipe@workspace:codemods/v1.50.0/migration-recipe"
+  resolution: "@backstage/v1-50-0-migration-recipe@workspace:codemods/v1.50.0"
   dependencies:
+    "@backstage/scripts": "workspace:*"
+    "@codemod.com/jssg-types": "npm:1.6.3"
+    "@jssg/utils": "npm:^0.0.10"
     codemod: "npm:1.18.3"
   languageName: unknown
   linkType: soft
 
-"@backstage/v1-51-0-migration-recipe@workspace:codemods/v1.51.0/migration-recipe":
+"@backstage/v1-51-0-migration-recipe@workspace:codemods/v1.51.0":
   version: 0.0.0-use.local
-  resolution: "@backstage/v1-51-0-migration-recipe@workspace:codemods/v1.51.0/migration-recipe"
+  resolution: "@backstage/v1-51-0-migration-recipe@workspace:codemods/v1.51.0"
   dependencies:
+    "@backstage/scripts": "workspace:*"
+    "@codemod.com/jssg-types": "npm:1.6.3"
+    "@jssg/utils": "npm:^0.0.10"
     codemod: "npm:1.18.3"
   languageName: unknown
   linkType: soft
 
-"@backstage/v1-52-0-migration-recipe@workspace:codemods/v1.52.0/migration-recipe":
+"@backstage/v1-52-0-migration-recipe@workspace:codemods/v1.52.0":
   version: 0.0.0-use.local
-  resolution: "@backstage/v1-52-0-migration-recipe@workspace:codemods/v1.52.0/migration-recipe"
+  resolution: "@backstage/v1-52-0-migration-recipe@workspace:codemods/v1.52.0"
   dependencies:
+    "@backstage/scripts": "workspace:*"
+    "@codemod.com/jssg-types": "npm:1.6.3"
     codemod: "npm:1.18.3"
   languageName: unknown
   linkType: soft
 
-"@backstage/v1-53-0-migration-recipe@workspace:codemods/v1.53.0/migration-recipe":
+"@backstage/v1-53-0-migration-recipe@workspace:codemods/v1.53.0":
   version: 0.0.0-use.local
-  resolution: "@backstage/v1-53-0-migration-recipe@workspace:codemods/v1.53.0/migration-recipe"
+  resolution: "@backstage/v1-53-0-migration-recipe@workspace:codemods/v1.53.0"
   dependencies:
+    "@backstage/scripts": "workspace:*"
+    "@codemod.com/jssg-types": "npm:1.6.3"
     codemod: "npm:1.18.3"
   languageName: unknown
   linkType: soft
 
-"@backstage/v1-54-0-migration-recipe@workspace:codemods/v1.54.0/migration-recipe":
+"@backstage/v1-54-0-migration-recipe@workspace:codemods/v1.54.0":
   version: 0.0.0-use.local
-  resolution: "@backstage/v1-54-0-migration-recipe@workspace:codemods/v1.54.0/migration-recipe"
+  resolution: "@backstage/v1-54-0-migration-recipe@workspace:codemods/v1.54.0"
   dependencies:
     "@backstage/frontend-plugin-api": "npm:0.18.1"
     "@backstage/scripts": "workspace:*"
     "@codemod.com/jssg-types": "npm:1.6.3"
+    "@types/node": "npm:^24"
     codemod: "npm:1.18.3"
     typescript: "npm:^7.0.2"
     zod: "npm:^4.1.0"
   languageName: unknown
   linkType: soft
 
-"@backstage/v1-55-0-migration-recipe@workspace:codemods/v1.55.0/migration-recipe":
+"@backstage/v1-55-0-migration-recipe@workspace:codemods/v1.55.0":
   version: 0.0.0-use.local
-  resolution: "@backstage/v1-55-0-migration-recipe@workspace:codemods/v1.55.0/migration-recipe"
+  resolution: "@backstage/v1-55-0-migration-recipe@workspace:codemods/v1.55.0"
   dependencies:
+    "@backstage/scripts": "workspace:*"
+    "@codemod.com/jssg-types": "npm:1.6.3"
     codemod: "npm:1.18.3"
+    typescript: "npm:^7.0.2"
+    yaml: "npm:^2.8.1"
   languageName: unknown
   linkType: soft
 
