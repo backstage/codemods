@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+nodes:
+  - id: apply-recipe
+    name: 'Run every Backstage 1.55.0 codemod in order'
+    type: automatic
+    steps:
+      # --- BREAKING: connections API import/symbol changes
+      - name: 'Rename removed connections public API symbols'
+        js-ast-grep:
+          js_file: scripts/rename-connections-public-api.ts
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+
+      - name: 'Move connections config imports to /config subpath'
+        js-ast-grep:
+          js_file: scripts/move-connections-config-imports.ts
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+
+      # --- BREAKING: removed catalog compatibility config
+      - name: 'Remove catalog compatibility relations config'
+        js-ast-grep:
+          js_file: scripts/remove-relations-compatibility-config.ts
+          language: 'yaml'
+          include:
+            - '**/app-config.yaml'
+            - '**/app-config.*.yaml'
+            - '**/app-config.yml'
+            - '**/app-config.*.yml'
+          exclude:
+            - '**/node_modules/**'
+
+      # --- BREAKING: removed BUI anchor render prop
+      - name: 'Remove BUI Anchor render props and mark manual follow-up'
+        js-ast-grep:
+          js_file: scripts/remove-bui-anchor-render-props.ts
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+
+      # --- BREAKING: removed never-rendered Kubernetes children
+      - name: 'Remove implicit Kubernetes children and mark manual follow-up'
+        js-ast-grep:
+          js_file: scripts/remove-kubernetes-implicit-children.ts
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+
+      # --- BREAKING: removed scaffolder GitHub action inputs
+      - name: 'Remove ignored GitHub repo create action inputs'
+        js-ast-grep:
+          js_file: scripts/remove-ignored-github-repo-create-inputs.ts
+          language: 'yaml'
+          include:
+            - '**/*.yaml'
+            - '**/*.yml'
+          exclude:
+            - '**/node_modules/**'
