@@ -1,12 +1,12 @@
 ---
 name: backstage-codemod-issue-research
 description: |
-  Researches Backstage release breaking changes and drafts GitHub issues for backstage/codemods. Use when planning a Backstage version migration (e.g. 1.52.0), inventorying breaking changes for codemods, authoring codemod issue specs, deciding codemod vs document-only, or preparing migration issues before implementation. Also use when asked to parse release changelogs, cross-check upgrade notes, classify deprecations, or write Detection Criteria / Transformation Logic for a codemod issue. Does not implement codemods — hand off to the `codemod` skill after issues are filed.
+  Researches Backstage release breaking changes and drafts the consolidated migration-recipe GitHub issue for backstage/codemods (one issue per release, one bundled recipe package since v1.54). Use when planning a Backstage version migration (e.g. 1.56.0), inventorying breaking changes, deciding codemod step vs document-only, or preparing the release issue before implementation. Also use when asked to parse release changelogs, cross-check upgrade notes, classify deprecations, or write Detection Criteria / Transformation Logic for a recipe step. Does not implement codemods — hand off to the `codemod` skill after the issue is filed and approved.
 ---
 
 # Backstage Codemod Issue Research
 
-Research a Backstage release and produce **GitHub issue specs** in `backstage/codemods` before anyone scaffolds code. Output is an inventory table plus one issue per codemod (and one recipe issue last).
+Research a Backstage release and produce **one consolidated GitHub issue** in `backstage/codemods` before anyone scaffolds code. Since the v1.54 restructure, each release ships **one migration recipe package** (`codemods/v1.<minor>/`, `@backstage/v1-<minor>-0-migration-recipe`) bundling several deterministic local transform scripts behind one workflow — **not** one registry package per codemod. Output of this skill is an inventory table plus a single issue whose recipe-steps section specs each bundled script.
 
 **Handoff:** After issues are filed and approved, switch to the **`codemod` skill** ([Codemod OSS quickstart](https://docs.codemod.com/oss-quickstart)) for scaffold → implement → test → publish. This skill stops at issue bodies.
 
@@ -28,7 +28,7 @@ npx codemod ai --project
 
 Then **restart or reload the agent session** so the skill and Codemod MCP are picked up (see install output `restart_hint`).
 
-Hand off with: the approved inventory table, filed issue numbers/links, and the target GitHub issue body as the implementation spec. The implementer follows the installed **`codemod` skill** (path from `codemod ai list`) plus [`CONTRIBUTING.md`](../../../CONTRIBUTING.md).
+Hand off with: the approved inventory table and the filed consolidated issue link as the implementation spec. The implementer follows the installed **`codemod` skill** (path from `codemod ai list`) plus [`CONTRIBUTING.md`](../../../CONTRIBUTING.md).
 
 ## Setup
 
@@ -39,7 +39,7 @@ Hand off with: the approved inventory table, filed issue numbers/links, and the 
 | Changelog | Consolidated changelog file available locally | Fetch from `backstage/backstage` — see Sources                                        |
 | Prior art | Closed issues for previous release exist      | `gh issue list --repo backstage/codemods --state closed --search "Backstage 1.<N-1>"` |
 
-Read [`CONTRIBUTING.md`](../../../CONTRIBUTING.md) for package naming (`@backstage/<kebab-name>`) and directory layout (`codemods/<version>/<name>/`).
+Read [`CONTRIBUTING.md`](../../../CONTRIBUTING.md) for package naming and directory layout. Since v1.54 the layout is **one package per release**: `codemods/v1.<minor>/` containing `package.json`, `codemod.yaml`, `workflow.yaml`, `README.md`, `scripts/<step-name>.ts` (one per transform, `js-ast-grep` + `@jssg/utils` helpers) and `tests/`. See `codemods/v1.55.0/` for the reference implementation and issue #156 (1.55) / #189 (1.56) for consolidated-issue prior art.
 
 ## Workflow
 
@@ -52,11 +52,10 @@ digraph research {
   verify_pr [label="4. Verify out-of-scope\n(investigate linked PRs)"];
   verify_surface [label="5. Verify consumer surface area\n(grep monorepo + community-plugins)"];
   sweep [label="6. Sweep Patch Changes\n(deprecated/removed/renamed)"];
-  dedupe [label="7. Dedupe & name packages\n(one issue = one transform)"];
+  dedupe [label="7. Dedupe & name steps\n(one issue = one recipe with steps)"];
   inventory [label="8. Publish inventory table\n(get user sign-off)"];
-  issues [label="9. File codemod issues\n(template per item)"];
-  recipe [label="10. File recipe issue\n(blocked by codemods)"];
-  sources -> scan -> classify -> verify_pr -> verify_surface -> sweep -> dedupe -> inventory -> issues -> recipe;
+  issues [label="9. File ONE consolidated\nrecipe issue (steps + out-of-scope)"];
+  sources -> scan -> classify -> verify_pr -> verify_surface -> sweep -> dedupe -> inventory -> issues;
 }
 ```
 
@@ -109,9 +108,9 @@ Load [`references/classification-guide.md`](references/classification-guide.md) 
 | **Merge with another issue** | Same package + same file types + transform can run in one pass without conflicting edits                      |
 | **Split issues**             | Unrelated domains (frontend JSX vs app-config YAML) or conflicting transform order                            |
 
-**One issue = one atomic migration.** If a changelog bullet lists multiple independent changes, split them. Do not bundle unrelated breaking changes. Prefer smaller composable codemods over multi-step monsters.
+**One step = one atomic migration.** If a changelog bullet lists multiple independent changes, split them into separate recipe steps. Do not bundle unrelated breaking changes into one step; prefer smaller composable steps over multi-step monsters.
 
-Document **out-of-scope** items explicitly in the recipe issue README section — they are as important as the codemods.
+Document **out-of-scope** items explicitly in the issue's out-of-scope table — they are as important as the recipe steps, and they become the README's manual-only section.
 
 ### Step 4: Verify out-of-scope items against linked PRs
 
@@ -151,68 +150,51 @@ python .agents/skills/backstage-codemod-issue-research/scripts/scan-changelog.py
 
 Evaluate each for codemod eligibility. Low-surface-area typo fixes (zero consumer matches in monorepo + community-plugins) can be listed in the recipe README out-of-scope rather than getting their own issues.
 
-### Step 7: Dedupe and name
+### Step 7: Dedupe and name recipe steps
 
-Package name: `@backstage/<kebab-case-descriptive-name>` — verb-led when possible (`migrate-nav-item-to-page`, `rename-header-main-class`).
-
-Issue title format (Backstage variant of [Codemod Issue Generator title](references/codemod-issue-generator.md)):
-
-```
-feat: Backstage 1.<minor>.0 migration - <short human description>
-```
-
-Worktree path (for Implementation notes): `.worktrees/feat/v1.<minor>.0/<codemod-name>`
+Each codemod candidate becomes **one bundled script (recipe step)**, not its own package or issue: `scripts/<verb-led-kebab-name>.ts`, e.g. `migrate-catalog-filters-to-query`, `remove-atlassian-username-resolver`, `move-bui-menusection-disabled-keys`. Prefer verb-led names. The only reason to split into multiple issues would be steps that cannot share one package — none so far.
 
 ### Step 8: Inventory table (sign-off gate)
 
-Present a markdown table **before** filing issues:
+Present a markdown table **before** filing the issue:
 
-| #   | Package | Type | Source package | aiFixup? | Notes |
-| --- | ------- | ---- | -------------- | -------- | ----- |
+| #   | Script (recipe step) | Type | Source package | aiFixup? | Notes |
+| --- | -------------------- | ---- | -------------- | -------- | ----- |
 
 - **Type:** breaking | deprecation
-- **aiFixup?:** yes | no | maybe — decide using criteria below
+- **aiFixup?:** yes | no | maybe — decide using criteria below (recipe-level default is **no**; every release so far shipped deterministic steps only)
 - **Notes:** out-of-scope rationale, merge/split reasoning, or "changelog only — verify in source"
 
 Wait for user confirmation on the inventory. Adjust before filing.
 
-### Step 9: File codemod issues
+### Step 9: File the consolidated recipe issue
 
-Use [`references/issue-template.md`](references/issue-template.md) for each row. **Section order** follows [Codemod Issue Generator](references/codemod-issue-generator.md), plus Backstage extensions:
+File **one issue** covering the whole release. Title format:
 
-1. **Summary** — what changes; why required for the migration (state if NOT a drop-in rename)
-2. **Detection Criteria** — implementation-ready bullets (imports, calls, JSX, config keys, CSS selectors; note test vs prod if relevant)
-3. **Transformation Logic** — numbered steps; add **Prop mapping** subsection when props rename or move between nodes
-4. **Before / After Example** — required unless no illustrative code applies; use labeled variants for structural migrations (e.g. basic / with error prop / nested routes)
-5. **Notes / Edge Cases** — skip conditions, TODO markers, conflation warnings
-6. **Optional: AI fixup step** — only when warranted (see below)
-7. **Changeset (when implementing)** — package name, **minor** bump for initial release, example summary line
-8. **Implementation notes** — worktree path, one PR per codemod
+```
+feat: Backstage 1.<minor>.0 migration - add v1.<minor>.0 migration recipe
+```
 
-When filing: issue bodies are **spec only** — no inventory commentary. Do **not invent** migrations unsupported by the changelog. Use source terminology. Write for a senior implementer.
+Use [`references/issue-template.md`](references/issue-template.md) per step, assembled into one body:
 
-Create issues via:
+1. **Summary** — what changes; link changelog + release notes; reference #140-style adopter follow-ups when relevant
+2. **Recipe steps** — ordered table: script path, source package, scope (imports first, then config, then JSX; steps must not depend on each other's output)
+3. **Per-step sections** — for each step: Detection Criteria, Transformation Logic (numbered; **Prop mapping** subsection when props rename or move between nodes), Before / After Example, edge cases
+4. **Notes / Edge Cases** — cross-step conflation warnings and `TODO(backstage-codemod)` placement
+5. **AI fixup** — usually "None" with rationale; only add when a step leaves systematic ambiguity the AST cannot resolve
+6. **Out of scope** — the manual-only table (as important as the steps; it becomes the README's manual-only section)
+7. **Changeset (when implementing)** — `@backstage/v1-<minor>-0-migration-recipe`, **minor** bump for initial release, example summary line
+8. **Implementation notes** — worktree path `.worktrees/feat/v1.<minor>.0/migration-recipe`, one PR, deliverables following `codemods/v1.<prior>/` layout, QA target (`../backstage` dry-run + third-party fixtures)
+
+When filing: issue bodies are **spec only** — no inventory commentary. Do **not invent** migrations unsupported by the changelog. Use source terminology. Write for a senior implementer. Follow [`docs/agents/issue-tracker.md`](../../../docs/agents/issue-tracker.md) for `gh` mechanics (native sub-issues / `--blocked-by` if a split is ever truly needed).
+
+Create the issue via:
 
 ```bash
 gh issue create --repo backstage/codemods \
-  --title "feat: Backstage 1.<minor>.0 migration - <description>" \
+  --title "feat: Backstage 1.<minor>.0 migration - add v1.<minor>.0 migration recipe" \
   --body-file /tmp/issue-body.md
 ```
-
-Cross-link related issues when two migrations touch the same package (e.g. two removed APIs in `@backstage/frontend-plugin-api` — separate codemods, note the distinction in Summary).
-
-### Step 10: Recipe issue (last)
-
-After all codemod issues exist, file **one recipe issue** modeled on the prior release's migration-recipe issue:
-
-- Release sequencing (codemods merge → Version Packages publish → recipe merge)
-- Ordered table of registry packages aligned with release-note narrative
-- aiFixup matrix (which steps support `--param aiFixup=true`)
-- Out-of-scope list (manual-only changes)
-- **Blocked by** — link every codemod issue number
-- QA target: sample monorepo path (e.g. `../backstage`)
-
-Reference the **prior release** migration recipe in this repo — e.g. [`codemods/v1.<prior>/migration-recipe/`](../../../codemods/) (use the highest `v1.*` directory below the target version).
 
 ## aiFixup decision
 
@@ -243,7 +225,7 @@ When including aiFixup, specify in the issue:
 - Workflow model hint (`claude-sonnet-4-6`, `max_steps: 50`) and example CLI
 - Dry-run target path
 
-Mirror aiFixup layout from closed codemod issues in the prior release — read at least one issue that ships `aiFixup` and one that does not.
+Read at least one prior consolidated issue (#156 for 1.55, #189 for 1.56) before deciding.
 
 ## Quality bar
 
@@ -253,10 +235,11 @@ An issue is ready to implement when:
 - [ ] Transformation logic covers import + usage + cleanup (not import-only)
 - [ ] Before/after compiles conceptually (types and JSX structure make sense)
 - [ ] Edge cases call out **skip** conditions and **TODO(backstage-codemod)** placement
-- [ ] No overlap with another issue in the same release inventory
-- [ ] Changeset notes use **minor** for new packages
+- [ ] No overlap with another step in the same release inventory
+- [ ] Changeset notes use **minor** for the new recipe package
 - [ ] Migration is explicitly supported by changelog/release notes — nothing invented
 - [ ] Terminology matches the source document
+- [ ] Issue structure matches the consolidated single-issue format (steps table + per-step sections + out-of-scope table)
 
 ## Common mistakes
 
@@ -264,9 +247,11 @@ An issue is ready to implement when:
 
 **Conflating related migrations.** Same release may remove an API _and_ change test utilities that referenced it. Separate issues unless one codemod safely handles both.
 
-**Config / semantics as codemods.** Catalog pagination behavior, OIDC hardening, dependency caps — document in recipe out-of-scope, do not file codemod issues.
+**Config / semantics as codemods.** Catalog pagination behavior, OIDC hardening, dependency caps — document in the issue's out-of-scope table, do not add recipe steps for them.
 
-**Missing prior-release diff.** Always read at least two closed v1.(N-1) codemod issues before filing — one with aiFixup, one without — plus that release's migration-recipe issue for section depth and tone.
+**Missing prior-release issue.** Always read the prior release's consolidated issue (#156 for 1.55, #189 for 1.56) plus its `codemods/v1.<prior>/` recipe package for section depth, step granularity and tone.
+
+**Filing per-codemod issues.** Pre-1.54 releases had one issue per codemod plus a separate recipe issue. Do not revive that structure: one issue per release, one recipe package with bundled scripts, one PR.
 
 **Inventing migrations.** If the changelog does not support a transform, do not file an issue — note it in the inventory or recipe out-of-scope instead.
 
