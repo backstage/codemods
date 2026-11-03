@@ -11,7 +11,7 @@ import { join } from 'node:path'
 // no change to any test command:
 //
 //   scripts/<name>.ts  +  tests/<name>/<case>/input.<ext>  -> codemod jssg test
-//     (ext ts/tsx -> language tsx, json -> json, yaml/yml -> yaml; fixture roots
+//     (ext ts/tsx -> language tsx, json -> json, yaml/yml -> yaml, css/scss -> css; fixture roots
 //      without JSSG input files, e.g. .sh suites, are skipped here and covered
 //      by their node --test suites)
 //   tests/<name>/assert-fixtures.ts                        -> node tests/<name>/assert-fixtures.ts
@@ -102,6 +102,8 @@ function collectFiles(root: string, match: (name: string) => boolean): string[] 
 }
 
 const languages: Record<string, string> = {
+  css: 'css',
+  scss: 'css',
   ts: 'tsx',
   tsx: 'tsx',
   json: 'json',

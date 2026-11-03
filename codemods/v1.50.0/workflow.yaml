@@ -100,7 +100,7 @@ nodes:
             - '**/node_modules/**'
       - name: 'Rename PluginHeaderToolbarWrapper to PluginHeaderToolbar in CSS/SCSS files'
         js-ast-grep:
-          js_file: 'scripts/codemod-css.ts'
+          js_file: 'scripts/rename-plugin-header-toolbar-css.ts'
           language: 'css'
           include:
             - '**/*.css'

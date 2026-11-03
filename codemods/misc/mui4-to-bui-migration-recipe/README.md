@@ -85,24 +85,24 @@ yarn dlx codemod@latest run @backstage/mui4-to-bui-migration-recipe \
   --target /path/to/backstage-app
 ```
 
-### Local pre-publish dry-runs (`workflow.local.yaml`)
+### Local pre-publish dry-runs (`workflow.yaml`)
 
-Before packages are published, use the sibling-path workflow to exercise unpublished transforms against a local Backstage checkout (commonly `../backstage` from the monorepo root):
+Before packages are published, use the bundled-script workflow to exercise unpublished transforms against a local Backstage checkout (commonly `../backstage` from the monorepo root):
 
 ```bash
 cd codemods/misc/mui4-to-bui-migration-recipe
 
-# Validate registry + local workflows (also: yarn test)
-bash scripts/validate-workflows.sh
+# Validate the workflow and run recipe tests
+yarn test
 
 # Dry-run against a sibling Backstage tree (run from this package directory).
 # Pass the workflow *file* path so the CLI does not rewrite to workflow.yaml.
-yarn exec codemod workflow run -w ./workflow.local.yaml \
+yarn exec codemod workflow run -w ./workflow.yaml \
   -t /absolute/path/to/backstage \
   --dry-run --no-interactive --allow-dirty
 ```
 
-`workflow.local.yaml` is a maintainer-only mirror of the bundled-script workflow. Published consumers use the registry recipe.
+Local dry-runs use the same `workflow.yaml` as the published recipe, like other recipes.
 
 A full dry-run against the Backstage monorepo (pre-merge hardening) completed cleanly: no `Surface` emissions; bare Paper sites emit default-elevation verify TODOs; Button reports `outlined-to-secondary`; Link skips only `packages/core-components` paths and migrates direct MUI `Link` elsewhere.
 
@@ -137,5 +137,5 @@ The following are **not** covered by this recipe (document-only / manual):
 ## Notes
 
 - `workflow.yaml` runs bundled local scripts; standalone transform packages are no longer required.
-- Use `workflow.local.yaml` for pre-publish dry-runs against a local `../backstage` tree.
+- Use `workflow.yaml` for pre-publish dry-runs against a local `../backstage` tree.
 - `yarn test` runs transform fixtures, CSS golden checks, workflow regression tests, and workflow schema validation.

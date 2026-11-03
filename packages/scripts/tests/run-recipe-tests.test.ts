@@ -22,6 +22,8 @@ test('run-recipe-tests discovers suites by convention', () => {
       'tests/gamma/case',
       'tests/delta/case',
       'tests/epsilon',
+      'tests/styles-css/case',
+      'tests/styles-scss/case',
       'tests/zeta/typed-extension',
     ]) {
       mkdirSync(join(fixture, dir), { recursive: true })
@@ -32,6 +34,8 @@ test('run-recipe-tests discovers suites by convention', () => {
       ['alpha.ts', 'export const a = 1;\n'],
       ['beta.ts', 'export const b = 2;\n'],
       ['gamma.ts', 'export const c = 3;\n'],
+      ['styles-css.ts', 'export const styles = true;\n'],
+      ['styles-scss.ts', 'export const styles = true;\n'],
       ['delta.ts', 'export const d = 4;\n'],
       ['lib.js', 'export const lib = true;\n'],
     ] as [string, string][]) {
@@ -41,6 +45,8 @@ test('run-recipe-tests discovers suites by convention', () => {
     file('tests/alpha/case-tsx/input.tsx', 'fixture\n')
     file('tests/beta/case/input.json', '{"fixture":true}\n')
     file('tests/gamma/case/input.yaml', 'fixture: true\n')
+    file('tests/styles-css/case/input.css', '.fixture {}\n')
+    file('tests/styles-scss/case/input.scss', '.fixture {}\n')
     file('tests/delta/case/input.sh', 'fixture\n')
     file('tests/epsilon/assert-fixtures.ts', 'process.exit(0)\n')
     file('tests/zeta/typed-extension/tsconfig.json', '{}\n')
@@ -64,6 +70,10 @@ test('typed unit', () => {})
   yarn exec codemod jssg test -l json scripts/beta.ts tests/beta
 == jssg test: gamma (yaml)
   yarn exec codemod jssg test -l yaml scripts/gamma.ts tests/gamma
+== jssg test: styles-css (css)
+  yarn exec codemod jssg test -l css scripts/styles-css.ts tests/styles-css
+== jssg test: styles-scss (css)
+  yarn exec codemod jssg test -l css scripts/styles-scss.ts tests/styles-scss
 == workflow fixtures: tests/epsilon/assert-fixtures.ts
   node tests/epsilon/assert-fixtures.ts
 == tsc: tests/zeta/typed-extension/tsconfig.json

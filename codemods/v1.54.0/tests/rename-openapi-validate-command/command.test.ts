@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { rewriteCommand } from '../../scripts/rename-openapi-validate-command-command.js'
+import { rewriteCommand } from '../../scripts/rename-openapi-validate-command-command.ts'
 
 test('rewriteCommand retains flags, quotes, environment, operators and line continuations', () => {
   assert.equal(

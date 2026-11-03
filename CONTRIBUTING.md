@@ -82,7 +82,7 @@ Conventions to follow:
 - Version recipe package roots are `codemods/<version>/`; the misc recipe root is `codemods/misc/mui4-to-bui-migration-recipe/`. Tooling discovers these package roots, not standalone codemod directories.
 - The `package.json` `name` must use the `@backstage/` scope. The tagging and publishing scripts assume this scope.
 - The `version` field in `codemod.yaml` is generated from `package.json` by `sync-codemod-versions`. Don't edit it directly.
-- Use single-quoted scalars in `codemod.yaml` and `workflow.yaml` to match the oxfmt convention.
+- Use single quotes for string scalars in `codemod.yaml` and `workflow.yaml`, following oxfmt; ids, type values, and booleans remain bare.
 
 Use `codemods/v1.54.0/` as a reference when adding a script and workflow step.
 
@@ -92,7 +92,7 @@ Each Backstage release publishes a single `migration-recipe` package directly un
 
 ```
 codemods/<version>/
-  scripts/<name>.ts     # One script per codemod step, kept separately runnable
+  scripts/<name>.ts     # Transform entrypoints and supporting scripts
   tests/<name>/         # Fixture suite matching scripts/<name>.ts
   workflow.yaml         # Steps reference the local scripts (js_file: scripts/<name>.ts)
   codemod.yaml / package.json / README.md
@@ -103,10 +103,11 @@ The misc recipe keeps its nested package root at `codemods/misc/mui4-to-bui-migr
 Conventions:
 
 - `package.json` `test` is `run-recipe-tests` (a bin from the private [`@backstage/scripts`](../../packages/scripts) workspace package, declared as a devDependency — no relative paths). The runner discovers suites by convention, so adding a step never changes a test command:
-  - `scripts/<name>.ts` + `tests/<name>/<case>/input.<ext>` fixtures run as `codemod jssg test`; the language is inferred from the fixture extension (`ts`/`tsx` → `tsx`, `json`, `yaml`/`yml`). Fixture roots without JSSG input files (e.g. `.sh` suites) are skipped there and covered by their `node --test` suites.
+  - `scripts/<name>.ts` + `tests/<name>/<case>/input.<ext>` fixtures run as `codemod jssg test`; the language is inferred from the fixture extension (`ts`/`tsx` → `tsx`, `json`, `yaml`/`yml` → `yaml`, `css`/`scss` → `css`); CSS suites use this shared discovery, not local wrapper tests. Fixture roots without JSSG input files (e.g. `.sh` suites) are skipped there and covered by their `node --test` suites.
   - `tests/<name>/assert-fixtures.ts` runs whole-app fixture trees through the recipe workflow (`run-recipe-tests --list` prints the plan without executing).
   - Every `tests/**/tsconfig.json` is type-checked with `tsc`.
   - Every `tests/**/*.test.ts` runs under `node --test`.
   - The workflow itself is structurally validated: every `js-ast-grep` step's `js_file` and every run step's `CODEMOD_SCRIPT` must exist locally, and registry `codemod:` steps are rejected. Recipe-specific concerns (step ordering, parameter bindings) stay in the recipe's own `tests/workflow.test.ts`.
+- Helpers need no same-stem fixture suite: test them through their entrypoints or focused `node --test` suites. Index scripts that populate workflow state may be covered by workflow fixtures rather than standalone JSSG suites.
 - Steps that share workflow state (an indexing step feeding a transform, or a shell step reading state set by another step) must run in the same workflow and in order — keep that coupling when reordering.
 - Repository tooling (gates, generators, release helpers, the recipe runner) lives in [`packages/scripts`](../../packages/scripts) as TypeScript bins with `node:test` regression tests in `tests/`; run them with `yarn test:scripts`. Update them when changing discovery or gate rules.

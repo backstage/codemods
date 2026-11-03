@@ -53,6 +53,6 @@ yarn dlx codemod@latest run @backstage/v1-50-0-migration-recipe   --target /path
 ## Notes
 
 - All transforms run from bundled local scripts; no nested registry packages are resolved.
-- The toolbar rename includes both JS/TS and CSS/SCSS transforms (`scripts/codemod-css.ts`).
+- The toolbar rename includes both JS/TS and CSS/SCSS transforms (`scripts/rename-plugin-header-toolbar-css.ts`).
 - After running, review remaining `TODO(backstage-codemod)` markers.
 - `yarn test` runs fixture suites, CSS regression tests, and workflow validation through `run-recipe-tests`.

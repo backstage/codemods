@@ -9,13 +9,6 @@ import test from 'node:test'
 const root = new URL('../../', import.meta.url)
 const workflow = readFileSync(new URL('workflow.yaml', root), 'utf8')
 
-test('local mirror preserves bundled workflow', () => {
-  assert.equal(
-    readFileSync(new URL('workflow.local.yaml', root), 'utf8').split('\n').slice(1).join('\n'),
-    workflow,
-  )
-})
-
 test('bootstrap precedes transforms and dependency cleanup follows them', () => {
   assert.match(workflow, /id: apply-recipe/)
   const scripts = [...workflow.matchAll(/js_file: '?([^'\n]+)'?/g)].map(match => match[1])

@@ -30,7 +30,7 @@ Once the recipe is published, replace `workflow run -w codemods/v1.54.0/workflow
 
 ## Running a single script
 
-Each script is a standalone JSSG transform. To run one individually, copy the corresponding step from `workflow.yaml` into a minimal workflow that points `js_file` at the script and run it with `codemod workflow run -w <your-workflow.yaml> --target /path/to/backstage-app`. Keep the step's `language`, `include`, and `exclude` values as they appear in the recipe. Note that step 4's two scripts share workflow state (`zod-v4-package:*`), so always run them together and in order; the OpenAPI shell step depends on state (`targetDirEncoded`) set by its package.json step, so run those together too.
+Transform entrypoints can run separately where dependencies permit; supporting helpers are not JSSG entrypoints, and the OpenAPI shell runner is a host-run step. To run a transform individually, copy the corresponding step from `workflow.yaml` into a minimal workflow that points `js_file` at the script and run it with `codemod workflow run -w <your-workflow.yaml> --target /path/to/backstage-app`. Keep the step's `language`, `include`, and `exclude` values as they appear in the recipe. Note that step 4's two scripts share workflow state (`zod-v4-package:*`), so always run them together and in order; the OpenAPI shell step depends on state (`targetDirEncoded`) set by its package.json step, so run those together too.
 
 ## AI behavior and review
 

@@ -1,7 +1,7 @@
 import type { Codemod } from 'codemod:ast-grep'
 import type YAML from 'codemod:ast-grep/langs/yaml'
 
-import { rewriteCommand } from './rename-openapi-validate-command-command.js'
+import { rewriteCommand } from './rename-openapi-validate-command-command.ts'
 
 const transform: Codemod<YAML> = (root) => {
   const document = root.root()

@@ -2,15 +2,21 @@
 // are eligible; substitutions, concatenated words and aliases are deliberately skipped.
 const delimiters = ';|&()<>'
 
-/** @typedef {{value: string, start: number, end: number, raw: string, safe: boolean}} CommandWord */
-/** @typedef {{words: CommandWord[], unsafe: boolean}} CommandSegment */
+interface CommandWord {
+  value: string
+  start: number
+  end: number
+  raw: string
+  safe: boolean
+}
+interface CommandSegment {
+  words: CommandWord[]
+  unsafe: boolean
+}
 
-/** @param {string} source @returns {CommandSegment[]} */
-function wordsInSegment(source) {
-  /** @type {CommandSegment[]} */
-  const segments = []
-  /** @type {CommandWord[]} */
-  let words = []
+function wordsInSegment(source: string): CommandSegment[] {
+  const segments: CommandSegment[] = []
+  let words: CommandWord[] = []
   let unsafe = false
   let parenDepth = 0
   let redirected = false
@@ -105,14 +111,12 @@ function wordsInSegment(source) {
   return segments
 }
 
-/** @param {string} source @returns {string} */
-export function rewriteCommand(source) {
+export function rewriteCommand(source: string): string {
   // Here-documents can contain command-looking prose; leave the whole input unchanged.
   if (/(?:^|\n)[^\n]*<<-?\s*['"]?\w+/.test(source)) {
     return source
   }
-  /** @type {{start: number, end: number, replacement: string}[]} */
-  const edits = []
+  const edits: { start: number; end: number; replacement: string }[] = []
   let shadowedByAlias = false
   for (const { words, unsafe } of wordsInSegment(source)) {
     if (words[0]?.value === 'alias' && words.slice(1).some((word) => word.value.startsWith('backstage-repo-tools='))) {

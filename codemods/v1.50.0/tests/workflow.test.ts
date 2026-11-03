@@ -15,7 +15,7 @@ test('v1.50.0 bundles all transforms in release order', () => {
     'scripts/replace-create-schema-from-zod.ts',
     'scripts/header-tab-to-nav-tab-item.ts',
     'scripts/rename-plugin-header-toolbar.ts',
-    'scripts/codemod-css.ts',
+    'scripts/rename-plugin-header-toolbar-css.ts',
     'scripts/dialog-api-show-to-open.ts',
     'scripts/humanize-entity-ref-to-presentation.ts',
     'scripts/remove-bootstrap-env-proxy.ts',

@@ -8,7 +8,7 @@ test('v1.48.0 runs local transforms in migration order before optional AI fixups
   assert.doesNotMatch(workflow, /^\s+codemod:/m);
   assert.deepEqual([...workflow.matchAll(/js_file: (\S+)/g)].map(match => match[1]), [
     'scripts/rename-bui-css-tokens-v1-48.ts',
-    'scripts/codemod-css.ts',
+    'scripts/rename-bui-css-tokens-v1-48-css.ts',
     'scripts/remove-alert-surface-prop.ts',
     'scripts/migrate-surface-to-bg-system.ts',
     'scripts/migrate-column-config-to-react-element.ts',

@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from
 import { join } from 'node:path'
 
 async function main(): Promise<void> {
-  const { rewriteCommand } = await import('./rename-openapi-validate-command-command.js')
+  const { rewriteCommand } = await import('./rename-openapi-validate-command-command.ts')
   // A URI-encoded state value remains one argument even when the target path contains spaces.
   const argument = process.argv.at(-1)
   const target = argument && decodeURIComponent(argument)
