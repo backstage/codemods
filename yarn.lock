@@ -198,6 +198,7 @@ __metadata:
     "@backstage/frontend-plugin-api": "npm:0.18.1"
     "@backstage/scripts": "workspace:*"
     "@codemod.com/jssg-types": "npm:1.6.3"
+    "@types/node": "npm:^24"
     codemod: "npm:1.18.3"
     typescript: "npm:^7.0.2"
     zod: "npm:^4.1.0"

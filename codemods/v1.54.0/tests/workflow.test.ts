@@ -15,7 +15,7 @@ test('every codemod step runs a local script, not a registry package', () => {
 });
 
 test('shell step references the local openapi shell script', () => {
-  assert.match(workflow, /CODEMOD_SCRIPT: 'scripts\/rename-openapi-validate-command-shell\.mjs'/);
+  assert.match(workflow, /CODEMOD_SCRIPT: 'scripts\/rename-openapi-validate-command-shell\.ts'/);
 });
 
 test('extension config schema step binds default-false aiFixup', () => {

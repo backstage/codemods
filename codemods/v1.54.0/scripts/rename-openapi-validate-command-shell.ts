@@ -1,12 +1,11 @@
-// Node built-ins are untyped in this JSSG-only workspace; host Node executes this step.
-/* oxlint-disable typescript/no-unsafe-assignment, typescript/no-unsafe-call, typescript/no-unsafe-member-access, typescript/no-unsafe-argument */
 import { readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-async function main() {
+async function main(): Promise<void> {
   const { rewriteCommand } = await import('./rename-openapi-validate-command-command.js')
   // A URI-encoded state value remains one argument even when the target path contains spaces.
-  const target = process.argv.at(-1) && decodeURIComponent(process.argv.at(-1))
+  const argument = process.argv.at(-1)
+  const target = argument && decodeURIComponent(argument)
   if (!target) {
     throw new Error('Missing workflow targetDirEncoded')
   }

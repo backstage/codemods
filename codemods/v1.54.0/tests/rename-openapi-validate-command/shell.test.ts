@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { test } from 'node:test'
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
-const shellScript = join(packageRoot, 'scripts', 'rename-openapi-validate-command-shell.mjs')
+const shellScript = join(packageRoot, 'scripts', 'rename-openapi-validate-command-shell.ts')
 
 test('shell-codemod updates .sh under explicit target only, skipping docs and symlinks', () => {
   const temp = mkdtempSync(join(tmpdir(), 'openapi validate '))
@@ -21,7 +21,7 @@ test('shell-codemod updates .sh under explicit target only, skipping docs and sy
   try {
     mkdirSync(dirname(positive), { recursive: true })
     mkdirSync(dirname(docs), { recursive: true })
-    const fixture = (caseName, fileName) => readFileSync(join(packageRoot, 'tests', 'rename-openapi-validate-command-shell', caseName, fileName), 'utf8')
+    const fixture = (caseName: string, fileName: string): string => readFileSync(join(packageRoot, 'tests', 'rename-openapi-validate-command-shell', caseName, fileName), 'utf8')
     writeFileSync(positive, fixture('positive', 'input.sh'))
     writeFileSync(negative, fixture('negative', 'input.sh'))
     writeFileSync(docs, fixture('positive', 'input.sh'))
@@ -35,7 +35,7 @@ test('shell-codemod updates .sh under explicit target only, skipping docs and sy
     try {
       symlinkSync(outside, join(target, 'linked.sh'))
     } catch (error) {
-      if (error.code !== 'EPERM') throw error
+      if ((error as NodeJS.ErrnoException).code !== 'EPERM') throw error
     }
     execFileSync(process.execPath, [shellScript, target])
     assert.equal(readFileSync(hardLinked, 'utf8'), fixture('positive', 'input.sh'))

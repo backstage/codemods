@@ -12,7 +12,7 @@ Users who need only one transform can still run that script individually (see be
 | 2   | `scripts/migrate-connections-query.ts`                                                            | Move built-in URL lookups from `find({ url })` to `find({ query: { url } })`. |
 | 3   | `scripts/rename-root-connection-auth.ts`                                                          | Rename `RootConnectionAuth` to `ConfiguredConnectionAuth`.                    |
 | 4   | `scripts/migrate-extension-config-schema-index.ts` + `scripts/migrate-extension-config-schema.ts` | Migrate extension `config.schema` factories to Standard Schema values.        |
-| 5   | `scripts/rename-openapi-validate-command-*.ts`/`.mjs`/`.js`                                       | Rename `repo schema openapi verify` to `validate`.                            |
+| 5   | `scripts/rename-openapi-validate-command-*.ts`/`.js`                                              | Rename `repo schema openapi verify` to `validate`.                            |
 
 ## Usage
 
@@ -51,7 +51,7 @@ Search the migrated app for residual markers: `rg -F 'TODO(backstage-codemod)' /
 
 - `scripts/<name>.ts` + `tests/<name>/<case>/input.<ext>` fixtures run as JSSG tests (language inferred from the fixture extension).
 - `tests/<name>/assert-fixtures.ts` suites run whole app trees through the recipe workflow (the extension config schema fixtures; the diffs prove the other steps no-op on them) and `typed-extension` is type-checked with `tsc`.
-- `tests/**/*.test.mjs` run under `node --test` (OpenAPI `rewriteCommand` and shell walker unit tests, plus workflow structure checks).
+- `tests/**/*.test.ts` run under `node --test` (OpenAPI `rewriteCommand` and shell walker unit tests, plus workflow structure checks).
 - `codemod workflow validate` checks the workflow schema.
 
 ```bash

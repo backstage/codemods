@@ -165,7 +165,7 @@ for (const tsconfig of collectFiles('tests', (name) => name === 'tsconfig.json')
 }
 
 // --- Node unit tests
-for (const testFile of collectFiles('tests', (name) => name.endsWith('.test.mjs') || name.endsWith('.test.ts'))) {
+for (const testFile of collectFiles('tests', (name) => name.endsWith('.test.ts'))) {
   const path = testFile.replaceAll('\\', '/')
   console.log(`== node --test: ${path}`)
   run('node', ['--test', path])

@@ -10,6 +10,7 @@
     "@backstage/frontend-plugin-api": "0.18.1",
     "@backstage/scripts": "workspace:*",
     "@codemod.com/jssg-types": "1.6.3",
+    "@types/node": "^24",
     "codemod": "1.18.3",
     "typescript": "^7.0.2",
     "zod": "^4.1.0"

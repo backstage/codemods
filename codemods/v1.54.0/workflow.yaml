@@ -101,7 +101,7 @@ nodes:
 
       - name: 'Update shell scripts'
         env:
-          CODEMOD_SCRIPT: 'scripts/rename-openapi-validate-command-shell.mjs'
+          CODEMOD_SCRIPT: 'scripts/rename-openapi-validate-command-shell.ts'
           CODEMOD_URL_MODULE: 'node:url'
         # The -e payload must be quoted: an unquoted parenthesized expression
         # is a syntax error under sh (Linux) even though cmd accepts it.

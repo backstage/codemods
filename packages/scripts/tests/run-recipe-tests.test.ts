@@ -44,7 +44,8 @@ test('run-recipe-tests discovers suites by convention', () => {
     file('tests/delta/case/input.sh', 'fixture\n')
     file('tests/epsilon/assert-fixtures.ts', 'process.exit(0)\n')
     file('tests/zeta/typed-extension/tsconfig.json', '{}\n')
-    file('tests/unit.test.mjs', "import { test } from 'node:test'\ntest('unit', () => {})\n")
+    // Legacy JavaScript suites must not be discovered.
+    file('tests/stray.test.mjs', "import { test } from 'node:test'\ntest('unit', () => {})\n")
 
     file('tests/unit.test.ts', `import { test } from 'node:test'
 test('typed unit', () => {})
@@ -67,8 +68,6 @@ test('typed unit', () => {})
   node tests/epsilon/assert-fixtures.ts
 == tsc: tests/zeta/typed-extension/tsconfig.json
   yarn exec tsc -p tests/zeta/typed-extension/tsconfig.json
-== node --test: tests/unit.test.mjs
-  node --test tests/unit.test.mjs
 == node --test: tests/unit.test.ts
   node --test tests/unit.test.ts
 == codemod workflow validate
@@ -76,6 +75,7 @@ test('typed unit', () => {})
 
     assert.equal(plan.status, 0)
     assert.equal(plan.stdout, expectedPlan)
+    assert.doesNotMatch(plan.stdout, /stray\.test\.mjs/)
 
     // Nothing was executed: --list must not run the discovered suites.
     assert.ok(!existsSync(join(fixture, 'tests/epsilon/ran')))
