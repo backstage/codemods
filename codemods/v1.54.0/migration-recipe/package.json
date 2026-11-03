@@ -1,0 +1,17 @@
+{
+  "name": "@backstage/v1-54-0-migration-recipe",
+  "version": "0.1.0",
+  "description": "Backstage 1.54.0: Migration recipe that runs every Backstage 1.54.0 codemod script in a safe order.",
+  "type": "module",
+  "scripts": {
+    "test": "run-recipe-tests"
+  },
+  "devDependencies": {
+    "@backstage/frontend-plugin-api": "0.18.1",
+    "@backstage/scripts": "workspace:*",
+    "@codemod.com/jssg-types": "1.6.3",
+    "codemod": "1.18.3",
+    "typescript": "^7.0.2",
+    "zod": "^4.1.0"
+  }
+}

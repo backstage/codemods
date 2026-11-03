@@ -32,10 +32,10 @@ yarn test
 
 After `yarn install`, the `prepare` script runs `husky` and sets `core.hooksPath` to `.husky/_`. Hooks fail loudly if `node_modules` is missing (so worktrees cannot silently skip checks).
 
-| Hook           | What runs                                                                                                                                        |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **pre-commit** | `yarn lint-staged` — format + lint staged files; package tests for staged `codemods/**/scripts/*` ([`.lintstagedrc.json`](./.lintstagedrc.json)) |
-| **pre-push**   | `yarn check:changed` → [`scripts/check-changed.sh`](./scripts/check-changed.sh) — the **same** format / lint / package-name / test gates as CI   |
+| Hook           | What runs                                                                                                                                                     |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **pre-commit** | `yarn lint-staged` — format + lint staged files; package tests for staged `codemods/**/scripts/*` ([`.lintstagedrc.json`](./.lintstagedrc.json))              |
+| **pre-push**   | `yarn check:changed` (the `check-changed` bin from [`@backstage/scripts`](./packages/scripts)) — the **same** format / lint / package-name / test gates as CI |
 
 CI (`.github/workflows/ci.yml`) calls that same script, so local and remote gates cannot drift. Run `yarn check:changed` anytime to reproduce CI locally. Codemod PRs do not regenerate or check the root README; leave it unchanged. After codemods land on `main`, run **Sync codemod README** from the Actions tab on `main` to generate a separate reviewable PR. A clean README is a no-op; reruns update the same bot branch/PR without force-pushing. The dispatch runs format, tests, script regressions, and README idempotence checks, but not repository-wide lint: PRs created with `GITHUB_TOKEN` do **not** trigger `pull_request` CI, so review the dispatch result before merging.
 
@@ -90,9 +90,32 @@ The `<group>` is either a Backstage release version (e.g. `v1.52.0`) for migrati
 
 Conventions to follow:
 
-- The two-level glob `codemods/*/*/` is assumed by `scripts/sync-codemod-versions.sh` and `scripts/tag-and-publish.sh`. Don't flatten or deepen this layout.
+- The two-level glob `codemods/*/*/` is assumed by the `sync-codemod-versions` and `tag-and-publish` bins from [`@backstage/scripts`](./packages/scripts). Don't flatten or deepen this layout.
 - The `package.json` `name` must be `@backstage/<codemod-name>`. The tagging and publishing scripts assume this scope.
-- The `version` field in `codemod.yaml` is generated from `package.json` by `scripts/sync-codemod-versions.sh`. Don't edit it directly.
+- The `version` field in `codemod.yaml` is generated from `package.json` by the `sync-codemod-versions` bin. Don't edit it directly.
 - Use single-quoted scalars in `codemod.yaml` and `workflow.yaml` to match the oxfmt convention.
 
 Use an existing codemod like `catalog-node-alpha-to-stable` as a reference when creating a new one.
+
+## Adding a migration recipe
+
+Each Backstage release publishes a single `migration-recipe` package under `codemods/<version>/migration-recipe/` — the recipe is the only published package for its version, and every workflow step runs a local script instead of a nested registry codemod:
+
+```
+codemods/<version>/migration-recipe/
+  scripts/<name>.ts     # One script per codemod step, kept separately runnable
+  tests/<name>/         # Fixture suite matching scripts/<name>.ts
+  workflow.yaml         # Steps reference the local scripts (js_file: scripts/<name>.ts)
+  codemod.yaml / package.json / README.md
+```
+
+Conventions:
+
+- `package.json` `test` is `run-recipe-tests` (a bin from the private [`@backstage/scripts`](../../packages/scripts) workspace package, declared as a devDependency — no relative paths). The runner discovers suites by convention, so adding a step never changes a test command:
+  - `scripts/<name>.ts` + `tests/<name>/<case>/input.<ext>` fixtures run as `codemod jssg test`; the language is inferred from the fixture extension (`ts`/`tsx` → `tsx`, `json`, `yaml`/`yml`). Fixture roots without JSSG input files (e.g. `.sh` suites) are skipped there and covered by their `node --test` suites.
+  - `tests/<name>/assert-fixtures.ts` runs whole-app fixture trees through the recipe workflow (`run-recipe-tests --list` prints the plan without executing).
+  - Every `tests/**/tsconfig.json` is type-checked with `tsc`.
+  - Every `tests/**/*.test.mjs` runs under `node --test`.
+  - The workflow itself is structurally validated: every `js-ast-grep` step's `js_file` and every run step's `CODEMOD_SCRIPT` must exist locally, and registry `codemod:` steps are rejected. Recipe-specific concerns (step ordering, parameter bindings) stay in the recipe's own `tests/workflow.test.mjs`.
+- Steps that share workflow state (an indexing step feeding a transform, or a shell step reading state set by another step) must run in the same workflow and in order — keep that coupling when reordering.
+- Repository tooling (gates, generators, release helpers, the recipe runner) lives in [`packages/scripts`](../../packages/scripts) as TypeScript bins with `node:test` regression tests in `tests/`; run them with `yarn test:scripts`. Update them when changing discovery or gate rules.

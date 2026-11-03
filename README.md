@@ -10,23 +10,27 @@ See the [Codemod docs](https://docs.codemod.com) for more on building and runnin
 
 <!-- CODEMODS_START -->
 
+### v1.55.0
+
+Run the [`migration-recipe`](./codemods/v1.55.0/migration-recipe) to apply every codemod below in one pass, or run any individual codemod on its own.
+
+| Codemod                                                                                                 | Description                                                                                    |
+| ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| [migration-recipe](./codemods/v1.55.0/migration-recipe)                                                 | Migration recipe that runs every @backstage v1.55.0 codemod from the registry in a safe order. |
+| [move-connections-config-imports](./codemods/v1.55.0/move-connections-config-imports)                   | Move Connections configuration imports and re-exports to @backstage/connections/config         |
+| [remove-bui-anchor-render-props](./codemods/v1.55.0/remove-bui-anchor-render-props)                     | Remove obsolete BUI anchor render props                                                        |
+| [remove-ignored-github-repo-create-inputs](./codemods/v1.55.0/remove-ignored-github-repo-create-inputs) | Remove ignored github:repo:create inputs from scaffolder templates                             |
+| [remove-kubernetes-implicit-children](./codemods/v1.55.0/remove-kubernetes-implicit-children)           | Remove unused Kubernetes component children                                                    |
+| [remove-relations-compatibility-config](./codemods/v1.55.0/remove-relations-compatibility-config)       | Remove deprecated catalog.enableRelationsCompatibility config                                  |
+| [rename-connections-public-api](./codemods/v1.55.0/rename-connections-public-api)                       | Rename Connections public symbols                                                              |
+
 ### v1.54.0
 
-| Codemod                                                                       | Description                                           |
-| ----------------------------------------------------------------------------- | ----------------------------------------------------- |
-| [rename-root-connection-auth](./codemods/v1.54.0/rename-root-connection-auth) | Rename RootConnectionAuth to ConfiguredConnectionAuth |
+Run the [`migration-recipe`](./codemods/v1.54.0/migration-recipe) to apply every codemod below in one pass. Individual scripts can still be run on their own; see the recipe's README.
 
-### v1.52.0
-
-Run the [`migration-recipe`](./codemods/v1.52.0/migration-recipe) to apply every codemod below in one pass, or run any individual codemod on its own.
-
-| Codemod                                                                                   | Description                                                                                    |
-| ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| [migrate-bui-props-to-intersection](./codemods/v1.52.0/migrate-bui-props-to-intersection) | Migrate ComboboxProps/SelectProps interface extends to type intersection                       |
-| [migrate-select-combobox-props](./codemods/v1.52.0/migrate-select-combobox-props)         | Migrate deprecated Select/Combobox search props and option value to id                         |
-| [migration-recipe](./codemods/v1.52.0/migration-recipe)                                   | Migration recipe that runs every @backstage v1.52.0 codemod from the registry in a safe order. |
-| [remove-stitching-strategy-mode](./codemods/v1.52.0/remove-stitching-strategy-mode)       | Remove deprecated catalog.stitchingStrategy.mode from app-config                               |
-| [rename-bui-css-tokens-v1-52](./codemods/v1.52.0/rename-bui-css-tokens-v1-52)             | Rename deprecated BUI semantic color tokens                                                    |
+| Codemod                                                 | Description                                                                       |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| [migration-recipe](./codemods/v1.54.0/migration-recipe) | Migration recipe that runs every Backstage 1.54.0 codemod script in a safe order. |
 
 Older versions are available in the [`codemods/`](./codemods) directory.
 
