@@ -38,7 +38,7 @@ function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode
         },
       },
     },
-  }) as SgNode<TSX, 'import_statement'>[]
+  })
 }
 
 function importsFromPermissionNode(rootNode: SgNode<TSX>): boolean {
@@ -348,7 +348,7 @@ function findMemberAccessOnBinding(
         },
       ],
     },
-  }) as SgNode<TSX, 'member_expression'>[]
+  })
 }
 
 function findIdentifierUsages(rootNode: SgNode<TSX>, name: string): SgNode<TSX, 'identifier'>[] {
@@ -357,7 +357,7 @@ function findIdentifierUsages(rootNode: SgNode<TSX>, name: string): SgNode<TSX, 
       kind: 'identifier',
       regex: exactMatchRegex(name),
     },
-  }) as SgNode<TSX, 'identifier'>[]
+  })
 }
 
 function isBindingIdentifier(node: SgNode<TSX>): boolean {
