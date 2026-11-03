@@ -1,5 +1,5 @@
 {
-  "signals-service-renames": [
+  "migrate-signals-service": [
     {
       "cardinality": {
         "from": "SignalService",

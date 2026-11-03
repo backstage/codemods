@@ -13,7 +13,7 @@ function parseTsx(source: string): SgRoot<TSX> {
 const PERMISSION_REACT = '@backstage/plugin-permission-react'
 const REACT_ROUTER_DOM = 'react-router-dom'
 
-const routesMigrated = useMetricAtom('permissioned-routes-migrated')
+const routesMigrated = useMetricAtom('migrate-permissioned-route')
 
 function collapseExtraBlankLines(source: string): string {
   return source.replaceAll(/\n{3,}/g, '\n\n')

@@ -2,7 +2,7 @@ import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
 
-const migrationMetric = useMetricAtom('header-tab-migration')
+const migrationMetric = useMetricAtom('header-tab-to-nav-tab-item')
 
 const OLD_TYPE = 'HeaderTab'
 const NEW_TYPE = 'HeaderNavTabItem'

@@ -26,7 +26,7 @@ const EXTRA_PROP_REMOVALS: Record<string, { pkg: string; props: string[] }> = {
   OwnershipCard: { pkg: '@backstage/plugin-org', props: ['maxScrollHeight'] },
 }
 
-const removedProps = useMetricAtom('catalog-card-variant-prop-removals')
+const removedProps = useMetricAtom('remove-catalog-card-variant-props')
 
 /**
  * Remove a JSX attribute node and the whitespace before it, so that

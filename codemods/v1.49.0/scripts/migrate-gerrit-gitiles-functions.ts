@@ -13,7 +13,7 @@ const RENAME_MAP = {
 type DeprecatedExport = keyof typeof RENAME_MAP
 const DEPRECATED_EXPORTS = Object.keys(RENAME_MAP) as DeprecatedExport[]
 
-const renamedExports = useMetricAtom('gerrit-gitiles-renames')
+const renamedExports = useMetricAtom('migrate-gerrit-gitiles-functions')
 
 const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root()

@@ -2,7 +2,7 @@ import type { Codemod, Edit } from 'codemod:ast-grep'
 import type CSS from 'codemod:ast-grep/langs/css'
 import { useMetricAtom } from 'codemod:metrics'
 
-const migrationMetric = useMetricAtom('bui-header-css-renames')
+const migrationMetric = useMetricAtom('rename-bui-header-css-classes')
 
 /**
  * Longest-match-first rename map for CSS class selectors.

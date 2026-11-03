@@ -1,5 +1,5 @@
 {
-  "nav-item-to-page-migration": [
+  "migrate-nav-item-to-page": [
     {
       "cardinality": {
         "outcome": "todo-unpaired"

@@ -1,5 +1,5 @@
 {
-  "permissioned-routes-migrated": [
+  "migrate-permissioned-route": [
     {
       "cardinality": {
         "pattern": "with-children"

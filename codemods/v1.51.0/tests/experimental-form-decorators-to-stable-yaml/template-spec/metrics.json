@@ -1,5 +1,5 @@
 {
-  "form-decorators-key-renames": [
+  "experimental-form-decorators-to-stable": [
     {
       "cardinality": {},
       "count": 1

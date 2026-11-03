@@ -2,7 +2,7 @@ import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
 
-const migrationMetric = useMetricAtom('humanize-entity-ref-migration')
+const migrationMetric = useMetricAtom('humanize-entity-ref-to-presentation')
 
 type Context = 'jsx' | 'react-component' | 'utility'
 

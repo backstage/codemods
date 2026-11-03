@@ -5,7 +5,7 @@ import { useMetricAtom } from 'codemod:metrics'
 const OLD_KEY = 'EXPERIMENTAL_formDecorators'
 const NEW_KEY = 'formDecorators'
 
-const renames = useMetricAtom('form-decorators-key-renames')
+const renames = useMetricAtom('experimental-form-decorators-to-stable')
 
 function escapeRegex(str: string): string {
   return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')

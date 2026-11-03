@@ -2,7 +2,7 @@ import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
 
-const migrationMetric = useMetricAtom('table-to-use-table-hook')
+const migrationMetric = useMetricAtom('migrate-table-to-use-table-hook')
 
 const BUI_SOURCE = '@backstage/ui'
 const TODO_COMMENT = '/* TODO(backstage-codemod): Review Table migration — verify column config and pagination mode */'

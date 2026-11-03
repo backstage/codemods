@@ -2,7 +2,7 @@ import type { Codemod, Edit } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
 
-const migrationMetric = useMetricAtom('header-main-class-rename')
+const migrationMetric = useMetricAtom('rename-header-main-class')
 
 const OLD_CLASS_NAME = 'bui-Header'
 const NEW_CLASS_NAME = 'bui-HeaderContent'

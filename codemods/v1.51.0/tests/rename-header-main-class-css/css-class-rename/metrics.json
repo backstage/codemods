@@ -1,5 +1,5 @@
 {
-  "header-main-class-rename": [
+  "rename-header-main-class": [
     {
       "cardinality": {
         "action": "renamed",

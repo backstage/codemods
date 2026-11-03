@@ -15,7 +15,7 @@ const RENAME_MAP = {
 type DeprecatedExport = keyof typeof RENAME_MAP
 const DEPRECATED_EXPORTS = Object.keys(RENAME_MAP) as DeprecatedExport[]
 
-const renamedExports = useMetricAtom('signals-service-renames')
+const renamedExports = useMetricAtom('migrate-signals-service')
 
 const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root()

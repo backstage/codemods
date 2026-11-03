@@ -1,5 +1,5 @@
 {
-  "header-tab-migration": [
+  "header-tab-to-nav-tab-item": [
     {
       "cardinality": {
         "action": "import-renamed",

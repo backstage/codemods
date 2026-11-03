@@ -2,7 +2,7 @@ import type { Codemod } from 'codemod:ast-grep'
 import type CSS from 'codemod:ast-grep/langs/css'
 import { useMetricAtom } from 'codemod:metrics'
 
-const migrationMetric = useMetricAtom('rename-bui-css-tokens')
+const migrationMetric = useMetricAtom('rename-bui-css-tokens-v1-48')
 
 /**
  * Token replacements, processed longest-first to avoid partial matches.

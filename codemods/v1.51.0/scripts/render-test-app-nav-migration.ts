@@ -9,8 +9,8 @@ const FRONTEND_TEST_UTILS = '@backstage/frontend-test-utils'
 
 const NAV_ASSERTION_TODO = '// TODO(backstage-codemod): verify nav assertions — renderTestApp uses real app shell'
 
-const callsMigrated = useMetricAtom('render-test-app-calls-migrated')
-const navAssertionsFlagged = useMetricAtom('nav-assertions-flagged')
+const callsMigrated = useMetricAtom('render-test-app-nav-migration')
+const navAssertionsFlagged = useMetricAtom('render-test-app-nav-migration-manual-follow-up')
 
 function parseTsx(source: string): SgRoot<TSX> {
   return parse<TSX>(TSX_LANG, source)

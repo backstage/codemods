@@ -2,7 +2,7 @@ import type { Codemod, Edit } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
 
-const migrationMetric = useMetricAtom('plugin-header-toolbar-rename')
+const migrationMetric = useMetricAtom('rename-plugin-header-toolbar')
 
 const OLD_CLASS_NAME = 'PluginHeaderToolbarWrapper'
 const NEW_CLASS_NAME = 'PluginHeaderToolbar'
