@@ -8,7 +8,7 @@ license: 'Apache-2.0'
 workflow: 'workflow.yaml'
 
 targets:
-  languages: ['tsx', 'ts', 'jsx', 'js']
+  languages: ['tsx', 'ts']
 
 keywords: ['backstage', 'migration', 'recipe', 'workflow', 'upgrade', '1.45.0']
 

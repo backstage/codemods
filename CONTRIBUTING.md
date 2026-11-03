@@ -83,6 +83,7 @@ Conventions to follow:
 - The `package.json` `name` must use the `@backstage/` scope. The tagging and publishing scripts assume this scope.
 - The `version` field in `codemod.yaml` is generated from `package.json` by `sync-codemod-versions`. Don't edit it directly.
 - Use single quotes for string scalars in `codemod.yaml` and `workflow.yaml`, following oxfmt; ids, type values, and booleans remain bare.
+- `codemod.yaml` `targets.languages` lists the union of input languages actually scanned by `workflow.yaml` steps, including file selectors and run-step target files (e.g. `.sh` → `sh`). Do not advertise languages outside those inputs or broaden workflow selectors just to match the manifest.
 
 Use `codemods/v1.54.0/` as a reference when adding a script and workflow step.
 
