@@ -24,18 +24,17 @@ yarn dlx codemod@latest run @backstage/v1-52-0-migration-recipe \
   --target /path/to/backstage-app
 ```
 
-## AI fixup
+## Running a single script
+
+To run one transform, copy its `js-ast-grep` step from `workflow.yaml` into a minimal workflow, preserving `js_file`, `language`, selectors, and any step options. Point `js_file` at the bundled script, then run `codemod workflow run -w <your-workflow.yaml> --target /path/to/backstage-app --dry-run` before applying. Keep related passes in recipe order when selecting more than one step.
+
+## AI behavior and review
 
 None of the four v1.52.0 codemods ship an `aiFixup` parameter. All transforms are fully mechanical (type rewrites, YAML key removal, CSS token renames, JSX prop restructuring).
 
-## Notes
-
-- Each step runs a bundled local script; no nested registry packages are downloaded.
-- Script order preserves the original codemods' behavior, including the CSS selector review and token rename steps.
 - Several scripts insert `TODO(backstage-codemod)` markers where a value needs human review. After the recipe finishes, grep for `TODO(backstage-codemod)` in your repo.
-- `yarn test` runs the fixture suites, CSS regression suites, and local workflow structure validation through `run-recipe-tests`.
 
-## Out of scope
+### Out of scope
 
 The following changes in Backstage 1.52.0 require manual migration and are **not** covered by this recipe:
 
@@ -44,3 +43,14 @@ The following changes in Backstage 1.52.0 require manual migration and are **not
 - **`runCliModule` → `runCli`** — deprecated in `@backstage/cli-node@0.3.3`. API signature change (single module → collection), not a simple rename.
 - **Neutral interaction token removal** — `--bui-bg-neutral-{1..4}-{hover,pressed,disabled}` have no direct replacement. The token rename codemod adds TODO markers; manual restyling required.
 - **Kubernetes standalone page removal** — the default `/kubernetes` page was removed; it was "added by mistake" and is not a code migration.
+
+## Development
+
+- `yarn test` runs the fixture suites, CSS regression suites, and local workflow structure validation through `run-recipe-tests`.
+
+The package-root `tsconfig.json` checks production scripts and excludes `tests/`; repository-wide `yarn lint` includes source type checking.
+
+## Notes
+
+- Each step runs a bundled local script; no nested registry packages are downloaded.
+- Script order preserves the original codemods' behavior, including the CSS selector review and token rename steps.

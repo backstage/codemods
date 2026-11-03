@@ -12,5 +12,5 @@
     "noUncheckedIndexedAccess": true,
     "skipLibCheck": true
   },
-  "exclude": ["tests", "tests-css", "node_modules"]
+  "exclude": ["tests", "node_modules"]
 }

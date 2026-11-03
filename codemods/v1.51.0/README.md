@@ -39,7 +39,11 @@ yarn dlx codemod@latest workflow run \
   --dry-run
 ```
 
-## AI fixup
+## Running a single script
+
+To run one transform, copy its `js-ast-grep` step from `workflow.yaml` into a minimal workflow, preserving `js_file`, `language`, selectors, and any step options. Point `js_file` at the bundled script, then run `codemod workflow run -w <your-workflow.yaml> --target /path/to/backstage-app --dry-run` before applying. Keep related passes in recipe order when selecting more than one step. CSS/SCSS passes are separate steps from source passes; select both where the migration spans both languages.
+
+## AI behavior and review
 
 AI fixups are disabled by default. Enable the six bundled fixup steps after the local AST transforms with:
 
@@ -47,13 +51,9 @@ AI fixups are disabled by default. Enable the six bundled fixup steps after the 
 yarn dlx codemod@latest run @backstage/v1-51-0-migration-recipe   --target /path/to/backstage-app   --param aiFixup=true
 ```
 
-## Notes
-
-- All transforms run bundled local scripts in workflow order; no nested registry packages are downloaded.
 - Several transforms insert `TODO(backstage-codemod)` markers where a value needs human review. Search for these after running the recipe.
-- `yarn test` runs the bundled TypeScript, YAML, and CSS fixture suites plus workflow structure and ordering checks.
 
-## Out of scope
+### Out of scope
 
 These Backstage 1.51.0 changes are not covered by this recipe. Handle them manually when upgrading:
 
@@ -64,3 +64,13 @@ These Backstage 1.51.0 changes are not covered by this recipe. Handle them manua
 - Zod v4-only bump in `@backstage/config`
 - React Aria monopackage migration in `@backstage/ui`
 - `Header.breadcrumbs` deprecation (not removed in 1.51.0)
+
+## Development
+
+- `yarn test` runs the bundled TypeScript, YAML, and CSS fixture suites plus workflow structure and ordering checks.
+
+The package-root `tsconfig.json` checks production scripts and excludes `tests/`; repository-wide `yarn lint` includes source type checking.
+
+## Notes
+
+- All transforms run bundled local scripts in workflow order; no nested registry packages are downloaded.

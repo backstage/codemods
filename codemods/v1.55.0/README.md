@@ -28,22 +28,17 @@ yarn dlx codemod@latest run @backstage/v1-55-0-migration-recipe \
   --target /path/to/backstage-app
 ```
 
-## AI fixup
+## Running a single script
+
+To run one transform, copy its `js-ast-grep` step from `workflow.yaml` into a minimal workflow, preserving `js_file`, `language`, selectors, and any step options. Point `js_file` at the bundled script, then run `codemod workflow run -w <your-workflow.yaml> --target /path/to/backstage-app --dry-run` before applying. Keep related passes in recipe order when selecting more than one step.
+
+## AI behavior and review
 
 None. The six v1.55.0 codemods are deterministic import/config/JSX/YAML transforms and do not expose an `aiFixup` parameter.
 
-## Relationship to previous release recipes
-
-- This recipe only orchestrates Backstage 1.55.0 codemods. Run earlier release recipes first when upgrading from older versions (for example [`scripts/v1-52-0-migration-recipe.ts`](scripts/v1-52-0-migration-recipe.ts)).
-- `catalog.stitchingStrategy.mode` migration is already handled by `@backstage/remove-stitching-strategy-mode` in the v1.52.0 recipe. This v1.55.0 recipe intentionally does not rerun that change.
-
-## Notes
-
-- Each step is a `js-ast-grep` workflow action using a bundled local script; no separate registry packages are required.
 - Several child codemods mark unresolved intent with `TODO(backstage-codemod)` comments. After running the recipe, grep for `TODO(backstage-codemod)` and resolve each marker manually.
-- `yarn test` runs fixture suites, script type checks, Node regression suites, and workflow validation via `run-recipe-tests`.
 
-## Manual-only migration work (out of scope)
+### Manual-only migration work (out of scope)
 
 The following Backstage 1.55.0 changes require manual migration decisions and are not covered by this recipe:
 
@@ -55,3 +50,18 @@ The following Backstage 1.55.0 changes require manual migration decisions and ar
 - GitHub username sign-in resolver deprecation: migrating to user ID resolver requires catalog annotation/data alignment.
 - Connections removed members (`matchAuth`, `validate`, `ConnectionAuthMethodKey`) with no mechanical equivalent.
 - Custom BUI renderers and effectful Kubernetes children intentionally left for manual review by `@backstage/remove-bui-anchor-render-props` and `@backstage/remove-kubernetes-implicit-children`.
+
+## Development
+
+- `yarn test` runs fixture suites, script type checks, Node regression suites, and workflow validation via `run-recipe-tests`.
+
+The package-root `tsconfig.json` checks production scripts and excludes `tests/`; repository-wide `yarn lint` includes source type checking. The `tests/**/tsconfig.json` files also check scripts, not fixture input/output trees.
+
+## Notes
+
+### Relationship to previous release recipes
+
+- This recipe only orchestrates Backstage 1.55.0 codemods. Run earlier release recipes first when upgrading from older versions (for example [`scripts/v1-52-0-migration-recipe.ts`](scripts/v1-52-0-migration-recipe.ts)).
+- `catalog.stitchingStrategy.mode` migration is already handled by `@backstage/remove-stitching-strategy-mode` in the v1.52.0 recipe. This v1.55.0 recipe intentionally does not rerun that change.
+
+- Each step is a `js-ast-grep` workflow action using a bundled local script; no separate registry packages are required.

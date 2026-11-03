@@ -4,15 +4,15 @@ Run every deterministic MUI 4 → BUI transform from bundled local scripts in a 
 
 This recipe is **not** tied to a single Backstage release. It is the orchestration package for the ongoing MUI 4 to BUI migration work in app and plugin repositories.
 
-## Recommended order
+## What it runs
+
+### Recommended order
 
 1. **Bootstrap first** — `migrate-mui-bootstrap-to-bui` adds `@backstage/ui` / `@remixicon/react` dependencies and the global BUI stylesheet.
 2. **Transforms** — icons, styles, core components, complex components, form controls, then layout, in the stable sequence below.
 3. **Cleanup last** — `remove-mui-dependencies` drops unused `@material-ui/*` packages from `package.json` only after source files no longer import them.
 
 Do **not** run `remove-mui-dependencies` before the component transforms finish, or packages that still have MUI imports may be removed incorrectly.
-
-## What it runs
 
 | #   | Package                                                                                         | Domain                    | Covers                                                                                                      |
 | --- | ----------------------------------------------------------------------------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -60,7 +60,7 @@ BUI controls default to `size="small"` while MUI defaults to medium. These packa
 - Select (Select prop first; else FormControl `size`)
 - Combobox / SearchAutocomplete (Autocomplete prop first; else `renderInput` TextField `size`)
 
-## Package naming
+### Package naming
 
 Most transforms use `migrate-mui-<source>-to-bui-<target>`. A few intentionally omit `-bui-` in the target segment when the BUI export name is the product surface (not a “BUI-prefixed” alias):
 
@@ -106,13 +106,17 @@ Local dry-runs use the same `workflow.yaml` as the published recipe, like other 
 
 A full dry-run against the Backstage monorepo (pre-merge hardening) completed cleanly: no `Surface` emissions; bare Paper sites emit default-elevation verify TODOs; Button reports `outlined-to-secondary`; Link skips only `packages/core-components` paths and migrates direct MUI `Link` elsewhere.
 
-## Recipe behavior
+## Running a single script
+
+To run one transform, copy its `js-ast-grep` step from `workflow.yaml` into a minimal workflow, preserving `js_file`, `language`, selectors, and any step options. Point `js_file` at the bundled script, then run `codemod workflow run -w <your-workflow.yaml> --target /path/to/backstage-app --dry-run` before applying. Keep related passes in recipe order when selecting more than one step. Bootstrap must precede component transforms; dependency cleanup must remain last.
+
+## AI behavior and review
 
 - Every step runs at **default deterministic settings**.
 - The recipe ships **no** `aiFixup` parameter.
 - Ambiguous cases are marked with `TODO(backstage-codemod)` in the transformed source rather than embedded AI workflow nodes.
 
-## Manual follow-up
+### Manual follow-up
 
 After the recipe finishes:
 
@@ -123,7 +127,7 @@ After the recipe finishes:
 3. Re-run typecheck / tests for the packages you migrated.
 4. Spot-check visual polish (spacing, dark mode, token usage) — the recipe does not aim for perfect theme parity.
 
-## Out of scope
+### Out of scope
 
 The following are **not** covered by this recipe (document-only / manual):
 
@@ -134,8 +138,13 @@ The following are **not** covered by this recipe (document-only / manual):
 - Perfect theme parity, dark-mode polish, and final design-token tuning after the source-level migration
 - Custom wrapper abstractions that hide MUI components behind project-specific APIs
 
+## Development
+
+- `yarn test` runs transform fixtures, CSS golden checks, workflow regression tests, and workflow schema validation.
+
+The package-root `tsconfig.json` checks production scripts and excludes `tests/`; repository-wide `yarn lint` includes source type checking.
+
 ## Notes
 
 - `workflow.yaml` runs bundled local scripts; standalone transform packages are no longer required.
 - Use `workflow.yaml` for pre-publish dry-runs against a local `../backstage` tree.
-- `yarn test` runs transform fixtures, CSS golden checks, workflow regression tests, and workflow schema validation.

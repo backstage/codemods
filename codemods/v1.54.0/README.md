@@ -38,7 +38,7 @@ The recipe defaults `aiFixup` to `false`; the default run is AST-only. The optio
 
 Search the migrated app for residual markers: `rg -F 'TODO(backstage-codemod)' /path/to/backstage-app`. Resolve each with context; the recipe does not guarantee every migration is mechanical.
 
-## Manual-only changes
+### Manual-only changes
 
 - OAuth redirect URI and CIMD allowlist matching is component-wise and strict: inspect URL patterns and security intent, especially wildcard ports and paths.
 - Custom Connections service implementations and portable-schema parsing need case-by-case review. Removed `RootConnection` / `AnyRootConnection` and custom AWS CodeCommit unauthenticated options have no safe generic replacement.
@@ -58,3 +58,9 @@ Search the migrated app for residual markers: `rg -F 'TODO(backstage-codemod)' /
 yarn install
 yarn test
 ```
+
+The package-root `tsconfig.json` checks production scripts and excludes `tests/`; repository-wide `yarn lint` includes source type checking.
+
+## Notes
+
+Source-scanning AST steps exclude `node_modules`, `dist`, `build`, and `coverage`; preserve these exclusions in custom workflows.
