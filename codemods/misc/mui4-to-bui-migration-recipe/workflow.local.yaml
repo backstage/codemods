@@ -1,129 +1,320 @@
+# Local mirror for maintainer dry-runs; all steps use bundled scripts.
 # yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
-#
-# Local-path mirror of workflow.yaml for pre-publish dry-runs against a sibling
-# Backstage checkout (e.g. ../backstage). Not published — registry consumers use
-# workflow.yaml with @backstage/* sources.
-#
-# Usage (from this package directory):
-#   yarn exec codemod workflow run -w workflow.local.yaml \
-#     -t /absolute/path/to/backstage \
-#     --dry-run --no-interactive --allow-dirty
-# Sibling checkout from repo root is typically ../../backstage (or ../../../backstage from a git worktree).
 
 version: '1'
 
 nodes:
   - id: apply-recipe
-    name: 'Run every MUI 4 to BUI codemod in order (local packages)'
+    name: 'Run every MUI 4 to BUI codemod in order'
     type: automatic
     steps:
       # --- Phase 1: bootstrap / package setup (run first)
       - name: 'Bootstrap BUI dependencies and root CSS'
-        codemod:
-          source: '../migrate-mui-bootstrap-to-bui'
+        js-ast-grep:
+          js_file: 'scripts/migrate-mui-bootstrap-to-bui-package-json-codemod.ts'
+          language: 'json'
+          include:
+            - '**/package.json'
+          exclude:
+            - '**/node_modules/**'
+      - name: 'Bootstrap app dependencies and root CSS'
+        js-ast-grep:
+          js_file: 'scripts/migrate-mui-bootstrap-to-bui.ts'
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
 
       # --- Phase 2: icon source + styling architecture
       - name: 'Replace MUI icons with Remix icons'
-        codemod:
-          source: '../migrate-mui-icons-to-remix-icons'
+        js-ast-grep:
+          js_file: 'scripts/migrate-mui-icons-to-remix-icons.ts'
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
 
       - name: 'Migrate makeStyles usage to BUI CSS modules'
-        codemod:
-          source: '../migrate-mui-styles-to-bui-css-modules'
+        js-ast-grep:
+          js_file: 'scripts/migrate-mui-styles-to-bui-css-modules.ts'
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
 
       # --- Phase 3: core components
       - name: 'Migrate Typography to Text'
-        codemod:
-          source: '../migrate-mui-typography-to-text'
+        js-ast-grep:
+          js_file: 'scripts/migrate-mui-typography-to-text.ts'
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
 
       - name: 'Migrate Alert to BUI Alert'
-        codemod:
-          source: '../migrate-mui-alert-to-bui-alert'
+        js-ast-grep:
+          js_file: 'scripts/migrate-mui-alert-to-bui-alert.ts'
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
 
       - name: 'Migrate Avatar to BUI Avatar'
-        codemod:
-          source: '../migrate-mui-avatar-to-bui-avatar'
+        js-ast-grep:
+          js_file: 'scripts/migrate-mui-avatar-to-bui-avatar.ts'
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
 
       - name: 'Migrate Skeleton to BUI Skeleton'
-        codemod:
-          source: '../migrate-mui-skeleton-to-bui-skeleton'
+        js-ast-grep:
+          js_file: 'scripts/migrate-mui-skeleton-to-bui-skeleton.ts'
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
 
       - name: 'Migrate Button to BUI Button'
-        codemod:
-          source: '../migrate-mui-button-to-bui-button'
+        js-ast-grep:
+          js_file: 'scripts/migrate-mui-button-to-bui-button.ts'
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
 
       - name: 'Migrate IconButton to ButtonIcon'
-        codemod:
-          source: '../migrate-mui-icon-button-to-button-icon'
+        js-ast-grep:
+          js_file: 'scripts/migrate-mui-icon-button-to-button-icon.ts'
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
 
       - name: 'Migrate Link to BUI Link'
-        codemod:
-          source: '../migrate-mui-link-to-bui-link'
+        js-ast-grep:
+          js_file: 'scripts/migrate-mui-link-to-bui-link.ts'
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
 
       - name: 'Migrate Tooltip to BUI Tooltip'
-        codemod:
-          source: '../migrate-mui-tooltip-to-bui-tooltip'
+        js-ast-grep:
+          js_file: 'scripts/migrate-mui-tooltip-to-bui-tooltip.ts'
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
 
       # --- Phase 4: complex components
       - name: 'Migrate Dialog to BUI Dialog'
-        codemod:
-          source: '../migrate-mui-dialog-to-bui-dialog'
+        js-ast-grep:
+          js_file: 'scripts/migrate-mui-dialog-to-bui-dialog.ts'
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
 
       - name: 'Migrate Tabs to BUI Tabs'
-        codemod:
-          source: '../migrate-mui-tabs-to-bui-tabs'
+        js-ast-grep:
+          js_file: 'scripts/migrate-mui-tabs-to-bui-tabs.ts'
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
 
       - name: 'Migrate Menu or Popover to BUI Menu/Popover'
-        codemod:
-          source: '../migrate-mui-menu-popover-to-bui-menu'
+        js-ast-grep:
+          js_file: 'scripts/migrate-mui-menu-popover-to-bui-menu.ts'
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
 
       - name: 'Migrate List family to BUI List'
-        codemod:
-          source: '../migrate-mui-list-family-to-bui-list'
+        js-ast-grep:
+          js_file: 'scripts/migrate-mui-list-family-to-bui-list.ts'
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
 
       - name: 'Migrate Chip to Tag'
-        codemod:
-          source: '../migrate-mui-chip-to-tag'
+        js-ast-grep:
+          js_file: 'scripts/migrate-mui-chip-to-tag.ts'
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
 
       - name: 'Migrate Card family to BUI Card'
-        codemod:
-          source: '../migrate-mui-card-to-bui-card'
+        js-ast-grep:
+          js_file: 'scripts/migrate-mui-card-to-bui-card.ts'
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
 
       # --- Phase 5: form controls
       - name: 'Migrate Select family to BUI Select'
-        codemod:
-          source: '../migrate-mui-select-family-to-bui-select'
+        js-ast-grep:
+          js_file: 'scripts/migrate-mui-select-family-to-bui-select.ts'
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
 
       - name: 'Migrate TextField to BUI TextField'
-        codemod:
-          source: '../migrate-mui-textfield-to-bui-textfield'
+        js-ast-grep:
+          js_file: 'scripts/migrate-mui-textfield-to-bui-textfield.ts'
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
 
       - name: 'Migrate Autocomplete to BUI Combobox'
-        codemod:
-          source: '../migrate-mui-autocomplete-to-combobox'
+        js-ast-grep:
+          js_file: 'scripts/migrate-mui-autocomplete-to-combobox.ts'
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
 
       - name: 'Migrate Accordion to BUI Accordion'
-        codemod:
-          source: '../migrate-mui-accordion-to-bui-accordion'
+        js-ast-grep:
+          js_file: 'scripts/migrate-mui-accordion-to-bui-accordion.ts'
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
 
       - name: 'Migrate radio/checkbox groups to BUI groups'
-        codemod:
-          source: '../migrate-mui-radio-checkbox-to-bui'
+        js-ast-grep:
+          js_file: 'scripts/migrate-mui-radio-checkbox-to-bui.ts'
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
 
       - name: 'Migrate Switch to BUI Switch'
-        codemod:
-          source: '../migrate-mui-switch-to-bui-switch'
+        js-ast-grep:
+          js_file: 'scripts/migrate-mui-switch-to-bui-switch.ts'
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
 
       - name: 'Migrate Slider to BUI Slider'
-        codemod:
-          source: '../migrate-mui-slider-to-bui-slider'
+        js-ast-grep:
+          js_file: 'scripts/migrate-mui-slider-to-bui-slider.ts'
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
 
       # --- Phase 6: layout primitives (after components so wrappers settle first)
       - name: 'Convert MUI layout primitives to BUI layout'
-        codemod:
-          source: '../migrate-mui-layout-to-bui-layout'
+        js-ast-grep:
+          js_file: 'scripts/migrate-mui-layout-to-bui-layout.ts'
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
 
       # --- Phase 7: cleanup (run last)
       - name: 'Remove unused @material-ui/* dependencies'
-        codemod:
-          source: '../remove-mui-dependencies'
+        js-ast-grep:
+          js_file: 'scripts/remove-mui-dependencies.ts'
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/src/**/*.ts'
+            - '**/src/**/*.tsx'
+            - '**/dev/**/*.ts'
+            - '**/dev/**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+      - name: 'Remove @material-ui/* packages when no longer imported in the package'
+        js-ast-grep:
+          js_file: 'scripts/remove-mui-dependencies-package-json-codemod.ts'
+          language: 'json'
+          include:
+            - '**/package.json'
+          exclude:
+            - '**/node_modules/**'
