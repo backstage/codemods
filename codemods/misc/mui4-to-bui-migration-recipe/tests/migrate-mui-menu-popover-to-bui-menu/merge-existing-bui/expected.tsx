@@ -1,5 +1,3 @@
-
-
 import { Button, Menu, MenuItem, MenuTrigger } from '@backstage/ui';
 
 const MyComponent = () => (

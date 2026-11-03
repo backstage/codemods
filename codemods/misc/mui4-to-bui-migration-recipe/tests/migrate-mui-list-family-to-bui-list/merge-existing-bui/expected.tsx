@@ -1,6 +1,3 @@
-
-
-
 import { Button, List, ListRow } from '@backstage/ui';
 
 const MyComponent = () => (

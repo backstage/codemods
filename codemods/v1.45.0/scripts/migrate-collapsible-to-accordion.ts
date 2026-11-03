@@ -1,3 +1,5 @@
+import { getAllImports } from '@jssg/utils/javascript/imports'
+import { getLineIndent } from '@jssg/utils/javascript/style'
 import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
@@ -15,43 +17,6 @@ const COMPONENT_MAP: Record<string, string> = {
 
 function escapeRegex(str: string): string {
   return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
-function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode<TSX, 'import_statement'>[] {
-  return rootNode.findAll({
-    rule: {
-      kind: 'import_statement',
-      has: {
-        kind: 'string',
-        has: {
-          kind: 'string_fragment',
-          regex: `^${escapeRegex(source)}$`,
-        },
-      },
-    },
-  })
-}
-
-function findCollapsibleImport(importStatements: SgNode<TSX, 'import_statement'>[]): string | null {
-  for (const imp of importStatements) {
-    for (const spec of imp.findAll({ rule: { kind: 'import_specifier' } })) {
-      const identifiers = spec.findAll({
-        rule: {
-          any: [{ kind: 'identifier' }, { kind: 'type_identifier' }],
-        },
-      })
-
-      const [importedNameNode] = identifiers
-      if (!importedNameNode || importedNameNode.text() !== TARGET_IMPORT) {
-        continue
-      }
-
-      const localNameNode = identifiers[1] ?? importedNameNode
-      return localNameNode.text()
-    }
-  }
-
-  return null
 }
 
 function getOpeningElement(el: SgNode<TSX>): SgNode<TSX> | null {
@@ -194,22 +159,6 @@ function extractSimpleRenderContent(opening: SgNode<TSX>): string | null {
   return null
 }
 
-function addImportEdit(importStatements: SgNode<TSX, 'import_statement'>[], edits: Edit[]): void {
-  for (const imp of importStatements) {
-    for (const spec of imp.findAll({ rule: { kind: 'import_specifier' } })) {
-      const identifiers = spec.findAll({
-        rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
-      })
-      const [importedNameNode] = identifiers
-      if (importedNameNode?.text() === TARGET_IMPORT) {
-        edits.push(spec.replace('Accordion, AccordionTrigger, AccordionPanel'))
-        migrationMetric.increment({ action: 'import-replaced' })
-        return
-      }
-    }
-  }
-}
-
 function transformCollapsibleElements(
   rootNode: SgNode<TSX>,
   fullSource: string,
@@ -298,7 +247,7 @@ function handleTriggerMigration(
     // Complex render pattern — rename but add TODO comment
     // Since the render prop is complex, just rename the component and keep the render prop
     // with a TODO comment
-    const indent = computeIndent(fullSource, el.range().start.index)
+    const indent = getLineIndent(fullSource, el)
     let newText = el.text()
     const oldMemberExpr = `${localName}.Trigger`
     newText = newText.split(oldMemberExpr).join(newName)
@@ -308,24 +257,14 @@ function handleTriggerMigration(
   }
 }
 
-function computeIndent(fullSource: string, startIndex: number): string {
-  let lineStart = startIndex
-  while (lineStart > 0 && fullSource.charAt(lineStart - 1) !== '\n') {
-    lineStart--
-  }
-  return fullSource.slice(lineStart, startIndex)
-}
-
 const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root()
   const fullSource = rootNode.text()
 
-  const uiImports = findImportStatementsFrom(rootNode, UI_SOURCE)
-  if (uiImports.length === 0) {
-    return null
-  }
-
-  const localName = findCollapsibleImport(uiImports)
+  const namedImport = getAllImports(rootNode, { type: 'named', name: TARGET_IMPORT, from: UI_SOURCE }).find(
+    (imp) => !imp.isNamespace,
+  )
+  const localName = namedImport?.alias ?? null
   if (!localName) {
     return null
   }
@@ -333,8 +272,16 @@ const transform: Codemod<TSX> = async (root) => {
   const edits: Edit[] = []
   transformCollapsibleElements(rootNode, fullSource, localName, edits)
 
-  // Add import edit atomically with JSX edits to avoid stale AST positions
-  addImportEdit(uiImports, edits)
+  // Add import edit atomically with JSX edits to avoid stale AST positions.
+  // addImport/removeImport cannot express "expand one specifier into three": on the
+  // stale tree a sole `Collapsible` specifier makes removeImport delete the whole
+  // statement, overlapping addImport's clause-merge edit. Replace the specifier
+  // in place instead, locating it through getAllImports.
+  const collapsibleSpec = namedImport?.node.parent()
+  if (collapsibleSpec?.is('import_specifier')) {
+    edits.push(collapsibleSpec.replace('Accordion, AccordionTrigger, AccordionPanel'))
+    migrationMetric.increment({ action: 'import-replaced' })
+  }
 
   const result = await Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)
   return result

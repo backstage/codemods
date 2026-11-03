@@ -1,4 +1,3 @@
-
 import { Grid } from '@backstage/ui';
 
 const MyComponent = () => (

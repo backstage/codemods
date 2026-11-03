@@ -1,6 +1,5 @@
 import { SearchAutocomplete } from '@backstage/ui';
 
-
 const SearchBox = ({
   query,
   setQuery,

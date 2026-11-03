@@ -1,6 +1,4 @@
-
 import CardHeader from '@material-ui/core/CardHeader';
-
 import Avatar from '@material-ui/core/Avatar';
 import { Card, CardBody } from '@backstage/ui';
 

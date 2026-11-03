@@ -360,7 +360,7 @@ const transform: Codemod<TSX> = async (root) => {
       from: FRONTEND_TEST_UTILS,
     })
     if (removeRenderInTestAppEdit) {
-      callEdits.push(removeRenderInTestAppEdit)
+      callEdits.push(...removeRenderInTestAppEdit)
     }
   }
 

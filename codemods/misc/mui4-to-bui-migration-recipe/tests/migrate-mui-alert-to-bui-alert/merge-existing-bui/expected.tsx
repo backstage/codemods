@@ -1,5 +1,4 @@
-
-import { Alert, Button } from '@backstage/ui';
+import { Button, Alert } from '@backstage/ui';
 
 const MyComponent = () => (
   <>

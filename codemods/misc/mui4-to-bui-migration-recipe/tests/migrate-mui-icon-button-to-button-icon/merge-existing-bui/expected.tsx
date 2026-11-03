@@ -1,4 +1,3 @@
-
 import { Button, ButtonIcon } from '@backstage/ui';
 
 const MyComponent = () => (

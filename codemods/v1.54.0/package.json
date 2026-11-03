@@ -6,13 +6,14 @@
   "scripts": {
     "test": "run-recipe-tests"
   },
+  "dependencies": {
+    "@jssg/utils": "patch:@jssg/utils@npm%3A0.0.11#~/.yarn/patches/@jssg-utils-npm-0.0.11-19369c37c8.patch"
+  },
   "devDependencies": {
-    "@backstage/frontend-plugin-api": "0.18.1",
+    "@backstage/frontend-plugin-api": "^0.18.2",
     "@backstage/scripts": "workspace:*",
     "@codemod.com/jssg-types": "1.6.3",
-    "@types/node": "^24",
     "codemod": "1.18.3",
-    "typescript": "^7.0.2",
-    "zod": "^4.1.0"
+    "zod": "^4.6.7"
   }
 }

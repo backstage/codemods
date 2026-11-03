@@ -1,3 +1,4 @@
+import { addImport, getAllImports, getImport, listImports, removeImport } from '@jssg/utils/javascript/imports'
 import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
@@ -57,183 +58,45 @@ function escapeRegex(str: string): string {
   return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode<TSX>[] {
-  return rootNode.findAll({
-    rule: {
-      kind: 'import_statement',
-      has: {
-        kind: 'string',
-        has: {
-          kind: 'string_fragment',
-          regex: `^${escapeRegex(source)}$`,
-        },
-      },
-    },
-  })
-}
-
-function getDefaultImportName(imp: SgNode<TSX>): string | null {
-  const clause = imp.find({ rule: { kind: 'import_clause' } })
-  if (!clause) {
-    return null
-  }
-  for (const child of clause.children()) {
-    if (child.is('identifier')) {
-      return child.text()
-    }
-  }
-  return null
-}
-
-function getNamedImportLocalName(imp: SgNode<TSX>, targetName: string): string | null {
-  for (const spec of imp.findAll({ rule: { kind: 'import_specifier' } })) {
-    const identifiers = spec.findAll({
-      rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
-    })
-    const [importedNameNode] = identifiers
-    if (importedNameNode?.text() === targetName) {
-      const localNameNode = identifiers[1] ?? importedNameNode
-      return localNameNode.text()
-    }
-  }
-  return null
-}
-
-function getImportedName(spec: SgNode<TSX>): string | null {
-  const identifiers = spec.findAll({
-    rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
-  })
-  return identifiers[0]?.text() ?? null
-}
-
 interface ImportCollectionResult {
   localNames: Map<string, string>
-  importNodesToRemove: SgNode<TSX>[]
-  importSpecifiersToRemove: Map<SgNode<TSX>, string[]>
+  defaultSources: string[]
+  barrelNames: string[]
 }
 
-function collectTypographyImports(rootNode: SgNode<TSX>): ImportCollectionResult {
+function collectTypographyImports(rootNode: SgNode<TSX, 'program'>): ImportCollectionResult {
   const localNames = new Map<string, string>()
-  const importNodesToRemove: SgNode<TSX>[] = []
-  const importSpecifiersToRemove = new Map<SgNode<TSX>, string[]>()
+  const defaultSources: string[] = []
+  const barrelNames: string[] = []
 
   // Default import: import Typography from '@material-ui/core/Typography'
-  for (const imp of findImportStatementsFrom(rootNode, '@material-ui/core/Typography')) {
-    const name = getDefaultImportName(imp)
-    if (name) {
-      localNames.set(name, 'Typography')
-    }
-    importNodesToRemove.push(imp)
+  const typographyDefault = getImport(rootNode, { type: 'default', from: '@material-ui/core/Typography' })
+  if (typographyDefault) {
+    localNames.set(typographyDefault.alias, 'Typography')
+    defaultSources.push('@material-ui/core/Typography')
   }
 
   // Default import: import DialogContentText from '@material-ui/core/DialogContentText'
-  for (const imp of findImportStatementsFrom(rootNode, '@material-ui/core/DialogContentText')) {
-    const name = getDefaultImportName(imp)
-    if (name) {
-      localNames.set(name, 'DialogContentText')
-    }
-    importNodesToRemove.push(imp)
+  const dialogContentTextDefault = getImport(rootNode, {
+    type: 'default',
+    from: '@material-ui/core/DialogContentText',
+  })
+  if (dialogContentTextDefault) {
+    localNames.set(dialogContentTextDefault.alias, 'DialogContentText')
+    defaultSources.push('@material-ui/core/DialogContentText')
   }
 
   // Named imports from barrel: import { Typography, DialogContentText } from '@material-ui/core'
-  for (const imp of findImportStatementsFrom(rootNode, '@material-ui/core')) {
-    let foundCount = 0
-
-    for (const componentName of TARGET_COMPONENTS) {
-      const localName = getNamedImportLocalName(imp, componentName)
-      if (localName) {
-        localNames.set(localName, componentName)
-        foundCount++
-      }
-    }
-
-    if (foundCount > 0) {
-      const allSpecifiers = imp.findAll({ rule: { kind: 'import_specifier' } })
-      if (foundCount >= allSpecifiers.length) {
-        importNodesToRemove.push(imp)
-      } else {
-        const toRemove: string[] = []
-        for (const componentName of TARGET_COMPONENTS) {
-          if (getNamedImportLocalName(imp, componentName)) {
-            toRemove.push(componentName)
-          }
-        }
-        importSpecifiersToRemove.set(imp, toRemove)
+  for (const componentName of TARGET_COMPONENTS) {
+    for (const named of getAllImports(rootNode, { type: 'named', name: componentName, from: '@material-ui/core' })) {
+      localNames.set(named.alias, componentName)
+      if (!barrelNames.includes(componentName)) {
+        barrelNames.push(componentName)
       }
     }
   }
 
-  return { localNames, importNodesToRemove, importSpecifiersToRemove }
-}
-
-function pruneBarrelImportSpecifiers(
-  imp: SgNode<TSX>,
-  namesToRemove: string[],
-  edits: Edit[],
-  appendTextImport = false,
-): void {
-  const remainingSpecs = imp.findAll({ rule: { kind: 'import_specifier' } }).filter((spec) => {
-    const importedName = getImportedName(spec)
-    return importedName !== null && !namesToRemove.includes(importedName)
-  })
-
-  if (remainingSpecs.length === 0) {
-    edits.push(imp.replace(''))
-  } else {
-    const specTexts = remainingSpecs.map((spec) => spec.text()).join(', ')
-    let replacement = `import { ${specTexts} } from '@material-ui/core';`
-    if (appendTextImport) {
-      replacement += `\nimport { Text } from '${BUI_SOURCE}';`
-      migrationMetric.increment({ action: 'import-added' })
-    }
-    edits.push(imp.replace(replacement))
-  }
-  migrationMetric.increment({ action: 'import-removed' })
-}
-
-function addTextToBuiImport(rootNode: SgNode<TSX>, importNodesToRemove: SgNode<TSX>[], edits: Edit[]): void {
-  const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
-  const existingImport = existingImports[0] ?? null
-
-  if (existingImport) {
-    const specifiers = existingImport.findAll({ rule: { kind: 'import_specifier' } })
-    const hasText = specifiers.some((spec) => getImportedName(spec) === 'Text')
-    if (!hasText) {
-      const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
-      if (namedImports) {
-        const names = specifiers.map((spec) => spec.text())
-        names.push('Text')
-        names.sort()
-        edits.push(namedImports.replace(`{ ${names.join(', ')} }`))
-        migrationMetric.increment({ action: 'import-merged' })
-      } else {
-        edits.push(existingImport.replace(`${existingImport.text()}\nimport { Text } from '${BUI_SOURCE}';`))
-        migrationMetric.increment({ action: 'import-added' })
-      }
-    }
-    return
-  }
-
-  const removeIds = new Set(importNodesToRemove.map((imp) => imp.id()))
-  const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
-  const anchorImport = [...allImports].reverse().find((imp) => !removeIds.has(imp.id())) ?? null
-
-  if (importNodesToRemove.length === 1 && !anchorImport) {
-    const [importNode] = importNodesToRemove
-    if (importNode) {
-      edits.push(importNode.replace(`import { Text } from '${BUI_SOURCE}';`))
-      migrationMetric.increment({ action: 'import-removed' })
-    }
-  } else {
-    const [firstImport] = allImports
-    if (firstImport) {
-      edits.push(firstImport.replace(`import { Text } from '${BUI_SOURCE}';\n${firstImport.text()}`))
-    } else if (anchorImport) {
-      edits.push(anchorImport.replace(`${anchorImport.text()}\nimport { Text } from '${BUI_SOURCE}';`))
-    }
-  }
-
-  migrationMetric.increment({ action: 'import-added' })
+  return { localNames, defaultSources, barrelNames }
 }
 
 function getAttrStringValue(
@@ -362,7 +225,11 @@ function buildTextElement(el: SgNode<TSX>, isSelfClosing: boolean, newProps: str
   return `<Text${propsStr}>${children}</Text>`
 }
 
-function transformTypographyElements(rootNode: SgNode<TSX>, localNames: Map<string, string>, edits: Edit[]): boolean {
+function transformTypographyElements(
+  rootNode: SgNode<TSX, 'program'>,
+  localNames: Map<string, string>,
+  edits: Edit[],
+): boolean {
   let migrated = false
   const jsxElements = rootNode.findAll({
     rule: {
@@ -498,7 +365,7 @@ const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
-  const { localNames, importNodesToRemove, importSpecifiersToRemove } = collectTypographyImports(rootNode)
+  const { localNames, defaultSources, barrelNames } = collectTypographyImports(rootNode)
 
   if (localNames.size === 0) {
     return null
@@ -506,31 +373,53 @@ const transform: Codemod<TSX> = async (root) => {
 
   const migrated = transformTypographyElements(rootNode, localNames, edits)
 
-  for (const imp of importNodesToRemove) {
-    if (
-      migrated &&
-      importNodesToRemove.length === 1 &&
-      findImportStatementsFrom(rootNode, BUI_SOURCE).length === 0 &&
-      imp.id() === importNodesToRemove[0]?.id()
-    ) {
-      continue
+  if (migrated) {
+    const addEdit = addImport(rootNode, {
+      type: 'named',
+      specifiers: [{ name: 'Text' }],
+      from: BUI_SOURCE,
+    })
+    if (addEdit) {
+      edits.push(addEdit)
+      const hasBuiNamedImport =
+        rootNode.find({
+          rule: {
+            kind: 'import_statement',
+            all: [
+              {
+                has: {
+                  kind: 'string',
+                  has: { kind: 'string_fragment', regex: `^${escapeRegex(BUI_SOURCE)}$` },
+                },
+              },
+              { has: { kind: 'import_clause', has: { kind: 'named_imports' } } },
+            ],
+          },
+        }) !== null
+      migrationMetric.increment({ action: hasBuiNamedImport ? 'import-merged' : 'import-added' })
     }
-    edits.push(imp.replace(''))
-    migrationMetric.increment({ action: 'import-removed' })
   }
 
-  let addedTextViaBarrelPrune = false
-
-  for (const [imp, namesToRemove] of importSpecifiersToRemove) {
-    const appendTextImport = migrated && findImportStatementsFrom(rootNode, BUI_SOURCE).length === 0
-    if (appendTextImport) {
-      addedTextViaBarrelPrune = true
+  if (barrelNames.length > 0) {
+    const removedNames = new Set(barrelNames)
+    for (const item of listImports(rootNode, { from: '@material-ui/core' })) {
+      const matching = item.specifiers.filter((spec) => removedNames.has(spec.importedName))
+      if (matching.length > 0) {
+        migrationMetric.increment({ action: 'import-removed' })
+      }
     }
-    pruneBarrelImportSpecifiers(imp, namesToRemove, edits, appendTextImport)
+    const edit = removeImport(rootNode, { type: 'named', specifiers: barrelNames, from: '@material-ui/core' })
+    if (edit) {
+      edits.push(...edit)
+    }
   }
 
-  if (migrated && !addedTextViaBarrelPrune) {
-    addTextToBuiImport(rootNode, importNodesToRemove, edits)
+  for (const source of defaultSources) {
+    const edit = removeImport(rootNode, { type: 'default', from: source })
+    if (edit) {
+      edits.push(...edit)
+      migrationMetric.increment({ action: 'import-removed' })
+    }
   }
 
   const result = await Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)

@@ -1,3 +1,5 @@
+import { getAllImports } from '@jssg/utils/javascript/imports'
+import { getLineIndent } from '@jssg/utils/javascript/style'
 import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
@@ -9,60 +11,6 @@ const UI_SOURCE = '@backstage/ui'
 
 function escapeRegex(str: string): string {
   return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
-function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode<TSX, 'import_statement'>[] {
-  return rootNode.findAll<'import_statement'>({
-    rule: {
-      kind: 'import_statement',
-      has: {
-        kind: 'string',
-        has: {
-          kind: 'string_fragment',
-          regex: `^${escapeRegex(source)}$`,
-        },
-      },
-    },
-  })
-}
-
-interface ImportedComponent {
-  localNames: Set<string>
-  namespaceAliases: string[]
-}
-
-function collectImportedComponent(importStatements: SgNode<TSX, 'import_statement'>[]): ImportedComponent {
-  const localNames = new Set<string>()
-  const namespaceAliases: string[] = []
-
-  for (const imp of importStatements) {
-    const nsImport = imp.find({ rule: { kind: 'namespace_import' } })
-    if (nsImport) {
-      const aliasNode = nsImport.find({ rule: { kind: 'identifier' } })
-      if (aliasNode) {
-        namespaceAliases.push(aliasNode.text())
-      }
-      continue
-    }
-
-    for (const spec of imp.findAll({ rule: { kind: 'import_specifier' } })) {
-      const identifiers = spec.findAll({
-        rule: {
-          any: [{ kind: 'identifier' }, { kind: 'type_identifier' }],
-        },
-      })
-
-      const [importedNameNode] = identifiers
-      if (!importedNameNode || importedNameNode.text() !== TARGET_COMPONENT) {
-        continue
-      }
-
-      const localNameNode = identifiers[1] ?? importedNameNode
-      localNames.add(localNameNode.text())
-    }
-  }
-
-  return { localNames, namespaceAliases }
 }
 
 function getOpeningElement(el: SgNode<TSX>): SgNode<TSX> | null {
@@ -129,14 +77,6 @@ function getSizeLargeAttr(opening: SgNode<TSX>): SgNode<TSX> | null {
   return fragment
 }
 
-function computeIndent(fullSource: string, startIndex: number): string {
-  let lineStart = startIndex
-  while (lineStart > 0 && fullSource.charAt(lineStart - 1) !== '\n') {
-    lineStart--
-  }
-  return fullSource.slice(lineStart, startIndex)
-}
-
 function transformJsxElements(
   rootNode: SgNode<TSX>,
   fullSource: string,
@@ -170,7 +110,7 @@ function transformJsxElements(
 
     if (renderAttr) {
       // When render prop is present, use positional edits within the element text
-      const indent = computeIndent(fullSource, el.range().start.index)
+      const indent = getLineIndent(fullSource, el)
       const elStart = el.range().start.index
       const elText = el.text()
 
@@ -223,12 +163,12 @@ const transform: Codemod<TSX> = async (root) => {
   const fullSource = rootNode.text()
   const edits: Edit[] = []
 
-  const uiImports = findImportStatementsFrom(rootNode, UI_SOURCE)
-  if (uiImports.length === 0) {
-    return null
-  }
+  const namedImports = getAllImports(rootNode, { type: 'named', name: TARGET_COMPONENT, from: UI_SOURCE })
+  const localNames = new Set(namedImports.filter((imp) => !imp.isNamespace).map((imp) => imp.alias))
+  const namespaceAliases = getAllImports(rootNode, { type: 'default', from: UI_SOURCE })
+    .filter((imp) => imp.isNamespace)
+    .map((imp) => imp.alias)
 
-  const { localNames, namespaceAliases } = collectImportedComponent(uiImports)
   if (localNames.size === 0 && namespaceAliases.length === 0) {
     return null
   }

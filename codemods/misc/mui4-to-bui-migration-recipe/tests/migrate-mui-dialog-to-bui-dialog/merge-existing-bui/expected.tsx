@@ -1,6 +1,3 @@
-
-
-
 import { Button, Dialog, DialogBody, DialogHeader } from '@backstage/ui';
 
 const MyDialog = ({ open, onClose }: { open: boolean; onClose: () => void }) => (

@@ -1,6 +1,5 @@
 import { Combobox } from '@backstage/ui';
 
-
 const FruitPicker = ({
   value,
   onChange,

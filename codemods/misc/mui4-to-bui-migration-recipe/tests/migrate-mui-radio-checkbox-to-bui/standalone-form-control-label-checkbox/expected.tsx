@@ -1,4 +1,3 @@
-
 import { Checkbox } from '@backstage/ui';
 
 const MyComponent = () => (

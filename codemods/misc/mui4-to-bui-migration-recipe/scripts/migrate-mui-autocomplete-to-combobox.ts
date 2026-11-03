@@ -1,3 +1,4 @@
+import { addImport, getImport, listImports, removeImport } from '@jssg/utils/javascript/imports'
 import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
@@ -7,6 +8,8 @@ const migrationMetric = useMetricAtom('migrate-mui-autocomplete-to-combobox')
 const BUI_SOURCE = '@backstage/ui'
 const MUI_LAB_BARREL = '@material-ui/lab'
 const MUI_LAB_AUTOCOMPLETE = '@material-ui/lab/Autocomplete'
+const MUI_TEXT_FIELD = '@material-ui/core/TextField'
+const MUI_CORE_BARREL = '@material-ui/core'
 
 function escapeRegex(str: string): string {
   return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -17,138 +20,6 @@ function withTodoComment(comment: string, elementText: string): string {
   ${comment}
   ${elementText}
 </>`
-}
-
-function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode<TSX>[] {
-  return rootNode.findAll({
-    rule: {
-      kind: 'import_statement',
-      has: {
-        kind: 'string',
-        has: {
-          kind: 'string_fragment',
-          regex: `^${escapeRegex(source)}$`,
-        },
-      },
-    },
-  })
-}
-
-function getDefaultImportName(imp: SgNode<TSX>): string | null {
-  const clause = imp.find({ rule: { kind: 'import_clause' } })
-  if (!clause) {
-    return null
-  }
-  for (const child of clause.children()) {
-    if (child.is('identifier')) {
-      return child.text()
-    }
-  }
-  return null
-}
-
-function getNamedImportLocalName(imp: SgNode<TSX>, targetName: string): string | null {
-  for (const spec of imp.findAll({ rule: { kind: 'import_specifier' } })) {
-    const identifiers = spec.findAll({
-      rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
-    })
-    const [importedNameNode] = identifiers
-    if (importedNameNode?.text() === targetName) {
-      const localNameNode = identifiers[1] ?? importedNameNode
-      return localNameNode.text()
-    }
-  }
-  return null
-}
-
-function getImportedName(spec: SgNode<TSX>): string | null {
-  const identifiers = spec.findAll({
-    rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
-  })
-  return identifiers[0]?.text() ?? null
-}
-
-function getPrunedBarrelImportText(imp: SgNode<TSX>, namesToRemove: string[], source: string): string {
-  const remainingSpecs = imp.findAll({ rule: { kind: 'import_specifier' } }).filter((spec) => {
-    const importedName = getImportedName(spec)
-    return importedName !== null && !namesToRemove.includes(importedName)
-  })
-
-  if (remainingSpecs.length === 0) {
-    return ''
-  }
-
-  const typeOnly = imp.text().trimStart().startsWith('import type')
-  const isMultiline = imp.text().includes('\n')
-  const specTexts = remainingSpecs.map((spec) => spec.text())
-  const typeKw = typeOnly ? 'type ' : ''
-
-  return isMultiline
-    ? `import ${typeKw}{\n  ${specTexts.join(',\n  ')},\n} from '${source}';`
-    : `import ${typeKw}{ ${specTexts.join(', ')} } from '${source}';`
-}
-
-function collectAutocompleteImports(rootNode: SgNode<TSX>): {
-  localName: string | null
-  importNodesToRemove: SgNode<TSX>[]
-  importSpecifiersToRemove: Map<SgNode<TSX>, { source: string; names: string[] }>
-} {
-  let localName: string | null = null
-  const importNodesToRemove: SgNode<TSX>[] = []
-  const importSpecifiersToRemove = new Map<SgNode<TSX>, { source: string; names: string[] }>()
-
-  for (const imp of findImportStatementsFrom(rootNode, MUI_LAB_AUTOCOMPLETE)) {
-    localName = getDefaultImportName(imp)
-    importNodesToRemove.push(imp)
-  }
-
-  for (const imp of findImportStatementsFrom(rootNode, MUI_LAB_BARREL)) {
-    const name = getNamedImportLocalName(imp, 'Autocomplete')
-    if (name) {
-      localName = name
-      const allSpecifiers = imp.findAll({ rule: { kind: 'import_specifier' } })
-      if (allSpecifiers.length <= 1) {
-        importNodesToRemove.push(imp)
-      } else {
-        importSpecifiersToRemove.set(imp, { source: MUI_LAB_BARREL, names: ['Autocomplete'] })
-      }
-    }
-  }
-
-  return { localName, importNodesToRemove, importSpecifiersToRemove }
-}
-
-const MUI_TEXT_FIELD = '@material-ui/core/TextField'
-const MUI_CORE_BARREL = '@material-ui/core'
-
-function collectTextFieldImports(rootNode: SgNode<TSX>): {
-  localName: string | null
-  importNodesToRemove: SgNode<TSX>[]
-  importSpecifiersToRemove: Map<SgNode<TSX>, { source: string; names: string[] }>
-} {
-  let localName: string | null = null
-  const importNodesToRemove: SgNode<TSX>[] = []
-  const importSpecifiersToRemove = new Map<SgNode<TSX>, { source: string; names: string[] }>()
-
-  for (const imp of findImportStatementsFrom(rootNode, MUI_TEXT_FIELD)) {
-    localName = getDefaultImportName(imp)
-    importNodesToRemove.push(imp)
-  }
-
-  for (const imp of findImportStatementsFrom(rootNode, MUI_CORE_BARREL)) {
-    const name = getNamedImportLocalName(imp, 'TextField')
-    if (name) {
-      localName = name
-      const allSpecifiers = imp.findAll({ rule: { kind: 'import_specifier' } })
-      if (allSpecifiers.length <= 1) {
-        importNodesToRemove.push(imp)
-      } else {
-        importSpecifiersToRemove.set(imp, { source: MUI_CORE_BARREL, names: ['TextField'] })
-      }
-    }
-  }
-
-  return { localName, importNodesToRemove, importSpecifiersToRemove }
 }
 
 function isInsideElementIds(node: SgNode<TSX>, elementIds: Set<number>): boolean {
@@ -181,78 +52,6 @@ function textFieldUsedOutsideMigrated(
     }
   }
   return false
-}
-
-function addBuiImport(
-  rootNode: SgNode<TSX>,
-  names: string[],
-  importNodesToRemove: SgNode<TSX>[],
-  importSpecifiersToRemove: Map<SgNode<TSX>, { source: string; names: string[] }>,
-  edits: Edit[],
-  handledBarrelIds: Set<number>,
-  replacedDeepImportIds: Set<number>,
-): void {
-  const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
-  const existingImport = existingImports[0] ?? null
-  const sortedNames = [...names].sort()
-  const buiImport = `import { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`
-
-  if (existingImport) {
-    const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
-    if (namedImports) {
-      const specifiers = existingImport.findAll({ rule: { kind: 'import_specifier' } })
-      const existingImported = new Set<string>()
-      const existingTexts: string[] = []
-      for (const spec of specifiers) {
-        const imported = getImportedName(spec)
-        if (imported) {
-          existingImported.add(imported)
-        }
-        existingTexts.push(spec.text())
-      }
-      for (const name of names) {
-        if (!existingImported.has(name)) {
-          existingTexts.push(name)
-          existingImported.add(name)
-        }
-      }
-      existingTexts.sort()
-      edits.push(namedImports.replace(`{ ${existingTexts.join(', ')} }`))
-      migrationMetric.increment({ action: 'import-merged' })
-    }
-    return
-  }
-
-  const skipIds = new Set([
-    ...importNodesToRemove.map((imp) => imp.id()),
-    ...[...importSpecifiersToRemove.keys()].map((imp) => imp.id()),
-  ])
-  const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
-  const anchorImport = [...allImports].reverse().find((imp) => !skipIds.has(imp.id())) ?? null
-
-  if (anchorImport) {
-    edits.push(anchorImport.replace(`${anchorImport.text()}\n${buiImport}`))
-    migrationMetric.increment({ action: 'import-added' })
-    return
-  }
-
-  const [barrelToFold] = [...importSpecifiersToRemove.entries()]
-  if (barrelToFold) {
-    const [imp, { source, names: namesToRemove }] = barrelToFold
-    const pruned = getPrunedBarrelImportText(imp, namesToRemove, source)
-    edits.push(imp.replace(pruned.length > 0 ? `${pruned}\n${buiImport}` : buiImport))
-    handledBarrelIds.add(imp.id())
-    migrationMetric.increment({ action: 'import-added' })
-    migrationMetric.increment({ action: 'import-removed' })
-    return
-  }
-
-  const [deep] = importNodesToRemove
-  if (deep) {
-    edits.push(deep.replace(buiImport))
-    replacedDeepImportIds.add(deep.id())
-    migrationMetric.increment({ action: 'import-added' })
-  }
 }
 
 function getElementName(opening: SgNode<TSX>): string | null {
@@ -806,7 +605,9 @@ const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
-  const { localName, importNodesToRemove, importSpecifiersToRemove } = collectAutocompleteImports(rootNode)
+  const autocompleteDefault = getImport(rootNode, { type: 'default', from: MUI_LAB_AUTOCOMPLETE })
+  const autocompleteBarrelNamed = getImport(rootNode, { type: 'named', name: 'Autocomplete', from: MUI_LAB_BARREL })
+  const localName = autocompleteBarrelNamed?.alias ?? autocompleteDefault?.alias ?? null
   if (!localName) {
     return null
   }
@@ -819,56 +620,81 @@ const transform: Codemod<TSX> = async (root) => {
     buiNames,
   )
 
-  // Fold unused TextField imports into the same removal pass so addBuiImport
-  // does not append onto a TextField import that we later delete.
+  // Fold unused TextField imports into the same removal pass so the BUI import
+  // does not merge onto a TextField import that we later delete.
+  let removeTextField = false
   if (migratedElementIds.size > 0) {
-    const textFieldImports = collectTextFieldImports(rootNode)
-    if (
-      textFieldImports.localName &&
-      !textFieldUsedOutsideMigrated(rootNode, textFieldImports.localName, migratedElementIds)
-    ) {
-      importNodesToRemove.push(...textFieldImports.importNodesToRemove)
-      for (const [imp, info] of textFieldImports.importSpecifiersToRemove) {
-        const existing = importSpecifiersToRemove.get(imp)
-        if (existing) {
-          existing.names.push(...info.names)
-        } else {
-          importSpecifiersToRemove.set(imp, info)
-        }
-      }
+    const textFieldDefault = getImport(rootNode, { type: 'default', from: MUI_TEXT_FIELD })
+    const textFieldBarrelNamed = getImport(rootNode, { type: 'named', name: 'TextField', from: MUI_CORE_BARREL })
+    const textFieldLocalName = textFieldBarrelNamed?.alias ?? textFieldDefault?.alias ?? null
+    if (textFieldLocalName && !textFieldUsedOutsideMigrated(rootNode, textFieldLocalName, migratedElementIds)) {
+      removeTextField = true
     }
   }
 
-  const handledBarrelIds = new Set<number>()
-  const replacedDeepImportIds = new Set<number>()
-
   if (migrated && buiNames.size > 0) {
-    addBuiImport(
-      rootNode,
-      [...buiNames],
-      importNodesToRemove,
-      importSpecifiersToRemove,
-      edits,
-      handledBarrelIds,
-      replacedDeepImportIds,
-    )
+    const addEdit = addImport(rootNode, {
+      type: 'named',
+      specifiers: [...buiNames].sort().map((name) => ({ name })),
+      from: BUI_SOURCE,
+    })
+    if (addEdit) {
+      edits.push(addEdit)
+      const hasBuiNamedImport =
+        rootNode.find({
+          rule: {
+            kind: 'import_statement',
+            all: [
+              {
+                has: {
+                  kind: 'string',
+                  has: { kind: 'string_fragment', regex: `^${escapeRegex(BUI_SOURCE)}$` },
+                },
+              },
+              { has: { kind: 'import_clause', has: { kind: 'named_imports' } } },
+            ],
+          },
+        }) !== null
+      migrationMetric.increment({ action: hasBuiNamedImport ? 'import-merged' : 'import-added' })
+    }
   }
 
   if (!preserveImport) {
-    for (const [imp, { source, names }] of importSpecifiersToRemove) {
-      if (handledBarrelIds.has(imp.id())) {
-        continue
+    if (autocompleteBarrelNamed) {
+      for (const item of listImports(rootNode, { from: MUI_LAB_BARREL })) {
+        if (item.specifiers.some((spec) => spec.importedName === 'Autocomplete')) {
+          migrationMetric.increment({ action: 'import-removed' })
+        }
       }
-      edits.push(imp.replace(getPrunedBarrelImportText(imp, names, source)))
-      migrationMetric.increment({ action: 'import-removed' })
+      const edit = removeImport(rootNode, { type: 'named', specifiers: ['Autocomplete'], from: MUI_LAB_BARREL })
+      if (edit) {
+        edits.push(...edit)
+      }
     }
-    for (const imp of importNodesToRemove) {
-      if (replacedDeepImportIds.has(imp.id())) {
-        migrationMetric.increment({ action: 'import-removed' })
-        continue
+    if (removeTextField) {
+      for (const item of listImports(rootNode, { from: MUI_CORE_BARREL })) {
+        if (item.specifiers.some((spec) => spec.importedName === 'TextField')) {
+          migrationMetric.increment({ action: 'import-removed' })
+        }
       }
-      edits.push(imp.replace(''))
-      migrationMetric.increment({ action: 'import-removed' })
+      const edit = removeImport(rootNode, { type: 'named', specifiers: ['TextField'], from: MUI_CORE_BARREL })
+      if (edit) {
+        edits.push(...edit)
+      }
+    }
+    if (autocompleteDefault) {
+      const edit = removeImport(rootNode, { type: 'default', from: MUI_LAB_AUTOCOMPLETE })
+      if (edit) {
+        edits.push(...edit)
+        migrationMetric.increment({ action: 'import-removed' })
+      }
+    }
+    if (removeTextField) {
+      const edit = removeImport(rootNode, { type: 'default', from: MUI_TEXT_FIELD })
+      if (edit) {
+        edits.push(...edit)
+        migrationMetric.increment({ action: 'import-removed' })
+      }
     }
   }
 

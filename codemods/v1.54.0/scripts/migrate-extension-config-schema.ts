@@ -1,8 +1,10 @@
+import { addImport, listImports } from '@jssg/utils/javascript/imports'
 import type { Codemod, Edit, GetSelector, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { getState } from 'codemod:workflow'
 
 type Node = SgNode<TSX>
+type Program = SgNode<TSX, 'program'>
 const API = '@backstage/frontend-plugin-api'
 const TODO = 'TODO(backstage-codemod)'
 const factories = new Set(['createExtension', 'createExtensionBlueprint'])
@@ -41,26 +43,19 @@ function property(object: Node, name: string): Node | undefined {
   return object.children().find((child) => child.is('pair') && child.field('key').text() === name)
 }
 
-function importedNames(root: Node, source: string): { named: Map<string, string>; namespace?: string } {
+function importedNames(root: Program, source: string): { named: Map<string, string>; namespace?: string } {
   const named = new Map<string, string>()
   let namespace: string | undefined
-  for (const statement of root.findAll({ rule: { kind: 'import_statement' } })) {
-    if (statement.field('source')?.text().slice(1, -1) !== source || statement.text().startsWith('import type ')) {
+  for (const item of listImports(root, { from: source })) {
+    // ESM import statements only; a statement-level `import type` is skipped but inline `type` specifiers count.
+    if (item.node.kind() !== 'import_statement' || item.isTypeOnly) {
       continue
     }
-    const clause = statement.find({ rule: { kind: 'import_clause' } })
-    if (!clause) {
-      continue
+    for (const spec of item.specifiers) {
+      named.set(spec.importedName, spec.localName)
     }
-    for (const specifier of clause.findAll({ rule: { kind: 'import_specifier' } })) {
-      const identifiers = specifier.children().filter((child) => child.is('identifier'))
-      if (identifiers[0]) {
-        named.set(identifiers[0].text(), identifiers[1]?.text() ?? identifiers[0].text())
-      }
-    }
-    const ns = clause.find({ rule: { kind: 'namespace_import' } })
-    if (ns) {
-      namespace = ns.find({ rule: { kind: 'identifier' } })?.text()
+    if (item.namespaceName) {
+      namespace = item.namespaceName
     }
   }
   return { named, namespace }
@@ -402,17 +397,14 @@ const transform: Codemod<TSX> = async (root) => {
     importNeeded ||= !existing
   }
   if (importNeeded) {
-    const imports = ast.children().filter((child) => child.is('import_statement'))
-    const last = imports.at(-1)
-    const position = last?.range().end.index ?? 0
-    edits.push({
-      startPos: position,
-      endPos: position,
-      insertedText: `${last ? '\n' : ''}import { z as ${binding} } from 'zod/v4';${last ? '' : '\n'}`.replace(
-        `z as z }`,
-        'z }',
-      ),
+    const edit = addImport(ast, {
+      type: 'named',
+      specifiers: [{ name: 'z', alias: binding === 'z' ? undefined : binding }],
+      from: 'zod/v4',
     })
+    if (edit) {
+      edits.push(edit)
+    }
   }
   if (!edits.length) {
     return null

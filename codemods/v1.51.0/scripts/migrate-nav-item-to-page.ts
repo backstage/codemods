@@ -1,4 +1,4 @@
-import { getImport } from '@jssg/utils/javascript/imports'
+import { getImport, removeImport } from '@jssg/utils/javascript/imports'
 import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
@@ -237,43 +237,6 @@ function getOriginalFactoryFirstArgObject(makeWithOverridesCall: SgNode<TSX>): S
     if (child.kind() === 'object') {
       return child
     }
-  }
-
-  return null
-}
-
-function removeNavItemBlueprintImport(rootNode: SgNode<TSX>): Edit | null {
-  for (const importStmt of rootNode.findAll({ rule: { kind: 'import_statement' } })) {
-    const source = importStmt.find({ rule: { kind: 'string_fragment' } })?.text()
-    if (source !== FRONTEND_API_SOURCE) {
-      continue
-    }
-
-    const specifiers = importStmt.findAll({ rule: { kind: 'import_specifier' } })
-    const remaining = specifiers.filter((spec) => {
-      const importedName = spec.find({ rule: { kind: 'identifier' } })?.text()
-      return importedName !== 'NavItemBlueprint'
-    })
-
-    if (remaining.length === specifiers.length) {
-      continue
-    }
-
-    if (remaining.length === 0) {
-      return importStmt.replace('')
-    }
-
-    const typeOnly = importStmt.text().trimStart().startsWith('import type')
-    const originalText = importStmt.text()
-    const isMultiline = originalText.includes('\n')
-    const specTexts = remaining.map((s) => s.text())
-    const typeKw = typeOnly ? 'type ' : ''
-
-    const rebuilt = isMultiline
-      ? `import ${typeKw}{\n  ${specTexts.join(',\n  ')},\n} from '${source}';`
-      : `import ${typeKw}{ ${specTexts.join(', ')} } from '${source}';`
-
-    return importStmt.replace(rebuilt)
   }
 
   return null
@@ -698,9 +661,12 @@ const transform: Codemod<TSX> = async (root) => {
     edits.push(declaration.replace(''))
   }
 
-  const removeImportEdit = declarationsToRemove.size === navItems.length ? removeNavItemBlueprintImport(rootNode) : null
-  if (removeImportEdit) {
-    edits.push(removeImportEdit)
+  const removeImportEdits =
+    declarationsToRemove.size === navItems.length
+      ? removeImport(rootNode, { type: 'named', specifiers: ['NavItemBlueprint'], from: FRONTEND_API_SOURCE })
+      : null
+  if (removeImportEdits) {
+    edits.push(...removeImportEdits)
   }
 
   if (edits.length === 0) {

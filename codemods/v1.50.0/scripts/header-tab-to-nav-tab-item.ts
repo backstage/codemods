@@ -1,3 +1,4 @@
+import { getAllImports, listImports, updateImport } from '@jssg/utils/javascript/imports'
 import type { RefineNode, Codemod, Edit, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
@@ -14,16 +15,12 @@ function escapeRegex(str: string): string {
 }
 
 /**
- * Find import/export statements from a given source module.
+ * Find export statements from a given source module.
  */
-function findStatementsFrom<K extends 'import_statement' | 'export_statement'>(
-  rootNode: SgNode<TSX>,
-  kind: K,
-  source: string,
-): RefineNode<TSX, K>[] {
-  return rootNode.findAll<K>({
+function findExportStatementsFrom(rootNode: SgNode<TSX>, source: string): RefineNode<TSX, 'export_statement'>[] {
+  return rootNode.findAll<'export_statement'>({
     rule: {
-      kind,
+      kind: 'export_statement',
       has: {
         kind: 'string',
         has: {
@@ -36,18 +33,17 @@ function findStatementsFrom<K extends 'import_statement' | 'export_statement'>(
 }
 
 /**
- * Rename HeaderTab to HeaderNavTabItem in import/export specifiers.
- * This handles both `import { HeaderTab }` and `import { HeaderTab as Alias }`.
+ * Rename HeaderTab to HeaderNavTabItem in re-export specifiers.
+ * This handles both `export { HeaderTab }` and `export { HeaderTab as Alias }`.
  *
  * For specifiers: the imported name "HeaderTab" is renamed to "HeaderNavTabItem"
  * while any alias (local name) is preserved.
+ *
+ * Import statements are renamed via `updateImport` from @jssg/utils; re-exports
+ * have no util equivalent, so they stay hand-rolled.
  */
-function renameSpecifiers(
-  node: SgNode<TSX>,
-  specifierKind: 'import_specifier' | 'export_specifier',
-  edits: Edit[],
-): boolean {
-  const specifiers = node.findAll({ rule: { kind: specifierKind } })
+function renameExportSpecifiers(node: SgNode<TSX>, edits: Edit[]): boolean {
+  const specifiers = node.findAll({ rule: { kind: 'export_specifier' } })
   let found = false
 
   for (const spec of specifiers) {
@@ -207,33 +203,22 @@ function removeMatchStrategyProperties(rootNode: SgNode<TSX>, edits: Edit[]): vo
 
 /**
  * Handle namespace imports (`import * as X from '@backstage/ui'`).
- * Finds the namespace alias, then uses `.references()` to trace all usages
- * of the alias. For each reference whose parent is a `nested_type_identifier`
- * or `member_expression` with a `HeaderTab` property, renames the property
- * to `HeaderNavTabItem`.
+ * For each namespace alias resolved via `getAllImports` from @jssg/utils, uses
+ * `.references()` to trace all usages of the alias. For each reference whose
+ * parent is a `nested_type_identifier` or `member_expression` with a
+ * `HeaderTab` property, renames the property to `HeaderNavTabItem`.
  *
  * Falls back to AST pattern matching if `.references()` returns no results
  * (e.g., in test mode without full semantic analysis).
  */
 function handleNamespaceImports(
-  importStatements: SgNode<TSX, 'import_statement'>[],
+  namespaceImports: { alias: string; node: SgNode<TSX> }[],
   rootNode: SgNode<TSX>,
   edits: Edit[],
 ): boolean {
   let found = false
 
-  for (const imp of importStatements) {
-    const nsImport = imp.find({ rule: { kind: 'namespace_import' } })
-    if (!nsImport) {
-      continue
-    }
-
-    const aliasNode = nsImport.find({ rule: { kind: 'identifier' } })
-    if (!aliasNode) {
-      continue
-    }
-
-    const alias = aliasNode.text()
+  for (const { alias, node: aliasNode } of namespaceImports) {
     const aliasRegex = escapeRegex(alias)
 
     // Try semantic analysis first: use .references() on the alias
@@ -333,38 +318,52 @@ const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
-  // Find all import statements from @backstage/ui
-  const uiImportStatements = findStatementsFrom(rootNode, 'import_statement', UI_SOURCE)
+  // List all import statements from @backstage/ui via @jssg/utils
+  const uiImports = listImports(rootNode, { from: UI_SOURCE }).filter((item) => item.node.is('import_statement'))
 
   // Check if there are any HeaderTab references at all in imports
   let hasHeaderTabImport = false
 
-  for (const imp of uiImportStatements) {
+  for (const item of uiImports) {
     // Skip namespace imports — handled separately by handleNamespaceImports
-    const hasNamespace = imp.find({ rule: { kind: 'namespace_import' } })
-    if (hasNamespace) {
+    if (item.namespaceName) {
       continue
     }
 
-    // Rename HeaderTab -> HeaderNavTabItem in import specifiers
-    const renamed = renameSpecifiers(imp, 'import_specifier', edits)
-    if (renamed) {
-      hasHeaderTabImport = true
+    for (const spec of item.specifiers) {
+      if (spec.importedName === OLD_TYPE) {
+        hasHeaderTabImport = true
+        migrationMetric.increment({ action: 'import-renamed', specifier: spec.node.text() })
+      }
     }
   }
 
+  // Rename HeaderTab -> HeaderNavTabItem in import specifiers (preserves aliases,
+  // inline `type` modifiers, and single/multi-line clause layout)
+  const renameEdits = updateImport(rootNode, {
+    type: 'named',
+    from: UI_SOURCE,
+    specifiers: [{ name: OLD_TYPE, to: NEW_TYPE }],
+  })
+  if (renameEdits) {
+    edits.push(...renameEdits)
+  }
+
   // Handle re-exports: export { HeaderTab } from '@backstage/ui'
-  const uiExportStatements = findStatementsFrom(rootNode, 'export_statement', UI_SOURCE)
+  const uiExportStatements = findExportStatementsFrom(rootNode, UI_SOURCE)
 
   for (const exp of uiExportStatements) {
-    const renamed = renameSpecifiers(exp, 'export_specifier', edits)
+    const renamed = renameExportSpecifiers(exp, edits)
     if (renamed) {
       hasHeaderTabImport = true
     }
   }
 
   // Handle namespace imports: rename UI.HeaderTab -> UI.HeaderNavTabItem
-  const hasNamespaceHeaderTab = handleNamespaceImports(uiImportStatements, rootNode, edits)
+  const namespaceImports = getAllImports(rootNode, { type: 'default', from: UI_SOURCE }).filter(
+    (item) => item.isNamespace,
+  )
+  const hasNamespaceHeaderTab = handleNamespaceImports(namespaceImports, rootNode, edits)
 
   // If we found and renamed any HeaderTab imports (named or namespace),
   // also rename body references and remove matchStrategy properties

@@ -1,5 +1,12 @@
+import { importBindingOf, resolveDefinition } from '@jssg/utils/javascript/bindings'
+import { getAllImports } from '@jssg/utils/javascript/imports'
 import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
+
+const SERVICE_TYPE = 'ConnectionsService'
+const SERVICE_TYPE_SOURCE = '@backstage/connections'
+const SERVICE_REF = 'connectionsServiceRef'
+const SERVICE_REF_SOURCES = ['@backstage/connections-node', '@backstage/connections']
 
 const URL_TYPES = new Set([
   'aws-codecommit',
@@ -18,6 +25,7 @@ const URL_TYPES = new Set([
 const TODO = '/* TODO(backstage-codemod): review ConnectionsService.find query for this connection type */ '
 
 type Node = SgNode<TSX>
+type Program = SgNode<TSX, 'program'>
 
 function directPairs(object: Node): Node[] {
   return object.children().filter((child) => child.kind() === 'pair')
@@ -44,42 +52,33 @@ function escapedKey(node: Node): boolean {
   )
 }
 
-function localImports(root: Node, source: string, imported: string): Map<string, Node> {
-  const names = new Map<string, Node>()
-  for (const statement of root.findAll({ rule: { kind: 'import_statement' } })) {
-    if (statement.field('source')?.text().slice(1, -1) !== source) {
-      continue
-    }
-    for (const spec of statement.findAll({ rule: { kind: 'import_specifier' } })) {
-      const identifiers = spec.children().filter((child) => child.kind() === 'identifier')
-      if (identifiers[0]?.text() === imported) {
-        const local = identifiers.at(-1)
-        if (local) {
-          names.set(local.text(), local)
-        }
-      }
-    }
-  }
-  return names
+/** True when `node` is a use of `importedName` imported from one of `sources`. */
+function isImportOf(node: Node, importedName: string, sources: readonly string[]): boolean {
+  const binding = importBindingOf(node)
+  return binding?.importedName === importedName && sources.includes(binding.source)
 }
 
-function sameDefinition(reference: Node, declaration: Node): boolean {
-  const definition = reference.definition()?.node
-  return definition !== undefined && definition.range().start.index === declaration.range().start.index
+function isLocalBinding(reference: Node, declaration: Node): boolean {
+  const definition = resolveDefinition(reference)
+  return definition?.range().start.index === declaration.range().start.index
 }
 
-function receiverBindings(root: Node): Node[] {
+function fileHasServiceTypeImport(root: Program): boolean {
+  return getAllImports(root, { type: 'named', name: SERVICE_TYPE, from: SERVICE_TYPE_SOURCE }).some(
+    (item) => !item.isNamespace,
+  )
+}
+
+function receiverBindings(root: Program): Node[] {
   const bindings: Node[] = []
-  const serviceTypes = localImports(root, '@backstage/connections', 'ConnectionsService')
-  if (serviceTypes.size) {
+  if (fileHasServiceTypeImport(root)) {
     for (const node of root.findAll({ rule: { kind: 'required_parameter' } })) {
       const name = node.field('pattern')
       const typeName = node
         .field('type')
         ?.children()
         .find((child) => child.kind() === 'type_identifier')
-      const importedType = typeName && serviceTypes.get(typeName.text())
-      if (name?.kind() === 'identifier' && typeName && importedType && sameDefinition(typeName, importedType)) {
+      if (name?.kind() === 'identifier' && typeName && isImportOf(typeName, SERVICE_TYPE, [SERVICE_TYPE_SOURCE])) {
         bindings.push(name)
       }
     }
@@ -89,19 +88,10 @@ function receiverBindings(root: Node): Node[] {
         .field('type')
         ?.children()
         .find((child) => child.kind() === 'type_identifier')
-      const importedType = typeName && serviceTypes.get(typeName.text())
-      if (name?.kind() === 'identifier' && typeName && importedType && sameDefinition(typeName, importedType)) {
+      if (name?.kind() === 'identifier' && typeName && isImportOf(typeName, SERVICE_TYPE, [SERVICE_TYPE_SOURCE])) {
         bindings.push(name)
       }
     }
-  }
-
-  const refs = new Map([
-    ...localImports(root, '@backstage/connections-node', 'connectionsServiceRef'),
-    ...localImports(root, '@backstage/connections', 'connectionsServiceRef'),
-  ])
-  if (!refs.size) {
-    return bindings
   }
 
   for (const config of root.findAll({ rule: { kind: 'object' } })) {
@@ -115,12 +105,10 @@ function receiverBindings(root: Node): Node[] {
     for (const pair of directPairs(deps)) {
       const key = pair.field('key')
       const value = pair.field('value')
-      const importedRef = value && refs.get(value.text())
       if (
         key?.kind() === 'property_identifier' &&
         value?.kind() === 'identifier' &&
-        importedRef &&
-        sameDefinition(value, importedRef)
+        isImportOf(value, SERVICE_REF, SERVICE_REF_SOURCES)
       ) {
         dependencyNames.add(key.text())
       }
@@ -161,7 +149,7 @@ function receiverBindings(root: Node): Node[] {
   return bindings
 }
 
-function typedClassField(receiver: Node, serviceTypes: Map<string, Node>): boolean {
+function typedClassField(receiver: Node): boolean {
   if (receiver.kind() !== 'member_expression' || receiver.field('object')?.kind() !== 'this') {
     return false
   }
@@ -206,8 +194,7 @@ function typedClassField(receiver: Node, serviceTypes: Map<string, Node>): boole
                 .field('type')
                 ?.children()
                 .find((child) => child.kind() === 'type_identifier')
-              const importedType = typeName && serviceTypes.get(typeName.text())
-              return !!(typeName && importedType && sameDefinition(typeName, importedType))
+              return !!(typeName && isImportOf(typeName, SERVICE_TYPE, [SERVICE_TYPE_SOURCE]))
             }) ?? false
         )
       }
@@ -218,8 +205,7 @@ function typedClassField(receiver: Node, serviceTypes: Map<string, Node>): boole
         .field('type')
         ?.children()
         .find((child) => child.kind() === 'type_identifier')
-      const importedType = typeName && serviceTypes.get(typeName.text())
-      return !!(typeName && importedType && sameDefinition(typeName, importedType))
+      return !!(typeName && isImportOf(typeName, SERVICE_TYPE, [SERVICE_TYPE_SOURCE]))
     }) ?? false
   )
 }
@@ -228,8 +214,7 @@ const transform: Codemod<TSX> = async (root) => {
   const ast = root.root()
   const source = ast.text()
   const bindings = receiverBindings(ast)
-  const serviceTypes = localImports(ast, '@backstage/connections', 'ConnectionsService')
-  if (!bindings.length && !serviceTypes.size) {
+  if (!bindings.length && !fileHasServiceTypeImport(ast)) {
     return null
   }
   const edits: Edit[] = []
@@ -243,8 +228,8 @@ const transform: Codemod<TSX> = async (root) => {
     if (
       !receiver ||
       !(
-        (receiver.kind() === 'identifier' && bindings.some((binding) => sameDefinition(receiver, binding))) ||
-        typedClassField(receiver, serviceTypes)
+        (receiver.kind() === 'identifier' && bindings.some((binding) => isLocalBinding(receiver, binding))) ||
+        typedClassField(receiver)
       )
     ) {
       continue

@@ -6,11 +6,12 @@
   "scripts": {
     "test": "run-recipe-tests"
   },
+  "dependencies": {
+    "@jssg/utils": "patch:@jssg/utils@npm%3A0.0.11#~/.yarn/patches/@jssg-utils-npm-0.0.11-19369c37c8.patch"
+  },
   "devDependencies": {
     "@backstage/scripts": "workspace:*",
     "@codemod.com/jssg-types": "1.6.3",
-    "codemod": "1.18.3",
-    "typescript": "^7.0.2",
-    "yaml": "^2.8.1"
+    "codemod": "1.18.3"
   }
 }

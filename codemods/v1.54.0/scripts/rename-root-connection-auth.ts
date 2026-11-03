@@ -1,3 +1,4 @@
+import { renameReferences } from '@jssg/utils/javascript/bindings'
 import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 
@@ -107,19 +108,7 @@ const transform: Codemod<TSX> = async (root) => {
         continue
       }
 
-      for (const group of imported.references()) {
-        if (group.root.filename() !== root.filename()) {
-          continue
-        }
-        for (const ref of group.nodes) {
-          if (ref.id() === imported.id()) {
-            continue
-          }
-          if (ref.kind() === 'type_identifier' || ref.parent()?.kind() === 'export_specifier') {
-            edits.push(ref.replace(NEW))
-          }
-        }
-      }
+      edits.push(...renameReferences(imported, NEW, root.filename()))
     }
 
     const namespace = statement.find({ rule: { kind: 'namespace_import' } })

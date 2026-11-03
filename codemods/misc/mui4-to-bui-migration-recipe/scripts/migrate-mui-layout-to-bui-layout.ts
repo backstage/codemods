@@ -1,3 +1,4 @@
+import { addImport, getAllImports, listImports, removeImport } from '@jssg/utils/javascript/imports'
 import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
@@ -47,86 +48,30 @@ function escapeRegex(str: string): string {
   return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode<TSX>[] {
-  return rootNode.findAll({
-    rule: {
-      kind: 'import_statement',
-      has: {
-        kind: 'string',
-        has: {
-          kind: 'string_fragment',
-          regex: `^${escapeRegex(source)}$`,
-        },
-      },
-    },
-  })
-}
-
-function getDefaultImportName(imp: SgNode<TSX>): string | null {
-  const clause = imp.find({ rule: { kind: 'import_clause' } })
-  if (!clause) {
-    return null
-  }
-  for (const child of clause.children()) {
-    if (child.is('identifier')) {
-      return child.text()
-    }
-  }
-  return null
-}
-
-function getNamedImportLocalName(imp: SgNode<TSX>, targetName: string): string | null {
-  for (const spec of imp.findAll({ rule: { kind: 'import_specifier' } })) {
-    const identifiers = spec.findAll({
-      rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
-    })
-    const [importedNameNode] = identifiers
-    if (importedNameNode?.text() === targetName) {
-      const localNameNode = identifiers[1] ?? importedNameNode
-      return localNameNode.text()
-    }
-  }
-  return null
-}
-
 interface LayoutImports {
   localNames: Map<string, string>
-  importNodes: SgNode<TSX>[]
 }
 
-function collectLayoutImports(rootNode: SgNode<TSX>): LayoutImports {
+function collectLayoutImports(rootNode: SgNode<TSX, 'program'>): LayoutImports {
   const localNames = new Map<string, string>()
-  const importNodes: SgNode<TSX>[] = []
 
   for (const componentName of MUI_LAYOUT_COMPONENTS) {
-    for (const imp of findImportStatementsFrom(rootNode, `@material-ui/core/${componentName}`)) {
-      const name = getDefaultImportName(imp)
-      if (name) {
-        localNames.set(name, componentName)
-      }
-      importNodes.push(imp)
+    for (const imp of getAllImports(rootNode, { type: 'default', from: `@material-ui/core/${componentName}` })) {
+      localNames.set(imp.alias, componentName)
+    }
+    for (const named of getAllImports(rootNode, { type: 'named', name: componentName, from: '@material-ui/core' })) {
+      localNames.set(named.alias, componentName)
     }
   }
 
-  for (const imp of findImportStatementsFrom(rootNode, '@material-ui/core')) {
-    for (const componentName of MUI_LAYOUT_COMPONENTS) {
-      const localName = getNamedImportLocalName(imp, componentName)
-      if (localName) {
-        localNames.set(localName, componentName)
-      }
-    }
-    const hasLayoutImport = MUI_LAYOUT_COMPONENTS.some(
-      (componentName) => getNamedImportLocalName(imp, componentName) !== null,
-    )
-    if (hasLayoutImport) {
-      importNodes.push(imp)
-    }
-  }
-
-  return { localNames, importNodes }
+  return { localNames }
 }
 
-function isMuiComponentStillUsed(rootNode: SgNode<TSX>, localName: string, migratedLocalNames: Set<string>): boolean {
+function isMuiComponentStillUsed(
+  rootNode: SgNode<TSX, 'program'>,
+  localName: string,
+  migratedLocalNames: Set<string>,
+): boolean {
   if (migratedLocalNames.has(localName)) {
     return false
   }
@@ -155,82 +100,92 @@ function isMuiComponentStillUsed(rootNode: SgNode<TSX>, localName: string, migra
 }
 
 function removeUnusedLayoutImports(
-  rootNode: SgNode<TSX>,
+  rootNode: SgNode<TSX, 'program'>,
   localNames: Map<string, string>,
-  importNodes: SgNode<TSX>[],
   migratedLocalNames: Set<string>,
   edits: Edit[],
-): Set<number> {
-  const seenImportIds = new Set<number>()
-  const removedImportIds = new Set<number>()
+): void {
+  // Deep default imports: import Box from '@material-ui/core/Box'
+  for (const componentName of MUI_LAYOUT_COMPONENTS) {
+    const source = `@material-ui/core/${componentName}`
+    for (const imp of getAllImports(rootNode, { type: 'default', from: source })) {
+      if (!localNames.has(imp.alias) || isMuiComponentStillUsed(rootNode, imp.alias, migratedLocalNames)) {
+        continue
+      }
+      const edit = removeImport(rootNode, { type: 'default', from: source, alias: imp.alias })
+      if (edit) {
+        edits.push(...edit)
+        migrationMetric.increment({ action: 'import-removed' })
+      }
+    }
+  }
 
-  for (const imp of importNodes) {
-    if (seenImportIds.has(imp.id())) {
+  // Barrel imports: import { Box, Grid } from '@material-ui/core'
+  for (const item of listImports(rootNode, { from: '@material-ui/core' })) {
+    const specifiers = item.specifiers.map((spec) => ({
+      importedName: spec.importedName,
+      localName: spec.localName,
+      isLayout: localNames.has(spec.localName),
+      stillUsed:
+        localNames.has(spec.localName) && isMuiComponentStillUsed(rootNode, spec.localName, migratedLocalNames),
+    }))
+    const touchesLayout =
+      specifiers.some((spec) => spec.isLayout) || (item.defaultName !== null && localNames.has(item.defaultName))
+    if (!touchesLayout) {
       continue
     }
-    seenImportIds.add(imp.id())
 
-    const defaultName = getDefaultImportName(imp)
-    const allSpecifiers = imp.findAll({ rule: { kind: 'import_specifier' } })
+    const defaultIsUnusedLayout =
+      item.defaultName !== null &&
+      localNames.has(item.defaultName) &&
+      !isMuiComponentStillUsed(rootNode, item.defaultName, migratedLocalNames)
+    const removable = specifiers.filter((spec) => spec.isLayout && !spec.stillUsed)
+    const keepsAnyNamed = specifiers.length > removable.length
 
-    if (defaultName && allSpecifiers.length === 0) {
-      if (localNames.has(defaultName) && !isMuiComponentStillUsed(rootNode, defaultName, migratedLocalNames)) {
-        edits.push(imp.replace(''))
-        removedImportIds.add(imp.id())
+    if (!keepsAnyNamed && !defaultIsUnusedLayout && item.defaultName === null) {
+      // Every specifier is an unused layout import — drop the whole statement.
+      const edit = removeImport(rootNode, {
+        type: 'named',
+        specifiers: removable.map((spec) => ({ name: spec.importedName, alias: spec.localName })),
+        from: '@material-ui/core',
+      })
+      if (edit) {
+        edits.push(...edit)
         migrationMetric.increment({ action: 'import-removed' })
       }
       continue
     }
 
-    const defaultIsUnusedLayout =
-      defaultName !== null &&
-      localNames.has(defaultName) &&
-      !isMuiComponentStillUsed(rootNode, defaultName, migratedLocalNames)
-
-    const remainingSpecifiers = allSpecifiers.filter((spec) => {
-      const identifiers = spec.findAll({
-        rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
-      })
-      const [importedNameNode] = identifiers
-      if (!importedNameNode) {
-        return true
-      }
-      const localNameNode = identifiers[1] ?? importedNameNode
-      const localName = localNameNode.text()
-      if (!localNames.has(localName)) {
-        return true
-      }
-      return isMuiComponentStillUsed(rootNode, localName, migratedLocalNames)
-    })
-
-    const importSource = imp.find({ rule: { kind: 'string_fragment' } })?.text()
-
-    if (remainingSpecifiers.length === 0 && (defaultIsUnusedLayout || !defaultName)) {
-      edits.push(imp.replace(''))
-      removedImportIds.add(imp.id())
+    if (!keepsAnyNamed && (defaultIsUnusedLayout || item.defaultName === null)) {
+      // Mixed statement whose default and named bindings are all removable.
+      edits.push(item.node.replace(''))
       migrationMetric.increment({ action: 'import-removed' })
-    } else if (defaultIsUnusedLayout && remainingSpecifiers.length > 0 && importSource) {
-      edits.push(
-        imp.replace(`import { ${remainingSpecifiers.map((s) => s.text()).join(', ')} } from '${importSource}';`),
-      )
-      migrationMetric.increment({ action: 'import-trimmed' })
-    } else if (remainingSpecifiers.length < allSpecifiers.length) {
-      const namedImports = imp.find({ rule: { kind: 'named_imports' } })
-      if (namedImports) {
-        edits.push(namedImports.replace(`{ ${remainingSpecifiers.map((s) => s.text()).join(', ')} }`))
-        migrationMetric.increment({ action: 'import-trimmed' })
+      continue
+    }
+
+    let trimmed = false
+    if (removable.length > 0) {
+      const edit = removeImport(rootNode, {
+        type: 'named',
+        specifiers: removable.map((spec) => ({ name: spec.importedName, alias: spec.localName })),
+        from: '@material-ui/core',
+      })
+      if (edit) {
+        edits.push(...edit)
+        trimmed = true
       }
     }
+    if (defaultIsUnusedLayout && item.defaultName !== null) {
+      const edit = removeImport(rootNode, { type: 'default', from: '@material-ui/core', alias: item.defaultName })
+      if (edit) {
+        edits.push(...edit)
+        trimmed = true
+      }
+    }
+    if (trimmed) {
+      migrationMetric.increment({ action: 'import-trimmed' })
+    }
   }
-
-  return removedImportIds
-}
-
-function getImportedName(spec: SgNode<TSX>): string | null {
-  const identifiers = spec.findAll({
-    rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
-  })
-  return identifiers[0]?.text() ?? null
 }
 
 function withTodoComment(comment: string, elementText: string): string {
@@ -238,59 +193,6 @@ function withTodoComment(comment: string, elementText: string): string {
   ${comment}
   ${elementText}
 </>`
-}
-
-function addBuiImport(rootNode: SgNode<TSX>, names: string[], excludedImportIds: Set<number>, edits: Edit[]): void {
-  const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
-  const existingImport = existingImports[0] ?? null
-
-  if (existingImport) {
-    const existingImportedNames = new Set(
-      existingImport
-        .findAll({ rule: { kind: 'import_specifier' } })
-        .map((spec) => getImportedName(spec))
-        .filter((name): name is string => name !== null),
-    )
-    const namesToAdd = names.filter((name) => !existingImportedNames.has(name))
-    if (namesToAdd.length === 0) {
-      return
-    }
-
-    const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
-    if (namedImports) {
-      const text = namedImports.text()
-      const inner = text.slice(1, -1).trim()
-      const existing = inner
-        .split(',')
-        .map((n) => n.trim())
-        .filter(Boolean)
-      existing.push(...namesToAdd)
-      existing.sort()
-      edits.push(namedImports.replace(`{ ${existing.join(', ')} }`))
-      migrationMetric.increment({ action: 'import-merged' })
-    } else {
-      const sortedNames = [...namesToAdd].sort()
-      edits.push(
-        existingImport.replace(`${existingImport.text()}\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`),
-      )
-      migrationMetric.increment({ action: 'import-added' })
-    }
-  } else {
-    const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
-    const sortedNames = [...names].sort()
-    const anchorImport =
-      [...allImports].reverse().find((imp) => !excludedImportIds.has(imp.id())) ?? allImports.at(-1) ?? null
-
-    if (anchorImport) {
-      const insertAt = anchorImport.range().end.index
-      edits.push({
-        startPos: insertAt,
-        endPos: insertAt,
-        insertedText: `\nimport { ${sortedNames.join(', ')} } from '${BUI_SOURCE}';`,
-      })
-    }
-    migrationMetric.increment({ action: 'import-added' })
-  }
 }
 
 function getElementName(opening: SgNode<TSX>): string | null {
@@ -760,7 +662,7 @@ function transformGridElement(el: SgNode<TSX>, opening: SgNode<TSX>, edits: Edit
 }
 
 function transformLayoutElements(
-  rootNode: SgNode<TSX>,
+  rootNode: SgNode<TSX, 'program'>,
   localNames: Map<string, string>,
   edits: Edit[],
 ): { usedBuiNames: Set<string>; migratedLocalNames: Set<string> } {
@@ -825,7 +727,7 @@ const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
-  const { localNames, importNodes } = collectLayoutImports(rootNode)
+  const { localNames } = collectLayoutImports(rootNode)
 
   if (localNames.size === 0) {
     return Promise.resolve(null)
@@ -834,10 +736,33 @@ const transform: Codemod<TSX> = (root) => {
   // Transform elements before removing imports so TODO paths keep MUI imports.
   const { usedBuiNames, migratedLocalNames } = transformLayoutElements(rootNode, localNames, edits)
 
-  const removedImportIds = removeUnusedLayoutImports(rootNode, localNames, importNodes, migratedLocalNames, edits)
+  removeUnusedLayoutImports(rootNode, localNames, migratedLocalNames, edits)
 
   if (usedBuiNames.size > 0) {
-    addBuiImport(rootNode, [...usedBuiNames], removedImportIds, edits)
+    const addEdit = addImport(rootNode, {
+      type: 'named',
+      specifiers: [...usedBuiNames].sort().map((name) => ({ name })),
+      from: BUI_SOURCE,
+    })
+    if (addEdit) {
+      edits.push(addEdit)
+      const hasBuiNamedImport =
+        rootNode.find({
+          rule: {
+            kind: 'import_statement',
+            all: [
+              {
+                has: {
+                  kind: 'string',
+                  has: { kind: 'string_fragment', regex: `^${escapeRegex(BUI_SOURCE)}$` },
+                },
+              },
+              { has: { kind: 'import_clause', has: { kind: 'named_imports' } } },
+            ],
+          },
+        }) !== null
+      migrationMetric.increment({ action: hasBuiNamedImport ? 'import-merged' : 'import-added' })
+    }
   }
 
   return Promise.resolve(edits.length > 0 ? rootNode.commitEdits(edits) : null)

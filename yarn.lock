@@ -5,7 +5,7 @@ __metadata:
   version: 10
   cacheKey: 10c0
 
-"@backstage/config@npm:^1.3.9":
+"@backstage/config@npm:^1.3.10":
   version: 1.3.10
   resolution: "@backstage/config@npm:1.3.10"
   dependencies:
@@ -16,7 +16,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@backstage/errors@npm:^1.3.1, @backstage/errors@npm:^1.3.2":
+"@backstage/errors@npm:^1.3.2":
   version: 1.3.2
   resolution: "@backstage/errors@npm:1.3.2"
   dependencies:
@@ -26,29 +26,30 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@backstage/filter-predicates@npm:^0.1.5":
-  version: 0.1.5
-  resolution: "@backstage/filter-predicates@npm:0.1.5"
+"@backstage/filter-predicates@npm:^0.2.0":
+  version: 0.2.0
+  resolution: "@backstage/filter-predicates@npm:0.2.0"
   dependencies:
-    "@backstage/config": "npm:^1.3.9"
-    "@backstage/errors": "npm:^1.3.1"
+    "@backstage/config": "npm:^1.3.10"
+    "@backstage/errors": "npm:^1.3.2"
     "@backstage/types": "npm:^1.2.2"
     zod: "npm:^3.25.76 || ^4.0.0"
     zod-validation-error: "npm:^5.0.0"
-  checksum: 10c0/463f22f586224d0fcbf0d658ae69f2c2517744859ed7b80e306af685c8a9b61f5d9a50dddc72af4007fd91a4787af0841d2d8c7e9408ed06adf80a9e6233313c
+  checksum: 10c0/2f4d9048ece84037e33babdc35e92b871b93edb3275efc2325ec674919d100eb29b36963ce6d076ac4cd12420f05cae662366ca9e86d8d33993dc89371706f18
   languageName: node
   linkType: hard
 
-"@backstage/frontend-plugin-api@npm:0.18.1":
-  version: 0.18.1
-  resolution: "@backstage/frontend-plugin-api@npm:0.18.1"
+"@backstage/frontend-plugin-api@npm:^0.18.2":
+  version: 0.18.2
+  resolution: "@backstage/frontend-plugin-api@npm:0.18.2"
   dependencies:
-    "@backstage/config": "npm:^1.3.9"
-    "@backstage/errors": "npm:^1.3.1"
-    "@backstage/filter-predicates": "npm:^0.1.5"
+    "@backstage/config": "npm:^1.3.10"
+    "@backstage/errors": "npm:^1.3.2"
+    "@backstage/filter-predicates": "npm:^0.2.0"
     "@backstage/types": "npm:^1.2.2"
     "@backstage/version-bridge": "npm:^1.0.12"
     "@standard-schema/spec": "npm:^1.1.0"
+    use-sync-external-store: "npm:^1.4.0"
   peerDependencies:
     "@types/react": ^17.0.0 || ^18.0.0
     react: ^17.0.0 || ^18.0.0
@@ -57,7 +58,7 @@ __metadata:
   peerDependenciesMeta:
     "@types/react":
       optional: true
-  checksum: 10c0/ccab18cceede3ed64e0bedc27d745913fedbfa57e4372fed1449b6cd743762aada81cf532ee9d61f143012530c3956c97d6483f87b301e5f307625fd2313d285
+  checksum: 10c0/057d0ea3cfc7bd8a7f368db50d0a2c51fb375d7561b53aa3f86285049f434480a65b162ffb1dee52c48103227919134defba95e285d1a3b5ce1f22be935ce99d
   languageName: node
   linkType: hard
 
@@ -67,6 +68,7 @@ __metadata:
   dependencies:
     "@backstage/scripts": "workspace:*"
     "@codemod.com/jssg-types": "npm:1.6.3"
+    "@jssg/utils": "patch:@jssg/utils@npm%3A0.0.11#~/.yarn/patches/@jssg-utils-npm-0.0.11-19369c37c8.patch"
     codemod: "npm:1.18.3"
   languageName: unknown
   linkType: soft
@@ -102,6 +104,7 @@ __metadata:
   dependencies:
     "@backstage/scripts": "workspace:*"
     "@codemod.com/jssg-types": "npm:1.6.3"
+    "@jssg/utils": "patch:@jssg/utils@npm%3A0.0.11#~/.yarn/patches/@jssg-utils-npm-0.0.11-19369c37c8.patch"
     codemod: "npm:1.18.3"
   languageName: unknown
   linkType: soft
@@ -122,6 +125,7 @@ __metadata:
   dependencies:
     "@backstage/scripts": "workspace:*"
     "@codemod.com/jssg-types": "npm:1.6.3"
+    "@jssg/utils": "patch:@jssg/utils@npm%3A0.0.11#~/.yarn/patches/@jssg-utils-npm-0.0.11-19369c37c8.patch"
     codemod: "npm:1.18.3"
   languageName: unknown
   linkType: soft
@@ -132,7 +136,7 @@ __metadata:
   dependencies:
     "@backstage/scripts": "workspace:*"
     "@codemod.com/jssg-types": "npm:1.6.3"
-    "@jssg/utils": "npm:^0.0.10"
+    "@jssg/utils": "patch:@jssg/utils@npm%3A0.0.11#~/.yarn/patches/@jssg-utils-npm-0.0.11-19369c37c8.patch"
     codemod: "npm:1.18.3"
   languageName: unknown
   linkType: soft
@@ -143,7 +147,7 @@ __metadata:
   dependencies:
     "@backstage/scripts": "workspace:*"
     "@codemod.com/jssg-types": "npm:1.6.3"
-    "@jssg/utils": "npm:^0.0.10"
+    "@jssg/utils": "patch:@jssg/utils@npm%3A0.0.11#~/.yarn/patches/@jssg-utils-npm-0.0.11-19369c37c8.patch"
     codemod: "npm:1.18.3"
   languageName: unknown
   linkType: soft
@@ -154,7 +158,7 @@ __metadata:
   dependencies:
     "@backstage/scripts": "workspace:*"
     "@codemod.com/jssg-types": "npm:1.6.3"
-    "@jssg/utils": "npm:^0.0.10"
+    "@jssg/utils": "patch:@jssg/utils@npm%3A0.0.11#~/.yarn/patches/@jssg-utils-npm-0.0.11-19369c37c8.patch"
     codemod: "npm:1.18.3"
   languageName: unknown
   linkType: soft
@@ -165,7 +169,7 @@ __metadata:
   dependencies:
     "@backstage/scripts": "workspace:*"
     "@codemod.com/jssg-types": "npm:1.6.3"
-    "@jssg/utils": "npm:^0.0.10"
+    "@jssg/utils": "patch:@jssg/utils@npm%3A0.0.11#~/.yarn/patches/@jssg-utils-npm-0.0.11-19369c37c8.patch"
     codemod: "npm:1.18.3"
   languageName: unknown
   linkType: soft
@@ -176,6 +180,7 @@ __metadata:
   dependencies:
     "@backstage/scripts": "workspace:*"
     "@codemod.com/jssg-types": "npm:1.6.3"
+    "@jssg/utils": "patch:@jssg/utils@npm%3A0.0.11#~/.yarn/patches/@jssg-utils-npm-0.0.11-19369c37c8.patch"
     codemod: "npm:1.18.3"
   languageName: unknown
   linkType: soft
@@ -194,13 +199,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@backstage/v1-54-0-migration-recipe@workspace:codemods/v1.54.0"
   dependencies:
-    "@backstage/frontend-plugin-api": "npm:0.18.1"
+    "@backstage/frontend-plugin-api": "npm:^0.18.2"
     "@backstage/scripts": "workspace:*"
     "@codemod.com/jssg-types": "npm:1.6.3"
-    "@types/node": "npm:^24"
+    "@jssg/utils": "patch:@jssg/utils@npm%3A0.0.11#~/.yarn/patches/@jssg-utils-npm-0.0.11-19369c37c8.patch"
     codemod: "npm:1.18.3"
-    typescript: "npm:^7.0.2"
-    zod: "npm:^4.1.0"
+    zod: "npm:^4.6.7"
   languageName: unknown
   linkType: soft
 
@@ -210,9 +214,8 @@ __metadata:
   dependencies:
     "@backstage/scripts": "workspace:*"
     "@codemod.com/jssg-types": "npm:1.6.3"
+    "@jssg/utils": "patch:@jssg/utils@npm%3A0.0.11#~/.yarn/patches/@jssg-utils-npm-0.0.11-19369c37c8.patch"
     codemod: "npm:1.18.3"
-    typescript: "npm:^7.0.2"
-    yaml: "npm:^2.8.1"
   languageName: unknown
   linkType: soft
 
@@ -490,10 +493,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jssg/utils@npm:^0.0.10":
-  version: 0.0.10
-  resolution: "@jssg/utils@npm:0.0.10"
-  checksum: 10c0/e2e93717e078932572f7caf5b066365d238cddca8f2013b66c352f0a8e5d39e9636c3b76dc1f95a1334f775fb999e7821b4ab25672bb3619e2e24472f9a9e529
+"@jssg/utils@npm:0.0.11":
+  version: 0.0.11
+  resolution: "@jssg/utils@npm:0.0.11"
+  checksum: 10c0/177aea6646cdd221b8cd237adf19544e37c34de6b5085bb772535093887226969315d8544d5b4328c488c4eb40607ad99fdf944a7ceeaf87ae0cce82ece74b51
+  languageName: node
+  linkType: hard
+
+"@jssg/utils@patch:@jssg/utils@npm%3A0.0.11#~/.yarn/patches/@jssg-utils-npm-0.0.11-19369c37c8.patch":
+  version: 0.0.11
+  resolution: "@jssg/utils@patch:@jssg/utils@npm%3A0.0.11#~/.yarn/patches/@jssg-utils-npm-0.0.11-19369c37c8.patch::version=0.0.11&hash=412d76"
+  checksum: 10c0/b4cfc1d537b2d10227802cb12483780bc4d2a45c2dd4b7f935cfc1e1b25af705dfed966e66dc194a19eda60fdef4a45661b718ef5c7abc57630b8f981c0b346c
   languageName: node
   linkType: hard
 
@@ -1609,6 +1619,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"use-sync-external-store@npm:^1.4.0":
+  version: 1.7.0
+  resolution: "use-sync-external-store@npm:1.7.0"
+  peerDependencies:
+    react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+  checksum: 10c0/6bae7cb778ce611131ec830c4e469fbc2872acefc25d2e4cf1c28b8628690689770742a9f2f0642c95134f9c77041fee60f0352f81ca43f96643b0ed01774726
+  languageName: node
+  linkType: hard
+
 "useful-codemods@workspace:.":
   version: 0.0.0-use.local
   resolution: "useful-codemods@workspace:."
@@ -1642,7 +1661,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod@npm:^3.25.76 || ^4.0.0, zod@npm:^4.1.0":
+"zod@npm:^3.25.76 || ^4.0.0, zod@npm:^4.6.7":
   version: 4.6.7
   resolution: "zod@npm:4.6.7"
   checksum: 10c0/4ce2eb14034317b7254e347ca37b5ad591cf8333147030cf05b9b5d31692d45073f7f2747aa50cf8c6b29012194d2b22978cecc89969cf34a0d18e89d0ee7d7b

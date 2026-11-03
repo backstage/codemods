@@ -1,0 +1,22 @@
+diff --git a/src/javascript/exports/imports.ts b/src/javascript/exports/imports.ts
+index 8f7a78220d2ecc6ebcafb817a8a94877ccb97881..3691a79f19f4d90a3cee4573d58e0ebf3ff42136 100644
+--- a/src/javascript/exports/imports.ts
++++ b/src/javascript/exports/imports.ts
+@@ -2247,7 +2247,7 @@ function requireObjectPatterns<T extends Language>(
+         },
+       },
+     ],
+-  } satisfies Rule<Language>;
++  } as unknown as Rule<Language>;
+   const patterns = new Map<number, SgNode<T>>();
+   const specifiers = tsProgram.findAll({
+     rule: {
+@@ -2258,7 +2258,7 @@ function requireObjectPatterns<T extends Language>(
+         inside: {
+           stopBy: "end",
+           kind: "variable_declarator",
+-          has: value,
++          has: value as unknown as never,
+         },
+       },
+     },

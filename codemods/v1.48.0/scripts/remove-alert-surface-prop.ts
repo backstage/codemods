@@ -1,3 +1,4 @@
+import { listImports } from '@jssg/utils/javascript/imports'
 import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
@@ -8,62 +9,31 @@ const TARGET_COMPONENT = 'Alert'
 const REMOVED_PROP = 'surface'
 const UI_SOURCE = '@backstage/ui'
 
-function escapeRegex(str: string): string {
-  return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
-function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode<TSX, 'import_statement'>[] {
-  return rootNode.findAll<'import_statement'>({
-    rule: {
-      kind: 'import_statement',
-      has: {
-        kind: 'string',
-        has: {
-          kind: 'string_fragment',
-          regex: `^${escapeRegex(source)}$`,
-        },
-      },
-    },
-  })
-}
-
 interface ImportedComponents {
   localNames: Set<string>
   namespaceAliases: string[]
 }
 
-function collectImportedComponents(importStatements: SgNode<TSX, 'import_statement'>[]): ImportedComponents {
+function collectImportedComponents(rootNode: SgNode<TSX, 'program'>): ImportedComponents {
   const localNames = new Set<string>()
   const namespaceAliases: string[] = []
 
-  for (const imp of importStatements) {
-    const nsImport = imp.find({ rule: { kind: 'namespace_import' } })
-    if (nsImport) {
-      const aliasNode = nsImport.find({ rule: { kind: 'identifier' } })
-      if (aliasNode) {
-        namespaceAliases.push(aliasNode.text())
-      }
-      continue
+  for (const imp of listImports(rootNode, { from: UI_SOURCE })) {
+    if (imp.namespaceName) {
+      namespaceAliases.push(imp.namespaceName)
     }
-
-    for (const spec of imp.findAll({ rule: { kind: 'import_specifier' } })) {
-      const identifiers = spec.findAll({
-        rule: {
-          any: [{ kind: 'identifier' }, { kind: 'type_identifier' }],
-        },
-      })
-
-      const [importedNameNode] = identifiers
-      if (!importedNameNode || importedNameNode.text() !== TARGET_COMPONENT) {
-        continue
+    for (const spec of imp.specifiers) {
+      if (spec.importedName === TARGET_COMPONENT) {
+        localNames.add(spec.localName)
       }
-
-      const localNameNode = identifiers[1] ?? importedNameNode
-      localNames.add(localNameNode.text())
     }
   }
 
   return { localNames, namespaceAliases }
+}
+
+function escapeRegex(str: string): string {
+  return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 function getOpeningElement(el: SgNode<TSX>): SgNode<TSX> | null {
@@ -133,12 +103,7 @@ const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
-  const uiImports = findImportStatementsFrom(rootNode, UI_SOURCE)
-  if (uiImports.length === 0) {
-    return null
-  }
-
-  const { localNames, namespaceAliases } = collectImportedComponents(uiImports)
+  const { localNames, namespaceAliases } = collectImportedComponents(rootNode)
   if (localNames.size === 0 && namespaceAliases.length === 0) {
     return null
   }

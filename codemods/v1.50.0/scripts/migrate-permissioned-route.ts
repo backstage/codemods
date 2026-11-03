@@ -345,7 +345,8 @@ const transform: Codemod<TSX> = async (root) => {
     from: PERMISSION_REACT,
   })
   if (removePermissionedRouteEdit) {
-    edits.push(removePermissionedRouteEdit)
+    // removeImport returns a flat Edit[] in @jssg/utils 0.0.11
+    edits.push(...removePermissionedRouteEdit)
   }
 
   const phase1Source = rootNode.commitEdits(edits)
@@ -366,7 +367,9 @@ const transform: Codemod<TSX> = async (root) => {
 
     const addRequirePermissionEdit = addImport(phase2Root, {
       type: 'named',
-      specifiers: [{ name: 'RequirePermission' }],
+      // Pass the resolved alias: in @jssg/utils 0.0.11 an aliased binding
+      // (`RequirePermission as ReqPerm`) no longer satisfies a plain-name add.
+      specifiers: [{ name: 'RequirePermission', alias: requirePermissionAlias }],
       from: PERMISSION_REACT,
       moduleType: permImport.moduleType,
     })
@@ -376,7 +379,7 @@ const transform: Codemod<TSX> = async (root) => {
 
     const addRouteEdit = addImport(phase2Root, {
       type: 'named',
-      specifiers: [{ name: 'Route' }],
+      specifiers: [{ name: 'Route', alias: routeName }],
       from: REACT_ROUTER_DOM,
       moduleType: routeImp?.moduleType ?? 'esm',
     })

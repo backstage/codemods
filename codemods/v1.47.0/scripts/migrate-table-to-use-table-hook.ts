@@ -1,4 +1,6 @@
-import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
+import { listImports } from '@jssg/utils/javascript/imports'
+import { getLineIndent } from '@jssg/utils/javascript/style'
+import type { Codemod, Edit } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
 
@@ -9,63 +11,19 @@ const TODO_COMMENT = '/* TODO(backstage-codemod): Review Table migration — ver
 const TODO_JSX_COMMENT =
   '{/* TODO(backstage-codemod): Migrate TableHeader/TableBody/TablePagination to new Table API */}'
 
-function escapeRegex(str: string): string {
-  return `^${str.replaceAll(/[.*+?^${}()|[\]\\/]/g, '\\$&')}$`
-}
-
-/**
- * Find all import statements from a given source.
- */
-function findImportsFrom(rootNode: SgNode<TSX>, source: string): SgNode<TSX, 'import_statement'>[] {
-  return rootNode.findAll<'import_statement'>({
-    rule: {
-      kind: 'import_statement',
-      has: {
-        kind: 'string',
-        has: {
-          kind: 'string_fragment',
-          regex: escapeRegex(source),
-        },
-      },
-    },
-  })
-}
-
-/**
- * Check if a specific named import exists in an import statement.
- */
-function hasNamedImport(importNode: SgNode<TSX>, name: string): boolean {
-  const specifiers = importNode.findAll({ rule: { kind: 'import_specifier' } })
-  for (const spec of specifiers) {
-    const identifiers = spec.findAll({ rule: { kind: 'identifier' } })
-    if (identifiers[0]?.text() === name) {
-      return true
-    }
-  }
-  return false
-}
-
 const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
-  const buiImports = findImportsFrom(rootNode, BUI_SOURCE)
+  const buiImports = listImports(rootNode, { from: BUI_SOURCE })
 
   if (buiImports.length === 0) {
     return null
   }
 
-  let hasTableImport = false
-  let hasUseTableImport = false
-
-  for (const imp of buiImports) {
-    if (hasNamedImport(imp, 'Table')) {
-      hasTableImport = true
-    }
-    if (hasNamedImport(imp, 'useTable')) {
-      hasUseTableImport = true
-    }
-  }
+  const importedNames = new Set(buiImports.flatMap((imp) => imp.specifiers.map((spec) => spec.importedName)))
+  const hasTableImport = importedNames.has('Table')
+  const hasUseTableImport = importedNames.has('useTable')
 
   // Only proceed if file uses the old Table-related imports
   if (!hasTableImport && !hasUseTableImport) {
@@ -77,18 +35,9 @@ const transform: Codemod<TSX> = async (root) => {
   const tableComponents = new Set(['TableHeader', 'TableBody', 'TablePagination'])
 
   for (const imp of buiImports) {
-    const specifiers = imp.findAll({ rule: { kind: 'import_specifier' } })
-    const foundComponents: string[] = []
-
-    for (const spec of specifiers) {
-      const identifiers = spec.findAll({ rule: { kind: 'identifier' } })
-      const importedName = identifiers[0]?.text()
-      if (importedName && tableComponents.has(importedName)) {
-        // Use local alias (second identifier) when present, otherwise the imported name
-        const localName = identifiers[1]?.text() ?? importedName
-        foundComponents.push(localName)
-      }
-    }
+    const foundComponents = imp.specifiers
+      .filter((spec) => tableComponents.has(spec.importedName))
+      .map((spec) => spec.localName)
 
     if (foundComponents.length > 0) {
       // Add TODO comments before JSX elements that use these components
@@ -110,12 +59,7 @@ const transform: Codemod<TSX> = async (root) => {
           }
 
           const startPos = jsxNode.range().start.index
-          const fullText = rootNode.text()
-          let lineStart = startPos
-          while (lineStart > 0 && fullText[lineStart - 1] !== '\n') {
-            lineStart--
-          }
-          const indent = fullText.slice(lineStart, startPos)
+          const indent = getLineIndent(rootNode.text(), jsxNode)
 
           edits.push({
             startPos,
@@ -171,12 +115,7 @@ const transform: Codemod<TSX> = async (root) => {
     const varDecl = declarator.parent()
     if (varDecl) {
       const startPos = varDecl.range().start.index
-      const fullText = rootNode.text()
-      let lineStart = startPos
-      while (lineStart > 0 && fullText[lineStart - 1] !== '\n') {
-        lineStart--
-      }
-      const indent = fullText.slice(lineStart, startPos)
+      const indent = getLineIndent(rootNode.text(), varDecl)
 
       edits.push({
         startPos,

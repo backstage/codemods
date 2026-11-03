@@ -1,3 +1,4 @@
+import { addImport, getAllImports, getImport, listImports, removeImport } from '@jssg/utils/javascript/imports'
 import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
@@ -58,188 +59,42 @@ function withTodoComment(comment: string, elementText: string): string {
 </>`
 }
 
-function rebuildImportWithout(importStmt: SgNode<TSX>, specifiersToRemove: Set<string>): string {
-  const specifiers = importStmt.findAll({ rule: { kind: 'import_specifier' } })
-  const remaining: string[] = []
-  for (const spec of specifiers) {
-    const identifiers = spec.findAll({
-      rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
-    })
-    const importedName = identifiers[0]?.text()
-    if (importedName && !specifiersToRemove.has(importedName)) {
-      remaining.push(spec.text())
-    }
-  }
-
-  if (remaining.length === 0) {
-    return ''
-  }
-
-  const sourceNode = importStmt.find({ rule: { kind: 'string' } })
-  const sourceText = sourceNode?.text() ?? `'${MUI_BARREL_SOURCE}'`
-
-  if (remaining.length <= 2) {
-    return `import { ${remaining.join(', ')} } from ${sourceText};`
-  }
-  return `import {\n  ${remaining.join(',\n  ')},\n} from ${sourceText};`
-}
-
-function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode<TSX>[] {
-  return rootNode.findAll({
-    rule: {
-      kind: 'import_statement',
-      has: {
-        kind: 'string',
-        has: {
-          kind: 'string_fragment',
-          regex: `^${escapeRegex(source)}$`,
-        },
-      },
-    },
-  })
-}
-
-function getDefaultImportName(imp: SgNode<TSX>): string | null {
-  const clause = imp.find({ rule: { kind: 'import_clause' } })
-  if (!clause) {
-    return null
-  }
-  for (const child of clause.children()) {
-    if (child.is('identifier')) {
-      return child.text()
-    }
-  }
-  return null
-}
-
-function getNamedImportLocalName(imp: SgNode<TSX>, targetName: string): string | null {
-  for (const spec of imp.findAll({ rule: { kind: 'import_specifier' } })) {
-    const identifiers = spec.findAll({
-      rule: { any: [{ kind: 'identifier' }, { kind: 'type_identifier' }] },
-    })
-    const [importedNameNode] = identifiers
-    if (importedNameNode?.text() === targetName) {
-      const localNameNode = identifiers[1] ?? importedNameNode
-      return localNameNode.text()
-    }
-  }
-  return null
-}
-
-function collectSwitchImports(rootNode: SgNode<TSX>): {
+function collectSwitchImports(rootNode: SgNode<TSX, 'program'>): {
   switchLocalName: string | null
   fclLocalName: string | null
-  importNodesToRemove: SgNode<TSX>[]
-  barrelImportsToPrune: { imp: SgNode<TSX>; namesToRemove: Set<string> }[]
+  defaultSources: string[]
+  barrelNames: string[]
 } {
   let switchLocalName: string | null = null
   let fclLocalName: string | null = null
-  const importNodesToRemove: SgNode<TSX>[] = []
-  const barrelImportsToPrune: { imp: SgNode<TSX>; namesToRemove: Set<string> }[] = []
+  const defaultSources: string[] = []
+  const barrelNames: string[] = []
 
-  for (const imp of findImportStatementsFrom(rootNode, '@material-ui/core/Switch')) {
-    switchLocalName = getDefaultImportName(imp)
-    importNodesToRemove.push(imp)
+  const switchDefault = getImport(rootNode, { type: 'default', from: '@material-ui/core/Switch' })
+  if (switchDefault) {
+    switchLocalName = switchDefault.alias
+    defaultSources.push('@material-ui/core/Switch')
+  }
+  const fclDefault = getImport(rootNode, { type: 'default', from: '@material-ui/core/FormControlLabel' })
+  if (fclDefault) {
+    fclLocalName = fclDefault.alias
+    defaultSources.push('@material-ui/core/FormControlLabel')
   }
 
-  for (const imp of findImportStatementsFrom(rootNode, '@material-ui/core/FormControlLabel')) {
-    fclLocalName = getDefaultImportName(imp)
-    importNodesToRemove.push(imp)
+  for (const named of getAllImports(rootNode, { type: 'named', name: 'Switch', from: MUI_BARREL_SOURCE })) {
+    switchLocalName = named.alias
+    if (!barrelNames.includes('Switch')) {
+      barrelNames.push('Switch')
+    }
   }
-
-  for (const imp of findImportStatementsFrom(rootNode, MUI_BARREL_SOURCE)) {
-    const foundNames = new Set<string>()
-    const switchName = getNamedImportLocalName(imp, 'Switch')
-    if (switchName) {
-      switchLocalName = switchName
-      foundNames.add('Switch')
-    }
-    const fclName = getNamedImportLocalName(imp, 'FormControlLabel')
-    if (fclName) {
-      fclLocalName = fclName
-      foundNames.add('FormControlLabel')
-    }
-    if (foundNames.size > 0) {
-      const allSpecifiers = imp.findAll({ rule: { kind: 'import_specifier' } })
-      if (foundNames.size >= allSpecifiers.length) {
-        importNodesToRemove.push(imp)
-      } else {
-        barrelImportsToPrune.push({ imp, namesToRemove: foundNames })
-      }
+  for (const named of getAllImports(rootNode, { type: 'named', name: 'FormControlLabel', from: MUI_BARREL_SOURCE })) {
+    fclLocalName = named.alias
+    if (!barrelNames.includes('FormControlLabel')) {
+      barrelNames.push('FormControlLabel')
     }
   }
 
-  return { switchLocalName, fclLocalName, importNodesToRemove, barrelImportsToPrune }
-}
-
-function addBuiImport(
-  rootNode: SgNode<TSX>,
-  importNodesToRemove: SgNode<TSX>[],
-  barrelImportsToPrune: { imp: SgNode<TSX>; namesToRemove: Set<string> }[],
-  edits: Edit[],
-  handledBarrelIds: Set<number>,
-): boolean {
-  const existingImports = findImportStatementsFrom(rootNode, BUI_SOURCE)
-  const existingImport = existingImports[0] ?? null
-
-  if (existingImport) {
-    const alreadyImported = getNamedImportLocalName(existingImport, 'Switch') !== null
-    if (!alreadyImported) {
-      const namedImports = existingImport.find({ rule: { kind: 'named_imports' } })
-      if (namedImports) {
-        const text = namedImports.text()
-        const inner = text.slice(1, -1).trim()
-        const names = inner
-          .split(',')
-          .map((n) => n.trim())
-          .filter(Boolean)
-        names.push('Switch')
-        names.sort()
-        edits.push(namedImports.replace(`{ ${names.join(', ')} }`))
-        migrationMetric.increment({ action: 'import-merged' })
-      } else {
-        edits.push(existingImport.replace(`${existingImport.text()}\nimport { Switch } from '${BUI_SOURCE}';`))
-        migrationMetric.increment({ action: 'import-added' })
-      }
-    }
-    return false
-  }
-
-  const skipIds = new Set([
-    ...importNodesToRemove.map((imp) => imp.id()),
-    ...barrelImportsToPrune.map(({ imp }) => imp.id()),
-  ])
-  const allImports = rootNode.findAll({ rule: { kind: 'import_statement' } })
-  const anchorImport = [...allImports].reverse().find((imp) => !skipIds.has(imp.id())) ?? null
-  const buiImport = `import { Switch } from '${BUI_SOURCE}';`
-
-  if (anchorImport) {
-    edits.push(anchorImport.replace(`${anchorImport.text()}\n${buiImport}`))
-    migrationMetric.increment({ action: 'import-added' })
-    return false
-  }
-
-  const [barrelToFold] = barrelImportsToPrune
-  if (barrelToFold) {
-    const pruned = rebuildImportWithout(barrelToFold.imp, barrelToFold.namesToRemove)
-    edits.push(barrelToFold.imp.replace(pruned.length > 0 ? `${pruned}\n${buiImport}` : buiImport))
-    handledBarrelIds.add(barrelToFold.imp.id())
-    migrationMetric.increment({ action: 'import-added' })
-    migrationMetric.increment({ action: 'import-pruned' })
-    return false
-  }
-
-  if (importNodesToRemove.length >= 1) {
-    const [importNode] = importNodesToRemove
-    if (importNode) {
-      edits.push(importNode.replace(buiImport))
-      migrationMetric.increment({ action: 'import-added' })
-      return true
-    }
-  }
-
-  migrationMetric.increment({ action: 'import-added' })
-  return false
+  return { switchLocalName, fclLocalName, defaultSources, barrelNames }
 }
 
 function getElementName(opening: SgNode<TSX>): string | null {
@@ -367,7 +222,7 @@ function extractControlSwitch(fclOpening: SgNode<TSX>, switchLocalName: string):
 }
 
 function transformElements(
-  rootNode: SgNode<TSX>,
+  rootNode: SgNode<TSX, 'program'>,
   switchLocalName: string,
   fclLocalName: string | null,
   edits: Edit[],
@@ -521,7 +376,7 @@ const transform: Codemod<TSX> = (root) => {
   const rootNode = root.root()
   const edits: Edit[] = []
 
-  const { switchLocalName, fclLocalName, importNodesToRemove, barrelImportsToPrune } = collectSwitchImports(rootNode)
+  const { switchLocalName, fclLocalName, defaultSources, barrelNames } = collectSwitchImports(rootNode)
 
   if (!switchLocalName) {
     return Promise.resolve(null)
@@ -529,27 +384,58 @@ const transform: Codemod<TSX> = (root) => {
 
   const { preserveImport, migrated } = transformElements(rootNode, switchLocalName, fclLocalName, edits)
 
-  let replacedImport = false
-  const handledBarrelIds = new Set<number>()
   if (migrated) {
-    replacedImport = addBuiImport(rootNode, importNodesToRemove, barrelImportsToPrune, edits, handledBarrelIds)
+    const addEdit = addImport(rootNode, {
+      type: 'named',
+      specifiers: [{ name: 'Switch' }],
+      from: BUI_SOURCE,
+    })
+    if (addEdit) {
+      edits.push(addEdit)
+      const hasBuiNamedImport =
+        rootNode.find({
+          rule: {
+            kind: 'import_statement',
+            all: [
+              {
+                has: {
+                  kind: 'string',
+                  has: { kind: 'string_fragment', regex: `^${escapeRegex(BUI_SOURCE)}$` },
+                },
+              },
+              { has: { kind: 'import_clause', has: { kind: 'named_imports' } } },
+            ],
+          },
+        }) !== null
+      migrationMetric.increment({ action: hasBuiNamedImport ? 'import-merged' : 'import-added' })
+    }
   }
 
   if (!preserveImport) {
-    for (const { imp, namesToRemove } of barrelImportsToPrune) {
-      if (handledBarrelIds.has(imp.id())) {
-        continue
+    if (barrelNames.length > 0) {
+      const removedNames = new Set(barrelNames)
+      for (const item of listImports(rootNode, { from: MUI_BARREL_SOURCE })) {
+        const matching = item.specifiers.filter((spec) => removedNames.has(spec.importedName))
+        if (matching.length === 0) {
+          continue
+        }
+        if (matching.length >= item.specifiers.length) {
+          migrationMetric.increment({ action: 'import-removed' })
+        } else {
+          migrationMetric.increment({ action: 'import-pruned' })
+        }
       }
-      edits.push(imp.replace(rebuildImportWithout(imp, namesToRemove)))
-      migrationMetric.increment({ action: 'import-pruned' })
+      const edit = removeImport(rootNode, { type: 'named', specifiers: barrelNames, from: MUI_BARREL_SOURCE })
+      if (edit) {
+        edits.push(...edit)
+      }
     }
-    for (const imp of importNodesToRemove) {
-      if (replacedImport && imp.id() === importNodesToRemove[0]?.id()) {
+    for (const source of defaultSources) {
+      const edit = removeImport(rootNode, { type: 'default', from: source })
+      if (edit) {
+        edits.push(...edit)
         migrationMetric.increment({ action: 'import-removed' })
-        continue
       }
-      edits.push(imp.replace(''))
-      migrationMetric.increment({ action: 'import-removed' })
     }
   }
 
