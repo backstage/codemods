@@ -10,13 +10,13 @@ See the [Codemod docs](https://docs.codemod.com) for more on building and runnin
 
 <!-- CODEMODS_START -->
 
+### v1.56.0
+
+Run the [`migration-recipe`](./codemods/v1.56.0) to apply every migration in one pass. Individual scripts can still be run on their own; see the recipe's README.
+
 ### v1.55.0
 
 Run the [`migration-recipe`](./codemods/v1.55.0) to apply every migration in one pass. Individual scripts can still be run on their own; see the recipe's README.
-
-### v1.54.0
-
-Run the [`migration-recipe`](./codemods/v1.54.0) to apply every migration in one pass. Individual scripts can still be run on their own; see the recipe's README.
 
 Older versions are available in the [`codemods/`](./codemods) directory.
 
