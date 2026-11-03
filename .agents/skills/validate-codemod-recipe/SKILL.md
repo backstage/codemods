@@ -19,10 +19,10 @@ is clean. This is an iterative loop — expect multiple passes.
 
 ## Inputs
 
-| Input            | Example                                         | Required |
-| ---------------- | ----------------------------------------------- | -------- |
-| Codemod path     | `../codemods/codemods/v1.51.0/migration-recipe` | Yes      |
-| Target directory | `packages`, `plugins`, or `.`                   | Yes      |
+| Input            | Example                        | Required |
+| ---------------- | ------------------------------ | -------- |
+| Codemod path     | `../codemods/codemods/v1.55.0` | Yes      |
+| Target directory | `packages`, `plugins`, or `.`  | Yes      |
 
 The codemod path points to a directory containing `codemod.yaml` and
 `workflow.yaml`. The target is relative to the current working directory.
@@ -58,7 +58,8 @@ git checkout -- .
 yarn dlx codemod workflow run -w <codemod-path> --no-interactive --target <target-dir>
 ```
 
-If the recipe references registry sources (`source: '@backstage/...'`) and you
+If the recipe references registry sources (`source: '@backstage/...'`) —
+legacy workflows only; current recipes run local `js_file` scripts — and you
 need to test local changes, swap them to relative paths in `workflow.yaml`
 before running. The path resolves relative to the current working directory,
 not the workflow file. Restore registry sources after validation.
