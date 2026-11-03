@@ -16,7 +16,7 @@ import { join } from 'node:path'
 //      by their node --test suites)
 //   tests/<name>/assert-fixtures.ts                        -> node tests/<name>/assert-fixtures.ts
 //   tests/**/tsconfig.json                                  -> tsc -p
-//   tests/**/*.test.mjs                                     -> node --test
+//   tests/**/*.test.{mjs,ts}                                     -> node --test
 // plus codemod workflow validate.
 //
 // --list prints the planned suites and commands without running them.
@@ -165,7 +165,7 @@ for (const tsconfig of collectFiles('tests', (name) => name === 'tsconfig.json')
 }
 
 // --- Node unit tests
-for (const testFile of collectFiles('tests', (name) => name.endsWith('.test.mjs'))) {
+for (const testFile of collectFiles('tests', (name) => name.endsWith('.test.mjs') || name.endsWith('.test.ts'))) {
   const path = testFile.replaceAll('\\', '/')
   console.log(`== node --test: ${path}`)
   run('node', ['--test', path])

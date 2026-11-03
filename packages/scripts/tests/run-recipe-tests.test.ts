@@ -46,6 +46,10 @@ test('run-recipe-tests discovers suites by convention', () => {
     file('tests/zeta/typed-extension/tsconfig.json', '{}\n')
     file('tests/unit.test.mjs', "import { test } from 'node:test'\ntest('unit', () => {})\n")
 
+    file('tests/unit.test.ts', `import { test } from 'node:test'
+test('typed unit', () => {})
+`)
+
     const plan = list(fixture)
 
     // Workflow structure comes first; jssg suites follow, one per script with a
@@ -65,6 +69,8 @@ test('run-recipe-tests discovers suites by convention', () => {
   yarn exec tsc -p tests/zeta/typed-extension/tsconfig.json
 == node --test: tests/unit.test.mjs
   node --test tests/unit.test.mjs
+== node --test: tests/unit.test.ts
+  node --test tests/unit.test.ts
 == codemod workflow validate
   yarn exec codemod workflow validate -w workflow.yaml`
 
