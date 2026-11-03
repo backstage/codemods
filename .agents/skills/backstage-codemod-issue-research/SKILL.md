@@ -1,12 +1,12 @@
 ---
 name: backstage-codemod-issue-research
 description: |
-  Researches Backstage release breaking changes and drafts the consolidated migration-recipe GitHub issue for backstage/codemods (one issue per release, one bundled recipe package since v1.54). Use when planning a Backstage version migration (e.g. 1.56.0), inventorying breaking changes, deciding codemod step vs document-only, or preparing the release issue before implementation. Also use when asked to parse release changelogs, cross-check upgrade notes, classify deprecations, or write Detection Criteria / Transformation Logic for a recipe step. Does not implement codemods — hand off to the `codemod` skill after the issue is filed and approved.
+  Researches Backstage release breaking changes and drafts the consolidated migration-recipe GitHub issue for backstage/codemods (one issue per release, one bundled recipe package). Use when planning a Backstage version migration (e.g. 1.56.0), inventorying breaking changes, deciding codemod step vs document-only, or preparing the release issue before implementation. Also use when asked to parse release changelogs, cross-check upgrade notes, classify deprecations, or write Detection Criteria / Transformation Logic for a recipe step. Does not implement codemods — hand off to the `codemod` skill after the issue is filed and approved.
 ---
 
 # Backstage Codemod Issue Research
 
-Research a Backstage release and produce **one consolidated GitHub issue** in `backstage/codemods` before anyone scaffolds code. Since the v1.54 restructure, each release ships **one migration recipe package** (`codemods/v1.<minor>/`, `@backstage/v1-<minor>-0-migration-recipe`) bundling several deterministic local transform scripts behind one workflow — **not** one registry package per codemod. Output of this skill is an inventory table plus a single issue whose recipe-steps section specs each bundled script.
+Research a Backstage release and produce **one consolidated GitHub issue** in `backstage/codemods` before anyone scaffolds code. Each release ships **one migration recipe package** (`codemods/v1.<minor>/`, `@backstage/v1-<minor>-0-migration-recipe`) bundling several deterministic local transform scripts behind one workflow. Output of this skill is an inventory table plus a single issue whose recipe-steps section specs each bundled script.
 
 **Handoff:** After issues are filed and approved, switch to the **`codemod` skill** ([Codemod OSS quickstart](https://docs.codemod.com/oss-quickstart)) for scaffold → implement → test → publish. This skill stops at issue bodies.
 
@@ -39,7 +39,7 @@ Hand off with: the approved inventory table and the filed consolidated issue lin
 | Changelog | Consolidated changelog file available locally | Fetch from `backstage/backstage` — see Sources                                        |
 | Prior art | Closed issues for previous release exist      | `gh issue list --repo backstage/codemods --state closed --search "Backstage 1.<N-1>"` |
 
-Read [`CONTRIBUTING.md`](../../../CONTRIBUTING.md) for package naming and directory layout. Since v1.54 the layout is **one package per release**: `codemods/v1.<minor>/` containing `package.json`, `codemod.yaml`, `workflow.yaml`, `README.md`, `scripts/<step-name>.ts` (one per transform, `js-ast-grep` + `@jssg/utils` helpers) and `tests/`. See `codemods/v1.55.0/` for the reference implementation and issue #156 (1.55) / #189 (1.56) for consolidated-issue prior art.
+Read [`CONTRIBUTING.md`](../../../CONTRIBUTING.md) for package naming and directory layout. The layout is **one package per release**: `codemods/v1.<minor>/` containing `package.json`, `codemod.yaml`, `workflow.yaml`, `README.md`, `scripts/<step-name>.ts` (one per transform, `js-ast-grep` + `@jssg/utils` helpers) and `tests/`. See `codemods/v1.55.0/` for the reference implementation and issue #156 (1.55) / #189 (1.56) for consolidated-issue prior art.
 
 ## Workflow
 
@@ -251,7 +251,7 @@ An issue is ready to implement when:
 
 **Missing prior-release issue.** Always read the prior release's consolidated issue (#156 for 1.55, #189 for 1.56) plus its `codemods/v1.<prior>/` recipe package for section depth, step granularity and tone.
 
-**Filing per-codemod issues.** Pre-1.54 releases had one issue per codemod plus a separate recipe issue. Do not revive that structure: one issue per release, one recipe package with bundled scripts, one PR.
+**Filing per-codemod issues.** Do not file one issue per codemod or a separate recipe issue: one issue per release, one recipe package with bundled scripts, one PR.
 
 **Inventing migrations.** If the changelog does not support a transform, do not file an issue — note it in the inventory or recipe out-of-scope instead.
 
