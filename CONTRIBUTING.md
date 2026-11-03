@@ -75,39 +75,30 @@ The manual `Publish Codemod (Manual)` workflow (`.github/workflows/publish.yml`)
 
 ## Adding a new codemod
 
-Each codemod lives in its own directory under `codemods/<group>/<codemod-name>/`:
-
-```
-codemods/<group>/<codemod-name>/
-  scripts/codemod.ts   # Codemod logic (jssg / ast-grep)
-  tests/               # Input/expected test fixtures
-  codemod.yaml         # Codemod manifest (version is auto-synced)
-  workflow.yaml        # Execution workflow
-  package.json         # Source of truth for name + version
-```
-
-The `<group>` is either a Backstage release version (e.g. `v1.52.0`) for migration codemods, or `misc` for codemods not tied to a specific release (e.g. NFS migration).
+Codemod scripts live inside a recipe package, not standalone packages. Add a release migration as `codemods/<version>/scripts/<name>.ts` with fixtures under `tests/<name>/`. Add steps unrelated to a release to `codemods/misc/mui4-to-bui-migration-recipe/` using the same structure.
 
 Conventions to follow:
 
-- The two-level glob `codemods/*/*/` is assumed by the `sync-codemod-versions` and `tag-and-publish` bins from [`@backstage/scripts`](./packages/scripts). Don't flatten or deepen this layout.
-- The `package.json` `name` must be `@backstage/<codemod-name>`. The tagging and publishing scripts assume this scope.
-- The `version` field in `codemod.yaml` is generated from `package.json` by the `sync-codemod-versions` bin. Don't edit it directly.
+- Version recipe package roots are `codemods/<version>/`; the misc recipe root is `codemods/misc/mui4-to-bui-migration-recipe/`. Tooling discovers these package roots, not standalone codemod directories.
+- The `package.json` `name` must use the `@backstage/` scope. The tagging and publishing scripts assume this scope.
+- The `version` field in `codemod.yaml` is generated from `package.json` by `sync-codemod-versions`. Don't edit it directly.
 - Use single-quoted scalars in `codemod.yaml` and `workflow.yaml` to match the oxfmt convention.
 
-Use an existing codemod like `catalog-node-alpha-to-stable` as a reference when creating a new one.
+Use `codemods/v1.54.0/` as a reference when adding a script and workflow step.
 
 ## Adding a migration recipe
 
-Each Backstage release publishes a single `migration-recipe` package under `codemods/<version>/migration-recipe/` — the recipe is the only published package for its version, and every workflow step runs a local script instead of a nested registry codemod:
+Each Backstage release publishes a single `migration-recipe` package directly under `codemods/<version>/` — the recipe is the only published package for its version, and every workflow step runs a local script instead of a nested registry codemod:
 
 ```
-codemods/<version>/migration-recipe/
+codemods/<version>/
   scripts/<name>.ts     # One script per codemod step, kept separately runnable
   tests/<name>/         # Fixture suite matching scripts/<name>.ts
   workflow.yaml         # Steps reference the local scripts (js_file: scripts/<name>.ts)
   codemod.yaml / package.json / README.md
 ```
+
+The misc recipe keeps its nested package root at `codemods/misc/mui4-to-bui-migration-recipe/`. No standalone codemod packages are published.
 
 Conventions:
 

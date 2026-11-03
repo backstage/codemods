@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { appendFileSync, readFileSync, readdirSync } from 'node:fs'
+import { appendFileSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 // Creates git tags for each codemod whose version was bumped by changesets.
@@ -11,6 +11,7 @@ import { join } from 'node:path'
 // clones where tags may not be fetched.
 import { cli } from 'cleye'
 
+import { recipeDirs } from './lib/recipes.ts'
 import { exitOnFailure, runGit } from './lib/spawn.ts'
 
 cli({ name: 'tag-and-publish' })
@@ -40,36 +41,26 @@ function tagExistsAnywhere(tag: string): boolean {
   return remoteTags.has(tag)
 }
 
-function listDirs(path: string): string[] {
-  return readdirSync(path, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
-    .sort()
-}
-
 const changedDirs: string[] = []
 const newTags: string[] = []
 
-for (const group of listDirs('codemods')) {
-  for (const name of listDirs(join('codemods', group))) {
-    const directory = join('codemods', group, name)
-    const packageJson = join(directory, 'package.json')
-    const manifest = JSON.parse(readFileSync(packageJson, 'utf8')) as {
-      name: string
-      version: string
-    }
-    const tag = `${manifest.name}@v${manifest.version}`
-
-    if (tagExistsAnywhere(tag)) {
-      console.log(`Tag ${tag} already exists, skipping`)
-      continue
-    }
-
-    console.log(`Creating tag ${tag}`)
-    exitOnFailure(runGit(['tag', tag]))
-    newTags.push(tag)
-    changedDirs.push(directory.replaceAll('\\', '/'))
+for (const directory of recipeDirs()) {
+  const packageJson = join(directory, 'package.json')
+  const manifest = JSON.parse(readFileSync(packageJson, 'utf8')) as {
+    name: string
+    version: string
   }
+  const tag = `${manifest.name}@v${manifest.version}`
+
+  if (tagExistsAnywhere(tag)) {
+    console.log(`Tag ${tag} already exists, skipping`)
+    continue
+  }
+
+  console.log(`Creating tag ${tag}`)
+  exitOnFailure(runGit(['tag', tag]))
+  newTags.push(tag)
+  changedDirs.push(directory.replaceAll('\\', '/'))
 }
 
 // Push only the tags this run created. Avoids `git push --tags` clobbering

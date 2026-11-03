@@ -7,6 +7,7 @@ import { join } from 'node:path'
 import { cli } from 'cleye'
 
 import { isFormatTarget, isLintTarget } from './lib/paths.ts'
+import { recipeDirForFile } from './lib/recipes.ts'
 import { exitOnFailure, runGit, runYarn } from './lib/spawn.ts'
 
 const argv = cli({
@@ -41,7 +42,7 @@ const codemodDirs = [
     runGit(['diff', '--name-only', `${base}...HEAD`, '--', 'codemods/'], { capture: true })
       .stdout.split('\n')
       .filter((line) => line.split('/').length >= 3)
-      .map((line) => line.split('/').slice(0, 3).join('/')),
+      .map(recipeDirForFile),
   ),
 ].sort()
 

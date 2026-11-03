@@ -869,9 +869,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@backstage/v1-54-0-migration-recipe@workspace:codemods/v1.54.0/migration-recipe":
+"@backstage/v1-54-0-migration-recipe@workspace:codemods/v1.54.0":
   version: 0.0.0-use.local
-  resolution: "@backstage/v1-54-0-migration-recipe@workspace:codemods/v1.54.0/migration-recipe"
+  resolution: "@backstage/v1-54-0-migration-recipe@workspace:codemods/v1.54.0"
   dependencies:
     "@backstage/frontend-plugin-api": "npm:0.18.1"
     "@backstage/scripts": "workspace:*"

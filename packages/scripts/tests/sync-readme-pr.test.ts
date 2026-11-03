@@ -39,7 +39,7 @@ test('README generation is idempotent', () => {
   const fixture = tempDir('generate-readme-')
   try {
     const stub = writeYarnStub(fixture)
-    for (const dir of ['generator/scripts', 'generator/codemods/v1.2.0/example', 'generator/codemods/v1.1.0/example']) {
+    for (const dir of ['generator/scripts', 'generator/codemods/v1.2.0', 'generator/codemods/v1.1.0']) {
       mkdirSync(join(fixture, dir), { recursive: true })
     }
     writeFileSync(
@@ -50,8 +50,8 @@ test('README generation is idempotent', () => {
       join(fixture, 'generator', 'README.md'),
       '# Codemods\n<!-- CODEMODS_START -->\n<!-- CODEMODS_END -->\n',
     )
-    writeFileSync(join(fixture, 'generator', 'codemods', 'v1.2.0', 'example', 'codemod.yaml'), "description: 'Example migration'\n")
-    writeFileSync(join(fixture, 'generator', 'codemods', 'v1.1.0', 'example', 'codemod.yaml'), "description: 'Older migration'\n")
+    writeFileSync(join(fixture, 'generator', 'codemods', 'v1.2.0', 'codemod.yaml'), "description: 'Example migration'\n")
+    writeFileSync(join(fixture, 'generator', 'codemods', 'v1.1.0', 'codemod.yaml'), "description: 'Older migration'\n")
 
     const generator = join(fixture, 'generator')
     const run = () => runBin('generate-readme-codemods.ts', [], { cwd: generator, env: { npm_execpath: stub } })
@@ -59,7 +59,7 @@ test('README generation is idempotent', () => {
     const generated = readFileSync(join(generator, 'README.md'), 'utf8')
     assert.equal(run().status, 0)
     assert.equal(readFileSync(join(generator, 'README.md'), 'utf8'), generated)
-    assert.ok(generated.includes('Example migration'))
+    assert.ok(generated.includes('(./codemods/v1.2.0)'))
   } finally {
     rmSync(fixture, { recursive: true, force: true })
   }

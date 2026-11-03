@@ -36,9 +36,9 @@ test('check-changed batches gates and stops on failure', () => {
 
     for (const directory of [
       'changed',
-      'codemods/misc/fixture/scripts',
-      'codemods/misc/fixture/tests/nested',
-      'codemods/misc/fixture/tests-css/nested',
+      'codemods/misc/mui4-to-bui-migration-recipe/scripts',
+      'codemods/misc/mui4-to-bui-migration-recipe/tests/nested',
+      'codemods/misc/mui4-to-bui-migration-recipe/tests-css/nested',
       'tests',
       'scripts',
     ]) {
@@ -52,17 +52,17 @@ test('check-changed batches gates and stops on failure', () => {
     }
     writeFileSync(join(fixture, 'changed/a file with spaces.ts'), 'export const fixture = true;\n')
     allFiles.push('changed/a file with spaces.ts')
-    writeFileSync(join(fixture, 'codemods/misc/fixture/scripts/codemod.ts'), 'export const fixture = true;\n')
-    writeFileSync(join(fixture, 'codemods/misc/fixture/tests/nested/input.ts'), 'export const fixture = true;\n')
-    writeFileSync(join(fixture, 'codemods/misc/fixture/tests-css/nested/input.css'), 'fixture\n')
+    writeFileSync(join(fixture, 'codemods/misc/mui4-to-bui-migration-recipe/scripts/codemod.ts'), 'export const fixture = true;\n')
+    writeFileSync(join(fixture, 'codemods/misc/mui4-to-bui-migration-recipe/tests/nested/input.ts'), 'export const fixture = true;\n')
+    writeFileSync(join(fixture, 'codemods/misc/mui4-to-bui-migration-recipe/tests-css/nested/input.css'), 'fixture\n')
     writeFileSync(join(fixture, 'tests/input.tsx'), 'export const fixture = true;\n')
-    writeFileSync(join(fixture, 'codemods/misc/fixture/package.json'), '{"name":"@backstage/fixture"}\n')
+    writeFileSync(join(fixture, 'codemods/misc/mui4-to-bui-migration-recipe/package.json'), '{"name":"@backstage/fixture"}\n')
     writeFileSync(join(fixture, 'scripts/mixed-shell.sh'), '#!/usr/bin/env bash\n')
-    const expectedFormat = [...allFiles, 'codemods/misc/fixture/scripts/codemod.ts', 'codemods/misc/fixture/package.json']
+    const expectedFormat = [...allFiles, 'codemods/misc/mui4-to-bui-migration-recipe/scripts/codemod.ts', 'codemods/misc/mui4-to-bui-migration-recipe/package.json']
     const expectedLint = [
       ...allFiles,
-      'codemods/misc/fixture/scripts/codemod.ts',
-      'codemods/misc/fixture/tests/nested/input.ts',
+      'codemods/misc/mui4-to-bui-migration-recipe/scripts/codemod.ts',
+      'codemods/misc/mui4-to-bui-migration-recipe/tests/nested/input.ts',
       'tests/input.tsx',
     ]
     commitAll(fixture, 'changed', 'changed', 'codemods', 'tests', 'scripts')
@@ -79,7 +79,7 @@ test('check-changed batches gates and stops on failure', () => {
     assert.ok(formatCalls.length > 1 && lintCalls.length > 1)
     assert.deepEqual(
       testCalls.map((call) => call.cwd),
-      [join(fixture, 'codemods', 'misc', 'fixture')],
+      [join(fixture, 'codemods', 'misc', 'mui4-to-bui-migration-recipe')],
     )
     assert.deepEqual(
       formatCalls.flatMap((call) => call.args).sort(),
@@ -107,8 +107,8 @@ test('check-changed batches gates and stops on failure', () => {
 
     // An ignored-fixture-only diff still lints and tests, but never formats.
     git(fixture, 'update-ref', 'refs/remotes/origin/main', 'HEAD')
-    writeFileSync(join(fixture, 'codemods/misc/fixture/tests/nested/input.ts'), 'export const fixture = false;\n')
-    writeFileSync(join(fixture, 'codemods/misc/fixture/tests-css/nested/input.css'), 'fixture changed\n')
+    writeFileSync(join(fixture, 'codemods/misc/mui4-to-bui-migration-recipe/tests/nested/input.ts'), 'export const fixture = false;\n')
+    writeFileSync(join(fixture, 'codemods/misc/mui4-to-bui-migration-recipe/tests-css/nested/input.css'), 'fixture changed\n')
     commitAll(fixture, 'ignored-only', 'codemods')
     rmSync(join(callsDir, 'count'), { force: true })
     result = runBin('check-changed.ts', [], { cwd: fixture, env })
@@ -118,8 +118,30 @@ test('check-changed batches gates and stops on failure', () => {
       calls.map((call) => call.command),
       ['lint', 'test'],
     )
-    assert.deepEqual(calls[0]?.args, ['codemods/misc/fixture/tests/nested/input.ts'])
-    assert.equal(calls[1]?.cwd, join(fixture, 'codemods', 'misc', 'fixture'))
+    assert.deepEqual(calls[0]?.args, ['codemods/misc/mui4-to-bui-migration-recipe/tests/nested/input.ts'])
+    assert.equal(calls[1]?.cwd, join(fixture, 'codemods', 'misc', 'mui4-to-bui-migration-recipe'))
+  } finally {
+    rmSync(fixture, { recursive: true, force: true })
+  }
+})
+
+test('check-changed tests a flat version recipe for nested fixture changes', () => {
+  const fixture = tempDir('check-flat-')
+  const callsDir = join(fixture, 'calls')
+  mkdirSync(callsDir)
+  const stub = writeYarnStub(fixture)
+  try {
+    git(fixture, 'init', '-q')
+    const recipe = join(fixture, 'codemods', 'v1.54.0')
+    mkdirSync(join(recipe, 'tests', 'transform', 'case'), { recursive: true })
+    writeFileSync(join(recipe, 'package.json'), '{"name":"@backstage/fixture"}')
+    commitAll(fixture, 'base', 'codemods')
+    git(fixture, 'update-ref', 'refs/remotes/origin/main', 'HEAD')
+    writeFileSync(join(recipe, 'tests', 'transform', 'case', 'input.ts'), 'export {}')
+    commitAll(fixture, 'fixture', 'codemods')
+    const result = runBin('check-changed.ts', [], { cwd: fixture, env: { npm_execpath: stub, CALLS: callsDir } })
+    assert.equal(result.status, 0, result.stderr)
+    assert.deepEqual(readCalls(callsDir).filter((call) => call.command === 'test').map((call) => call.cwd), [recipe])
   } finally {
     rmSync(fixture, { recursive: true, force: true })
   }

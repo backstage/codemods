@@ -20,8 +20,8 @@ test('test-staged runs each owning package once, in order', () => {
   const callsDir = join(fixture, 'calls')
   mkdirSync(callsDir)
   const stub = writeYarnStub(fixture)
-  const first = join(fixture, 'repo with spaces', 'codemods', 'misc', 'first')
-  const second = join(fixture, 'repo with spaces', 'codemods', 'misc', 'second')
+  const first = join(fixture, 'repo with spaces', 'codemods', 'misc', 'mui4-to-bui-migration-recipe')
+  const second = join(fixture, 'repo with spaces', 'codemods', 'v1.54.0')
   for (const directory of [first, second]) {
     mkdirSync(join(directory, 'scripts'), { recursive: true })
     writeFileSync(join(directory, 'package.json'), '{}\n')

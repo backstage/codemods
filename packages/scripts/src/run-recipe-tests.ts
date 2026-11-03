@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process'
 import { existsSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
-// Repo-wide test runner for migration recipes (codemods/<version>/migration-recipe).
+// Repo-wide test runner for migration recipes (codemods/<version>/).
 // Invoked by a recipe's package.json test script as `run-recipe-tests`, run from
 // the recipe directory.
 //

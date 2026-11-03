@@ -66,18 +66,12 @@ function renderGroup(group: string): string {
   const groupDir = join(codemodsDir, group)
   const lines: string[] = [`### ${group}`, '']
 
-  // Only show migration-recipe link for version directories that have one
-  if (existsSync(join(groupDir, 'migration-recipe'))) {
-    const standalone = listDirs(groupDir).some(
-      (name) => name !== 'migration-recipe' && existsSync(join(groupDir, name, 'codemod.yaml')),
-    )
-    const recipeLink = `[\`migration-recipe\`](./codemods/${group}/migration-recipe)`
+  if (existsSync(join(groupDir, 'codemod.yaml'))) {
     lines.push(
-      standalone
-        ? `Run the ${recipeLink} to apply every codemod below in one pass, or run any individual codemod on its own.`
-        : `Run the ${recipeLink} to apply every codemod below in one pass. Individual scripts can still be run on their own; see the recipe's README.`,
+      `Run the [\`migration-recipe\`](./codemods/${group}) to apply every migration in one pass. Individual scripts can still be run on their own; see the recipe's README.`,
       '',
     )
+    return lines.join('\n')
   }
 
   lines.push('| Codemod | Description |', '| ------- | ----------- |')
