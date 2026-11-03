@@ -18,15 +18,15 @@ Users who need only one transform can still run that script individually (see be
 
 ```bash
 # Preview first
-yarn dlx codemod@latest workflow run -w codemods/v1.54.0/migration-recipe/workflow.yaml \
+yarn dlx codemod@latest workflow run -w codemods/v1.54.0/workflow.yaml \
   --target /path/to/backstage-app --dry-run
 
 # Apply
-yarn dlx codemod@latest workflow run -w codemods/v1.54.0/migration-recipe/workflow.yaml \
+yarn dlx codemod@latest workflow run -w codemods/v1.54.0/workflow.yaml \
   --target /path/to/backstage-app
 ```
 
-Once the recipe is published, replace `workflow run -w codemods/v1.54.0/migration-recipe/workflow.yaml` with `run @backstage/v1-54-0-migration-recipe`.
+Once the recipe is published, replace `workflow run -w codemods/v1.54.0/workflow.yaml` with `run @backstage/v1-54-0-migration-recipe`.
 
 ## Running a single script
 
