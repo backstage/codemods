@@ -84,7 +84,6 @@ __metadata:
     generate-readme-codemods: ./src/generate-readme-codemods.ts
     run-recipe-tests: ./src/run-recipe-tests.ts
     sync-codemod-versions: ./src/sync-codemod-versions.ts
-    sync-readme-pr: ./src/sync-readme-pr.ts
     tag-and-publish: ./src/tag-and-publish.ts
     test-staged: ./src/test-staged.ts
   languageName: unknown

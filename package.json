@@ -19,8 +19,7 @@
     "version-packages": "changeset version && sync-codemod-versions",
     "readme": "generate-readme-codemods",
     "check:changed": "check-changed",
-    "tag-and-publish": "tag-and-publish",
-    "sync-readme-pr": "sync-readme-pr"
+    "tag-and-publish": "tag-and-publish"
   },
   "devDependencies": {
     "@backstage/scripts": "workspace:*",

@@ -73,11 +73,6 @@ export function runGit(args: string[], options: SpawnOptions = {}): SpawnResult 
   return spawn('git', args, options)
 }
 
-/** Runs a GitHub CLI command; gh is a native executable on every supported platform. */
-export function runGh(args: string[], options: SpawnOptions = {}): SpawnResult {
-  return spawn('gh', args, options)
-}
-
 /** Exits the process with the command's status when it failed. */
 export function exitOnFailure(result: SpawnResult): void {
   if (result.status !== 0) {

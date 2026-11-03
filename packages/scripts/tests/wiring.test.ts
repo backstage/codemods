@@ -19,13 +19,9 @@ test('CI runs the scripts package tests and the shared gates', () => {
   assert.doesNotMatch(ci, /bash scripts\//)
 })
 
-test('release and README-sync workflows call the bins', () => {
+test('release workflow calls the bins', () => {
   assert.ok(read('.github/workflows/release.yml').includes('yarn tag-and-publish'))
-  const syncReadme = read('.github/workflows/sync-readme.yml')
-  assert.ok(syncReadme.includes('yarn sync-readme-pr'))
-  assert.ok(syncReadme.includes('yarn test'))
   assert.doesNotMatch(read('.github/workflows/release.yml'), /bash scripts\//)
-  assert.doesNotMatch(syncReadme, /bash scripts\//)
 })
 
 test('root package.json scripts and devDependency use the bins', () => {
