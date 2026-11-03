@@ -43,7 +43,7 @@ function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode
         },
       },
     },
-  }) as SgNode<TSX, 'import_statement'>[]
+  })
 }
 
 /**
@@ -61,7 +61,7 @@ function findExportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode
         },
       },
     },
-  }) as SgNode<TSX, 'export_statement'>[]
+  })
 }
 
 interface SpecifierInfo {

@@ -65,7 +65,7 @@ The following changes in Backstage 1.49.0 are not covered by codemods and requir
 
 ## Notes
 
-- Each step is invoked through the `codemod:` workflow action and resolved from the Codemod registry, so running the recipe installs the latest published version of every referenced package.
-- The recipe does not reorder edits across codemods; each registry package owns its own before/after behavior. Check the individual READMEs for the details of any single step.
+- Each step runs a bundled local script (`scripts/<name>.ts`) in workflow order; no nested registry packages are resolved.
+- The recipe does not reorder edits across steps; check the step list in `workflow.yaml` for the details of any single transform.
 - Some codemods insert `TODO(backstage-codemod)` markers where a value needs human review. After the recipe finishes, grep for `TODO(backstage-codemod)` in your repo to find everything that still needs attention.
 - This recipe is orchestration only — it has no transform script of its own, so there are no fixture tests. Running `yarn test` in this package validates the workflow schema via `codemod workflow validate`.
