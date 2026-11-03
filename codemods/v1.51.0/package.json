@@ -1,6 +1,6 @@
 {
   "name": "@backstage/v1-51-0-migration-recipe",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "description": "Backstage 1.51.0: Migration recipe that runs every Backstage 1.51.0 codemod script in a safe order.",
   "type": "module",
   "scripts": {

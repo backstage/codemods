@@ -1,5 +1,12 @@
 # @backstage/mui4-to-bui-migration-recipe
 
+## 0.4.0
+
+### Minor Changes
+
+- defbd23: Bundle all 26 standalone MUI 4 to BUI codemods and their tests into the migration recipe, replacing registry dependencies with ordered local script steps.
+- d3ba1e5: Align recipe target languages with the inputs actually scanned by their workflows, including shell scripts in the 1.54.0 recipe. Workflow selectors and transform scope are unchanged.
+
 ## 0.3.1
 
 ### Patch Changes

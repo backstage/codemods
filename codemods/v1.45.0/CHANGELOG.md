@@ -1,5 +1,12 @@
 # @backstage/v1-45-0-migration-recipe
 
+## 0.3.0
+
+### Minor Changes
+
+- f585c23: Consolidate standalone codemods into flattened migration recipes with bundled local scripts, preserved fixture suites, and optional post-transform AI fixups.
+- d3ba1e5: Align recipe target languages with the inputs actually scanned by their workflows, including shell scripts in the 1.54.0 recipe. Workflow selectors and transform scope are unchanged.
+
 ## 0.2.3
 
 ### Patch Changes

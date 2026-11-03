@@ -1,5 +1,12 @@
 # @backstage/v1-46-0-migration-recipe
 
+## 0.3.0
+
+### Minor Changes
+
+- 6e77d34: Include app-config.yml and app-config.*.yml files in app-config migrations, matching existing YAML coverage.
+- f585c23: Consolidate standalone codemods into flattened migration recipes with bundled local scripts, preserved fixture suites, and optional post-transform AI fixups.
+
 ## 0.2.3
 
 ### Patch Changes

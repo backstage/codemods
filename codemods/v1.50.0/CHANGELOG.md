@@ -1,5 +1,12 @@
 # @backstage/v1-50-0-migration-recipe
 
+## 0.4.0
+
+### Minor Changes
+
+- 7652a9c: Consolidate all eleven Backstage 1.50.0 codemods and their fixture suites into the flattened migration recipe. Run local scripts in release order, with optional AI fixups after the transforms.
+- cdbb212: Metric identifiers were renamed to match logical migration stems, shared across language variants. Sub-action metrics now use stem-derived names. Consumers must update dashboards tracking the old identifiers.
+
 ## 0.3.7
 
 ### Patch Changes
