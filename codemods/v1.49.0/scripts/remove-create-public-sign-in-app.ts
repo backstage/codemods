@@ -11,7 +11,7 @@ const MODULE_NAME = 'appModulePublicSignIn'
 
 const TODO_DEPENDENCY = '// TODO(backstage-codemod): Add @backstage/plugin-app as a dependency to your package.json'
 
-const migrationMetric = useMetricAtom('create-public-sign-in-app-replacements')
+const migrationMetric = useMetricAtom('remove-create-public-sign-in-app')
 
 const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root()

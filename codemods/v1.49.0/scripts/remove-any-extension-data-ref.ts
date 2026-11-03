@@ -7,7 +7,7 @@ const FRONTEND_PLUGIN_API = '@backstage/frontend-plugin-api'
 const OLD_NAME = 'AnyExtensionDataRef'
 const NEW_NAME = 'ExtensionDataRef'
 
-const renamedExports = useMetricAtom('any-extension-data-ref-renames')
+const renamedExports = useMetricAtom('remove-any-extension-data-ref')
 
 const transform: Codemod<TSX> = async (root) => {
   const rootNode = root.root()

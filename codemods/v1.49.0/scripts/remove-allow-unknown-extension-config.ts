@@ -6,7 +6,7 @@ import { useMetricAtom } from 'codemod:metrics'
 const FRONTEND_DEFAULTS = '@backstage/frontend-defaults'
 const PROPERTY_NAME = 'allowUnknownExtensionConfig'
 
-const removedProps = useMetricAtom('allow-unknown-extension-config-removals')
+const removedProps = useMetricAtom('remove-allow-unknown-extension-config')
 
 /**
  * Remove a property from an object literal by surgically removing the property

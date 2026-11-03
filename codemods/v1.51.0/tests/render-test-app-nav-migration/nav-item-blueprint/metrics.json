@@ -1,5 +1,5 @@
 {
-  "render-test-app-calls-migrated": [
+  "render-test-app-nav-migration": [
     {
       "cardinality": {
         "pattern": "nav-item-features"

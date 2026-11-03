@@ -5,7 +5,7 @@ import { useMetricAtom } from 'codemod:metrics'
 
 const FRONTEND_API_SOURCE = '@backstage/frontend-plugin-api'
 
-const migrationMetric = useMetricAtom('nav-item-to-page-migration')
+const migrationMetric = useMetricAtom('migrate-nav-item-to-page')
 
 const TODO_UNPAIRED =
   '// TODO(backstage-codemod): Migrate NavItemBlueprint — no matching PageBlueprint with the same routeRef found'

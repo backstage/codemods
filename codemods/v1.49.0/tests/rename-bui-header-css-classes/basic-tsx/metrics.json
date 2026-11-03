@@ -1,5 +1,5 @@
 {
-  "bui-header-css-renames": [
+  "rename-bui-header-css-classes": [
     {
       "cardinality": {
         "from": "bui-HeaderPage",

@@ -7,7 +7,7 @@ function escapeRegex(str: string): string {
   return `^${str.replaceAll(/[.*+?^${}()|[\]\\/]/g, '\\$&')}$`
 }
 
-const migrationMetric = useMetricAtom('catalog-node-alpha-migration')
+const migrationMetric = useMetricAtom('catalog-node-alpha-to-stable')
 
 type Outcome = 'auto-migrated' | 'manual-required'
 type Reason =

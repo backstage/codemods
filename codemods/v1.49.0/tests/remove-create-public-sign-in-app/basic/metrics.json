@@ -1,5 +1,5 @@
 {
-  "create-public-sign-in-app-replacements": [
+  "remove-create-public-sign-in-app": [
     {
       "cardinality": {
         "action": "replaced"

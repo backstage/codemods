@@ -1,5 +1,5 @@
 {
-  "humanize-entity-ref-migration": [
+  "humanize-entity-ref-to-presentation": [
     {
       "cardinality": {
         "context": "utility",

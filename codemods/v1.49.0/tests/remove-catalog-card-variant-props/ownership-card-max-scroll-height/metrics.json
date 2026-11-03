@@ -1,5 +1,5 @@
 {
-  "catalog-card-variant-prop-removals": [
+  "remove-catalog-card-variant-props": [
     {
       "cardinality": {
         "component": "OwnershipCard",

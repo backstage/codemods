@@ -1,5 +1,5 @@
 {
-  "table-to-use-table-hook": [
+  "migrate-table-to-use-table-hook": [
     {
       "cardinality": {
         "action": "todo-added",

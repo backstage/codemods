@@ -2,7 +2,7 @@ import type { Codemod, Edit } from 'codemod:ast-grep'
 import type CSS from 'codemod:ast-grep/langs/css'
 import { useMetricAtom } from 'codemod:metrics'
 
-const migrationMetric = useMetricAtom('plugin-header-toolbar-rename')
+const migrationMetric = useMetricAtom('rename-plugin-header-toolbar')
 
 const OLD_CLASS_NAME = 'bui-PluginHeaderToolbarWrapper'
 const NEW_CLASS_NAME = 'bui-PluginHeaderToolbar'

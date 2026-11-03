@@ -1,5 +1,5 @@
 {
-  "allow-unknown-extension-config-removals": [
+  "remove-allow-unknown-extension-config": [
     {
       "cardinality": {
         "property": "allowUnknownExtensionConfig"
