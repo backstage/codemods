@@ -25,7 +25,7 @@ function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode
         },
       },
     },
-  }) as SgNode<TSX, 'import_statement'>[]
+  })
 }
 
 interface ImportedComponents {
