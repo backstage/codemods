@@ -1,5 +1,5 @@
 import { addImport } from '@jssg/utils/javascript/imports'
-import type { Codemod, Edit, SgNode } from 'codemod:ast-grep'
+import type { RefineNode, Codemod, Edit, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
 
@@ -172,8 +172,8 @@ function findStatementsFrom<K extends 'import_statement' | 'export_statement'>(
   rootNode: SgNode<TSX>,
   kind: K,
   source: string,
-): SgNode<TSX, K>[] {
-  return rootNode.findAll({
+): RefineNode<TSX, K>[] {
+  return rootNode.findAll<K>({
     rule: {
       kind,
       has: {
@@ -184,7 +184,7 @@ function findStatementsFrom<K extends 'import_statement' | 'export_statement'>(
         },
       },
     },
-  }) as SgNode<TSX, K>[]
+  })
 }
 
 const transform: Codemod<TSX> = async (root) => {

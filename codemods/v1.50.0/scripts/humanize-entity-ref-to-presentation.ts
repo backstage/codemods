@@ -21,7 +21,7 @@ interface DeprecatedImportInfo {
  * Find import statements from a specific source.
  */
 function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode<TSX, 'import_statement'>[] {
-  return rootNode.findAll({
+  return rootNode.findAll<'import_statement'>({
     rule: {
       kind: 'import_statement',
       has: {
@@ -32,7 +32,7 @@ function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode
         },
       },
     },
-  }) as SgNode<TSX, 'import_statement'>[]
+  })
 }
 
 /**

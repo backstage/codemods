@@ -1,4 +1,4 @@
-import type { Codemod, Edit, GetSelector, SgNode } from 'codemod:ast-grep'
+import type { RefineNode, Codemod, Edit, GetSelector, SgNode } from 'codemod:ast-grep'
 import type TSX from 'codemod:ast-grep/langs/tsx'
 import { useMetricAtom } from 'codemod:metrics'
 
@@ -50,8 +50,8 @@ function findStatementsFrom<K extends 'import_statement' | 'export_statement'>(
   rootNode: SgNode<TSX>,
   kind: K,
   source: string,
-): SgNode<TSX, K>[] {
-  return rootNode.findAll({
+): RefineNode<TSX, K>[] {
+  return rootNode.findAll<K>({
     rule: {
       kind,
       has: {
@@ -62,7 +62,7 @@ function findStatementsFrom<K extends 'import_statement' | 'export_statement'>(
         },
       },
     },
-  }) as SgNode<TSX, K>[]
+  })
 }
 
 interface SpecifierInfo {
@@ -405,10 +405,7 @@ function collectDeclaredLocalNames(rootNode: SgNode<TSX, 'program'>): Set<string
     names.add(nameNode.text())
   }
 
-  for (const importStatement of rootNode.findAll({ rule: { kind: 'import_statement' } }) as SgNode<
-    TSX,
-    'import_statement'
-  >[]) {
+  for (const importStatement of rootNode.findAll<'import_statement'>({ rule: { kind: 'import_statement' } })) {
     for (const localName of collectImportLocalNames(importStatement)) {
       names.add(localName)
     }
@@ -624,10 +621,7 @@ function processImports(
 function collectDeclaredReexportedNames(rootNode: SgNode<TSX, 'program'>): Set<string> {
   const names = new Set<string>()
 
-  for (const exportStatement of rootNode.findAll({ rule: { kind: 'export_statement' } }) as SgNode<
-    TSX,
-    'export_statement'
-  >[]) {
+  for (const exportStatement of rootNode.findAll<'export_statement'>({ rule: { kind: 'export_statement' } })) {
     for (const spec of extractSpecifiers(exportStatement, 'export_specifier')) {
       names.add(spec.localName)
     }

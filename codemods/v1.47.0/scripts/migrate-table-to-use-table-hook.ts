@@ -17,7 +17,7 @@ function escapeRegex(str: string): string {
  * Find all import statements from a given source.
  */
 function findImportsFrom(rootNode: SgNode<TSX>, source: string): SgNode<TSX, 'import_statement'>[] {
-  return rootNode.findAll({
+  return rootNode.findAll<'import_statement'>({
     rule: {
       kind: 'import_statement',
       has: {
@@ -28,7 +28,7 @@ function findImportsFrom(rootNode: SgNode<TSX>, source: string): SgNode<TSX, 'im
         },
       },
     },
-  }) as SgNode<TSX, 'import_statement'>[]
+  })
 }
 
 /**

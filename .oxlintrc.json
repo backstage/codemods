@@ -92,13 +92,5 @@
     "unicorn/switch-case-braces": "warn",
     "unicorn/catch-error-name": "warn"
   },
-  "ignorePatterns": ["**/node_modules", "**/dist", "**/tests", "**/tests-*", ".worktrees"],
-  "overrides": [
-    {
-      "files": ["codemods/**/scripts/*.ts"],
-      "rules": {
-        "typescript/no-unnecessary-type-assertion": "off"
-      }
-    }
-  ]
+  "ignorePatterns": ["**/node_modules", "**/dist", "**/tests", "**/tests-*", ".worktrees"]
 }

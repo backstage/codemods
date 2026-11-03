@@ -18,7 +18,7 @@ function escapeRegex(str: string): string {
 }
 
 function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode<TSX, 'import_statement'>[] {
-  return rootNode.findAll({
+  return rootNode.findAll<'import_statement'>({
     rule: {
       kind: 'import_statement',
       has: {
@@ -29,7 +29,7 @@ function findImportStatementsFrom(rootNode: SgNode<TSX>, source: string): SgNode
         },
       },
     },
-  }) as SgNode<TSX, 'import_statement'>[]
+  })
 }
 
 interface RenameInfo {
