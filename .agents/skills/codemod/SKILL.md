@@ -73,6 +73,7 @@ Keep feedback short and thematic. Do not include source code, secrets, auth toke
 - Use explicit workflow `base_path`, `include`, and `exclude` globs that match the actual target file types and keep `codemod.yaml` `targets.languages` aligned with that scope.
 - Preserve the scaffold-selected package manager in `package.json` scripts and package-local README/development commands. Infer it from the scaffold choice, lockfile, or existing package metadata; do not rewrite `yarn`/`pnpm`/`bun` packages to `npx`/`npm` unless the user explicitly asked.
 - Preserve repository-local package and lockfile conventions. In existing monorepos, do not introduce ad hoc dependency ranges or unrelated lockfile churn.
+- In this repo, release migrations land as one recipe package per release: `codemods/v1.<minor>/` with bundled `scripts/*.ts` steps and tests — follow [`CONTRIBUTING.md`](../../../CONTRIBUTING.md) and the consolidated release issue for scope, never one package per transform.
 - Treat fixture quality as a release gate. Cover realistic positive cases, edge cases, preserve/no-op cases, and negative cases where similar code must stay unchanged.
 - Do not stop while `validate_codemod_package` still reports starter scaffold markers, missing package surface updates, missing real test cases, or failing default tests.
 - For reusable authored codemods, do not default registry access/visibility to private unless the user explicitly asked for a private package.
