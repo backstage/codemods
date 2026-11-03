@@ -8,5 +8,11 @@ nodes:
     type: automatic
     steps:
       - name: 'Rename deprecated auth.experimentalClientIdMetadataDocuments config key'
-        codemod:
-          source: '@backstage/rename-experimental-cimd-config'
+        js-ast-grep:
+          js_file: scripts/rename-experimental-cimd-config.ts
+          language: 'yaml'
+          include:
+            - '**/app-config*.yaml'
+            - '**/app-config*.yml'
+          exclude:
+            - '**/node_modules/**'
