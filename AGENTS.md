@@ -9,6 +9,20 @@ The two failure modes most likely to bite an agent here are:
 
 Before declaring a task done, check `CONTRIBUTING.md` for the conventions in _Adding a new codemod_ (directory layout, package scope, single-quoted YAML) and run the checks listed in _Making changes_.
 
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues on `backstage/codemods` (via the `gh` CLI). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five-label vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `GLOSSARY.md` + `docs/adr/` at the repo root (created lazily). See `docs/agents/domain.md`.
+
 ## Planning a release migration
 
 Before implementing codemods for a new Backstage release, use the project skill [`.agents/skills/backstage-codemod-issue-research/SKILL.md`](./.agents/skills/backstage-codemod-issue-research/SKILL.md) to research breaking changes, classify codemod vs document-only items, produce an inventory table, and draft GitHub issue specs. Implementation starts only after issues are filed and approved — then use the project [`codemod` skill](./.agents/skills/codemod/SKILL.md). Pi and other Agent Skills-compatible agents can load it from `.agents/skills/`; use `npx codemod ai` for its CLI commands.
