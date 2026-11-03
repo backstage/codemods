@@ -37,7 +37,7 @@ After `yarn install`, the `prepare` script runs `husky` and sets `core.hooksPath
 | **pre-commit** | `yarn lint-staged` — format + lint staged files; package tests for staged `codemods/**/scripts/*` ([`.lintstagedrc.json`](./.lintstagedrc.json))              |
 | **pre-push**   | `yarn check:changed` (the `check-changed` bin from [`@backstage/scripts`](./packages/scripts)) — the **same** format / lint / package-name / test gates as CI |
 
-CI (`.github/workflows/ci.yml`) calls that same script, so local and remote gates cannot drift. Run `yarn check:changed` anytime to reproduce CI locally. Codemod PRs do not regenerate or check the root README; leave it unchanged. After codemods land on `main`, run **Sync codemod README** from the Actions tab on `main` to generate a separate reviewable PR. A clean README is a no-op; reruns update the same bot branch/PR without force-pushing. The dispatch runs format, tests, script regressions, and README idempotence checks, but not repository-wide lint: PRs created with `GITHUB_TOKEN` do **not** trigger `pull_request` CI, so review the dispatch result before merging.
+CI (`.github/workflows/ci.yml`) calls that same script, so local and remote gates cannot drift. Run `yarn check:changed` anytime to reproduce CI locally. Codemod PRs do not regenerate or check the root README; leave it unchanged. After codemods land on `main` with changesets, the release workflow regenerates the README on the **Version Packages** PR. **Sync codemod README** remains available from the Actions tab on `main` as a manual fallback that generates a separate reviewable PR. A clean README is a no-op; reruns update the same bot branch/PR without force-pushing. The dispatch runs format, tests, script regressions, and README idempotence checks, but not repository-wide lint: PRs created with `GITHUB_TOKEN` do **not** trigger `pull_request` CI, so review the dispatch result before merging.
 
 ## Making changes
 
@@ -66,7 +66,7 @@ This creates a markdown file in `.changeset/` that should be committed with your
 ## Release workflow
 
 1. Merge a PR with one or more changesets into `main`.
-2. CI automatically opens (or updates) a **Version Packages** PR that bumps versions in `package.json`, regenerates `CHANGELOG.md`, and syncs `codemod.yaml` versions.
+2. CI automatically opens (or updates) a **Version Packages** PR that removes the consumed changesets, bumps versions in `package.json`, regenerates `CHANGELOG.md`, and syncs `codemod.yaml` versions. The release job then checks out `changeset-release/main`, regenerates the root README, and commits and pushes it to the same PR only if it changed. This step runs only when pending changesets exist, never alongside tagging and publishing.
 3. Merge the Version Packages PR — git tags are created and the updated codemods are published to the Codemod registry.
 
 Do not hand-edit the `version` field in `package.json` or `codemod.yaml` to "trigger a release". The Changesets bot owns version bumps; manual edits are overwritten on the next Version Packages PR and may create version drift.
