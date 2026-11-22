@@ -1,0 +1,10 @@
+{
+  "name": "@example/plugin",
+  "peerDependencies": {
+    "react": "^17.0.0 || ^18.0.0",
+    "react-dom": "^17.0.0 || ^18.0.0",
+    "@types/react": "^17.0.0 || ^18.0.0",
+    "other": "^17 || ^18"
+  },
+  "dependencies": { "react": "^17 || ^18" }
+}

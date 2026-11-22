@@ -1,0 +1,10 @@
+{
+  "rename-techdocs-cli-serve-flags-package-json": [
+    {
+      "cardinality": {
+        "action": "command-updated"
+      },
+      "count": 2
+    }
+  ]
+}

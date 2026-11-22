@@ -1,0 +1,7 @@
+jobs:
+  docs:
+    steps:
+      - env: {COMMAND: "techdocs-cli serve --mkdocs-port=2"}
+      - commands:
+          - npx @techdocs/cli serve --mkdocs-config-file-name mkdocs.yml
+      - run: "techdocs-cli serve --mkdocs-port=3"

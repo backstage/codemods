@@ -1,0 +1,10 @@
+{
+  "update-react-peer-dependency-ranges": [
+    {
+      "cardinality": {
+        "action": "range-updated"
+      },
+      "count": 3
+    }
+  ]
+}

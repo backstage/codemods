@@ -1,0 +1,6 @@
+jobs:
+  docs:
+    steps:
+      - run: >-
+          echo
+          techdocs-cli serve --mkdocs-port=1

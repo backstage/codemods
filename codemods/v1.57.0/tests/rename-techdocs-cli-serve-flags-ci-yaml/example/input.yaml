@@ -1,0 +1,12 @@
+name: Build documentation
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Preview
+        run: |
+          echo starting
+          yarn techdocs-cli serve --mkdocs-port=8001 --mkdocs-config-file-name docs.yml
+          mkdocs serve --mkdocs-port 4
+      - run: 'npx @techdocs/cli serve --mkdocs-parameter-clean'
+      - run: techdocs-cli generate --mkdocs-port 1000

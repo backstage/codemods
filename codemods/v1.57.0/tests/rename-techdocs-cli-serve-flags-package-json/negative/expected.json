@@ -1,0 +1,1 @@
+{"scripts":{"docs":"mkdocs serve --mkdocs-port 8001","generate":"techdocs-cli generate --mkdocs-port=1","done":"yarn techdocs-cli serve --engine-port 1234"},"other":"techdocs-cli serve --mkdocs-port 1"}
