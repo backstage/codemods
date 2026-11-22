@@ -1,0 +1,10 @@
+{
+  "wrap-icon-bundle-icons-in-elements": [
+    {
+      "cardinality": {
+        "action": "icon-wrapped"
+      },
+      "count": 4
+    }
+  ]
+}

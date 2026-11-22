@@ -1,0 +1,11 @@
+app:
+  extensions:
+    - 'app-root-element:app/alert-display':
+        config:
+          anchorOrigin:
+            vertical: top
+    - app-root-element:app/alert-display:
+        disabled: true
+        config:
+          anchorOrigin:
+            horizontal: right

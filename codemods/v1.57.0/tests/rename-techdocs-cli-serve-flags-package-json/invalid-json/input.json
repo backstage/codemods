@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "docs": "techdocs-cli serve --mkdocs-port 8001",
+  }
+}

@@ -1,0 +1,5 @@
+auth:
+  staticClients: []
+---
+auth:
+  experimentalClientIdMetadataDocuments: {}

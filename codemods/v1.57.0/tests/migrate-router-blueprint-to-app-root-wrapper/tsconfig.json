@@ -1,0 +1,7 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": [
+    "../../scripts/migrate-router-blueprint-to-app-root-wrapper.ts",
+    "../../scripts/migrate-router-blueprint-to-app-root-wrapper-helpers.ts"
+  ]
+}

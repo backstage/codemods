@@ -1,0 +1,8 @@
+{
+  "name": "backstage",
+  "scripts": {
+    "docs": "techdocs-cli serve --engine-port 8001 --config-file-name docs.yml",
+    "all": "echo start && npx @techdocs/cli serve --engine-port=8001 --parameter-strict; mkdocs serve --mkdocs-port 3",
+    "generate": "techdocs-cli generate --mkdocs-port 8001"
+  }
+}

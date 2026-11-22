@@ -1,0 +1,47 @@
+catalog:
+  providers:
+    ldapOrg:
+      default:
+        users:
+          dn: ou=people,dc=example,dc=com
+          options:
+            filter: (uid=*) # keep inline
+            # Preserves pre-1.57 behavior (all attributes). Narrow this list to the attributes your mappings and transformers use to benefit from attribute selection.
+            attributes: ['*', '+']
+        groups:
+          - dn: ou=groups
+            options:
+              # Preserves pre-1.57 behavior (all attributes). Narrow this list to the attributes your mappings and transformers use to benefit from attribute selection.
+              attributes: ['*', '+']
+          - dn: ou=other
+            options:
+              attributes: ['cn']
+  processors:
+    ldapOrg:
+      providers:
+        - users:
+            dn: ou=legacy
+            options:
+              # Preserves pre-1.57 behavior (all attributes). Narrow this list to the attributes your mappings and transformers use to benefit from attribute selection.
+              attributes: ['*', '+']
+          groups:
+            dn: ou=legacy-groups
+            options:
+              # Preserves pre-1.57 behavior (all attributes). Narrow this list to the attributes your mappings and transformers use to benefit from attribute selection.
+              attributes: ['*', '+']
+ldap:
+  providers:
+    - users:
+        - dn: ou=first
+          options:
+            filter: (objectClass=person)
+            # Preserves pre-1.57 behavior (all attributes). Narrow this list to the attributes your mappings and transformers use to benefit from attribute selection.
+            attributes: ['*', '+']
+        - dn: ou=café
+          options:
+            # Preserves pre-1.57 behavior (all attributes). Narrow this list to the attributes your mappings and transformers use to benefit from attribute selection.
+            attributes: ['*', '+']
+      groups:
+        options: # keep comment
+          # Preserves pre-1.57 behavior (all attributes). Narrow this list to the attributes your mappings and transformers use to benefit from attribute selection.
+          attributes: ['*', '+']

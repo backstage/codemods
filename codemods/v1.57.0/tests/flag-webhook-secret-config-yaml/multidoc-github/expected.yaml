@@ -1,0 +1,13 @@
+events:
+  modules:
+    'github': # secret lives in other document
+      enabled: true
+    # TODO(backstage-codemod): since 1.57 webhook requests are rejected (HTTP 403) without webhookSecret. Configure it here or in an environment-specific app-config.
+    "gitlab":
+      enabled: true
+---
+integrations:
+  github:
+    - host: github.com
+      apps:
+        - webhookSecret: ${GITHUB_SECRET}

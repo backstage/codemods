@@ -1,0 +1,8 @@
+app:
+  extensions:
+    - app-root-element:app/alert-display:
+        config:
+          anchorOrigin:
+            vertical: top
+          # Keep this setting
+          transientTimeoutMs: 2500

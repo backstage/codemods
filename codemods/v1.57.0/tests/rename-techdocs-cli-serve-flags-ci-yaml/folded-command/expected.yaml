@@ -1,0 +1,8 @@
+jobs:
+  docs:
+    steps:
+      - run: >-
+          echo starting &&
+          techdocs-cli serve
+          --engine-port=8001
+          --config-file-name mkdocs.yml

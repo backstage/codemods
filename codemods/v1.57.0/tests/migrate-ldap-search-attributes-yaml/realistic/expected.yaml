@@ -1,0 +1,23 @@
+catalog:
+  providers:
+    ldapOrg:
+      default:
+        target: ldaps://example.invalid
+        bind:
+          dn: ${LDAP_USER_DN}
+          secret: ${LDAP_PASSWORD}
+        users:
+          dn: OU=Users and Groups,DC=example,DC=org
+          options:
+            scope: sub
+
+            # AD caps a single non-paged search (MaxPageSize, default 1000),
+            # so paging is needed when a group has more than 1000 members.
+            paged:
+              pageSize: 500
+
+            filter: '(memberof=${LDAP_ACCESS_GROUP_DN})'
+            # Preserves pre-1.57 behavior (all attributes). Narrow this list to the attributes your mappings and transformers use to benefit from attribute selection.
+            attributes: ['*', '+']
+        schedule:
+          frequency: { hours: 1 }

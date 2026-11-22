@@ -1,0 +1,34 @@
+events:
+  modules:
+    gitlab:
+      webhookSecret: ''
+---
+events:
+  modules:
+    gitlab:
+      webhookSecret: ""
+---
+events:
+  modules:
+    gitlab:
+      webhookSecret: null
+---
+events:
+  modules:
+    gitlab:
+      webhookSecret: ~
+---
+events:
+  modules:
+    gitlab:
+      webhookSecret: 
+---
+events:
+  modules:
+    github:
+      enabled: true
+integrations:
+  github:
+    - host: github.com
+      apps:
+        - webhookSecret: ''

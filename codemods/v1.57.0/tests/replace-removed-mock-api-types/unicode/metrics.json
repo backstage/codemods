@@ -1,0 +1,25 @@
+{
+  "replace-removed-mock-api-types": [
+    {
+      "cardinality": {
+        "action": "type-migrated",
+        "name": "MockConfigApi"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "type-migrated",
+        "name": "MockFetchApi"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "value-todo",
+        "name": "MockErrorApi"
+      },
+      "count": 1
+    }
+  ]
+}

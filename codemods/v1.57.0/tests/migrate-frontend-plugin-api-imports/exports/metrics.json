@@ -1,0 +1,39 @@
+{
+  "migrate-frontend-plugin-api-imports": [
+    {
+      "cardinality": {
+        "action": "export-moved",
+        "name": "AnalyticsImplementation"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "export-moved",
+        "name": "AnalyticsImplementationBlueprint"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "export-moved",
+        "name": "AnalyticsImplementationFactory"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "export-moved",
+        "name": "ExtensionFactoryMiddleware"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "export-moved",
+        "name": "PluginWrapperBlueprint"
+      },
+      "count": 1
+    }
+  ]
+}

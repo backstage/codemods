@@ -1,0 +1,151 @@
+{
+  "migrate-api-refs-to-core-apis": [
+    {
+      "cardinality": {
+        "action": "import-migrated",
+        "name": "analyticsApiRef"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-migrated",
+        "name": "appLanguageApiRef"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-migrated",
+        "name": "appLifecycleApiRef"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-migrated",
+        "name": "appThemeApiRef"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-migrated",
+        "name": "appTreeApiRef"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-migrated",
+        "name": "configApiRef"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-migrated",
+        "name": "dialogApiRef"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-migrated",
+        "name": "discoveryApiRef"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-migrated",
+        "name": "errorApiRef"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-migrated",
+        "name": "featureFlagsApiRef"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-migrated",
+        "name": "fetchApiRef"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-migrated",
+        "name": "iconsApiRef"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-migrated",
+        "name": "identityApiRef"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-migrated",
+        "name": "oauthRequestApiRef"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-migrated",
+        "name": "pluginHeaderActionsApiRef"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-migrated",
+        "name": "pluginWrapperApiRef"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-migrated",
+        "name": "routeResolutionApiRef"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-migrated",
+        "name": "storageApiRef"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-migrated",
+        "name": "swappableComponentsApiRef"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-migrated",
+        "name": "toastApiRef"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-migrated",
+        "name": "translationApiRef"
+      },
+      "count": 1
+    }
+  ]
+}

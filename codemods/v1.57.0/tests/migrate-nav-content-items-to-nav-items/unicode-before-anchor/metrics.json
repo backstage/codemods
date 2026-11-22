@@ -1,0 +1,22 @@
+{
+  "migrate-nav-content-items-to-nav-items": [
+    {
+      "cardinality": {
+        "action": "items-parameter-migrated"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "items-reference-migrated"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "manual-review"
+      },
+      "count": 1
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+app:
+  extensions:
+    - app-root-element:app/alert-display: {config: {anchorOrigin: {vertical: top}}}

@@ -1,0 +1,18 @@
+{
+  "migrate-frontend-plugin-api-imports": [
+    {
+      "cardinality": {
+        "action": "import-moved",
+        "name": "AnalyticsImplementationFactory"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-moved",
+        "name": "ExtensionFactoryMiddleware"
+      },
+      "count": 1
+    }
+  ]
+}

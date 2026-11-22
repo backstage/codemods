@@ -1,0 +1,11 @@
+{
+  "migrate-api-refs-to-core-apis": [
+    {
+      "cardinality": {
+        "action": "import-migrated",
+        "name": "pluginWrapperApiRef"
+      },
+      "count": 1
+    }
+  ]
+}

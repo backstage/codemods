@@ -1,0 +1,3 @@
+auth:
+  clientIdMetadataDocuments:
+    enabled: true

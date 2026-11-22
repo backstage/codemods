@@ -1,0 +1,11 @@
+{
+  "migrate-frontend-plugin-api-imports": [
+    {
+      "cardinality": {
+        "action": "import-moved",
+        "name": "AnalyticsImplementationBlueprint"
+      },
+      "count": 1
+    }
+  ]
+}

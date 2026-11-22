@@ -1,0 +1,10 @@
+{
+  "remove-dynamic-client-registration-config": [
+    {
+      "cardinality": {
+        "action": "config-removed"
+      },
+      "count": 2
+    }
+  ]
+}

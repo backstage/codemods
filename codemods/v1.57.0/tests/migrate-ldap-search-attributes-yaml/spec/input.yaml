@@ -1,0 +1,8 @@
+catalog:
+  providers:
+    ldapOrg:
+      default:
+        users:
+          dn: ou=people,dc=example,dc=com
+          options:
+            filter: (uid=*)

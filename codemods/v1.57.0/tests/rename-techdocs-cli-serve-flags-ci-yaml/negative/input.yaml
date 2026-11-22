@@ -1,0 +1,6 @@
+jobs:
+  docs:
+    steps:
+      - run: techdocs-cli generate --mkdocs-port 8001
+      - run: mkdocs serve --mkdocs-port 8001
+      - run: techdocs-cli serve --engine-port 8001

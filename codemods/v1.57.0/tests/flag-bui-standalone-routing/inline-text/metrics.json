@@ -1,0 +1,10 @@
+{
+  "flag-bui-standalone-routing": [
+    {
+      "cardinality": {
+        "action": "href-flagged"
+      },
+      "count": 1
+    }
+  ]
+}

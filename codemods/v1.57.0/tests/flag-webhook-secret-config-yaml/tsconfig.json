@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": [
+    "../../scripts/flag-webhook-secret-config-yaml.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

@@ -1,0 +1,309 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/codemod/codemod/refs/heads/main/schemas/workflow.json
+
+version: '1'
+
+nodes:
+  - id: apply-recipe
+    name: 'Run every Backstage 1.57.0 codemod in order'
+    type: automatic
+    steps:
+      # --- BREAKING: @backstage/frontend-plugin-api /alpha entry point removed; relocated exports (step 1)
+      - name: 'Move /alpha, ExtensionFactoryMiddleware and AnalyticsImplementation* imports'
+        js-ast-grep:
+          js_file: scripts/migrate-frontend-plugin-api-imports.ts
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+            - '**/dist/**'
+            - '**/dist-types/**'
+            - '**/build/**'
+            - '**/coverage/**'
+
+      # --- BREAKING + DEPRECATION: removed frontend-plugin-api type aliases, deprecated AnyApiRef/AnyApiFactory (step 2)
+      - name: 'Replace removed frontend-plugin-api type aliases'
+        js-ast-grep:
+          js_file: scripts/replace-removed-frontend-plugin-api-types.ts
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+            - '**/dist/**'
+            - '**/dist-types/**'
+            - '**/build/**'
+            - '**/coverage/**'
+
+      # --- DEPRECATION: individual core API refs deprecated in favor of coreApis (step 3)
+      - name: 'Replace deprecated core API refs with coreApis members'
+        js-ast-grep:
+          js_file: scripts/migrate-api-refs-to-core-apis.ts
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+            - '**/dist/**'
+            - '**/dist-types/**'
+            - '**/build/**'
+            - '**/coverage/**'
+
+      # --- BREAKING: createSpecializedApp removed from @backstage/frontend-app-api (step 4)
+      - name: 'Replace createSpecializedApp with prepareSpecializedApp().finalize()'
+        js-ast-grep:
+          js_file: scripts/replace-create-specialized-app.ts
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+            - '**/dist/**'
+            - '**/dist-types/**'
+            - '**/build/**'
+            - '**/coverage/**'
+
+      # --- BREAKING: standalone mock API types removed from @backstage/frontend-test-utils (step 5)
+      - name: 'Replace removed mock API types with mockApis-derived types'
+        js-ast-grep:
+          js_file: scripts/replace-removed-mock-api-types.ts
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+            - '**/dist/**'
+            - '**/dist-types/**'
+            - '**/build/**'
+            - '**/coverage/**'
+
+      # --- BREAKING: JSON request log timestamps (step 6)
+      - name: 'Keep timestamp in custom root logger JSON format'
+        js-ast-grep:
+          js_file: scripts/add-timestamp-to-root-logger-json-format.ts
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+            - '**/dist/**'
+            - '**/dist-types/**'
+            - '**/build/**'
+            - '**/coverage/**'
+
+      # --- BREAKING: webhook authentication required by default (step 7)
+      - name: 'Pass logger to createGitlabTokenValidator'
+        js-ast-grep:
+          js_file: scripts/add-logger-to-gitlab-token-validator.ts
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+            - '**/dist/**'
+            - '**/dist-types/**'
+            - '**/build/**'
+            - '**/coverage/**'
+
+      - name: 'Flag webhook module config without a secret in app-config'
+        js-ast-grep:
+          js_file: scripts/flag-webhook-secret-config-yaml.ts
+          language: 'yaml'
+          include:
+            - '**/app-config.yaml'
+            - '**/app-config.*.yaml'
+            - '**/app-config.yml'
+            - '**/app-config.*.yml'
+          exclude:
+            - '**/node_modules/**'
+            - '**/dist/**'
+            - '**/dist-types/**'
+            - '**/build/**'
+            - '**/coverage/**'
+
+      # --- BREAKING: LDAP attribute selection (step 8)
+      - name: 'Preserve all LDAP search attributes in app-config'
+        js-ast-grep:
+          js_file: scripts/migrate-ldap-search-attributes-yaml.ts
+          language: 'yaml'
+          include:
+            - '**/app-config.yaml'
+            - '**/app-config.*.yaml'
+            - '**/app-config.yml'
+            - '**/app-config.*.yml'
+          exclude:
+            - '**/node_modules/**'
+            - '**/dist/**'
+            - '**/dist-types/**'
+            - '**/build/**'
+            - '**/coverage/**'
+
+      # --- BREAKING: Dynamic Client Registration removed (step 9)
+      - name: 'Remove auth.experimentalDynamicClientRegistration from app-config'
+        js-ast-grep:
+          js_file: scripts/remove-dynamic-client-registration-config.ts
+          language: 'yaml'
+          include:
+            - '**/app-config.yaml'
+            - '**/app-config.*.yaml'
+            - '**/app-config.yml'
+            - '**/app-config.*.yml'
+          exclude:
+            - '**/node_modules/**'
+            - '**/dist/**'
+            - '**/dist-types/**'
+            - '**/build/**'
+            - '**/coverage/**'
+
+      # --- BREAKING: alert display anchorOrigin removed (step 10)
+      - name: 'Remove ignored anchorOrigin from alert display extension config'
+        js-ast-grep:
+          js_file: scripts/remove-alert-display-anchor-origin.ts
+          language: 'yaml'
+          include:
+            - '**/app-config.yaml'
+            - '**/app-config.*.yaml'
+            - '**/app-config.yml'
+            - '**/app-config.*.yml'
+          exclude:
+            - '**/node_modules/**'
+            - '**/dist/**'
+            - '**/dist-types/**'
+            - '**/build/**'
+            - '**/coverage/**'
+
+      # --- DEPRECATION: TechDocs CLI --mkdocs-* serve flags (step 11)
+      - name: 'Rename TechDocs CLI serve flags in package scripts'
+        js-ast-grep:
+          js_file: scripts/rename-techdocs-cli-serve-flags-package-json.ts
+          language: 'json'
+          include:
+            - '**/package.json'
+          exclude:
+            - '**/node_modules/**'
+            - '**/dist/**'
+            - '**/dist-types/**'
+            - '**/build/**'
+            - '**/coverage/**'
+
+      - name: 'Rename TechDocs CLI serve flags in GitHub Actions run commands'
+        js-ast-grep:
+          js_file: scripts/rename-techdocs-cli-serve-flags-ci-yaml.ts
+          language: 'yaml'
+          include:
+            - '**/.github/workflows/*.yml'
+            - '**/.github/workflows/*.yaml'
+          exclude:
+            - '**/node_modules/**'
+            - '**/dist/**'
+            - '**/dist-types/**'
+            - '**/build/**'
+            - '**/coverage/**'
+
+      # The shell step reads targetDirEncoded set by the package.json step above;
+      # targets without any package.json leave it unset and skip this step.
+      - name: 'Rename TechDocs CLI serve flags in shell scripts'
+        if: state.targetDirEncoded
+        env:
+          CODEMOD_SCRIPT: 'scripts/rename-techdocs-cli-serve-flags-shell.ts'
+          CODEMOD_URL_MODULE: 'node:url'
+        # The -e payload must be quoted: an unquoted parenthesized expression
+        # is a syntax error under sh (Linux) even though cmd accepts it.
+        run: 'node -e "import(require(process.env.CODEMOD_URL_MODULE).pathToFileURL(process.env.CODEMOD_PATH+String.fromCharCode(47)+process.env.CODEMOD_SCRIPT))" ${{ state.targetDirEncoded }}'
+
+      # --- BREAKING: React 17 removed from peer dependency ranges (step 12)
+      - name: 'Drop React 17 from peerDependencies ranges'
+        js-ast-grep:
+          js_file: scripts/update-react-peer-dependency-ranges.ts
+          language: 'json'
+          include:
+            - '**/package.json'
+          exclude:
+            - '**/node_modules/**'
+            - '**/dist/**'
+            - '**/dist-types/**'
+            - '**/build/**'
+            - '**/coverage/**'
+
+      # --- BREAKING: IconBundleBlueprint accepts only icon elements (step 13)
+      - name: 'Wrap IconBundleBlueprint icons in elements'
+        js-ast-grep:
+          js_file: scripts/wrap-icon-bundle-icons-in-elements.ts
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+            - '**/dist/**'
+            - '**/dist-types/**'
+            - '**/build/**'
+            - '**/coverage/**'
+
+      # --- BREAKING: RouterBlueprint and the app/root router input removed (step 14)
+      - name: 'Migrate RouterBlueprint to AppRootWrapperBlueprint'
+        js-ast-grep:
+          js_file: scripts/migrate-router-blueprint-to-app-root-wrapper.ts
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+            - '**/dist/**'
+            - '**/dist-types/**'
+            - '**/build/**'
+            - '**/coverage/**'
+
+      # --- BREAKING: custom navigation items prop removed (step 15)
+      - name: 'Migrate NavContentBlueprint items to navItems'
+        js-ast-grep:
+          js_file: scripts/migrate-nav-content-items-to-nav-items.ts
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+            - '**/dist/**'
+            - '**/dist-types/**'
+            - '**/build/**'
+            - '**/coverage/**'
+
+      # --- BREAKING: Backstage UI explicit routing integration (step 16)
+      - name: 'Flag executable-scheme hrefs on Backstage UI elements'
+        js-ast-grep:
+          js_file: scripts/flag-bui-standalone-routing.ts
+          language: 'tsx'
+          semantic_analysis: 'file'
+          include:
+            - '**/*.ts'
+            - '**/*.tsx'
+          exclude:
+            - '**/node_modules/**'
+            - '**/dist/**'
+            - '**/dist-types/**'
+            - '**/build/**'
+            - '**/coverage/**'
+            - '**/*.test.*'
+            - '**/*.spec.*'
+            - '**/*.stories.*'
+            - '**/__fixtures__/**'
+            - '**/__mocks__/**'

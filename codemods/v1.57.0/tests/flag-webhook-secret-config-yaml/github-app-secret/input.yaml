@@ -1,0 +1,10 @@
+events:
+  modules:
+    github:
+      option: true
+integrations:
+  github:
+    - host: github.com
+      apps:
+        - appId: 1
+          webhookSecret: ${SECRET}

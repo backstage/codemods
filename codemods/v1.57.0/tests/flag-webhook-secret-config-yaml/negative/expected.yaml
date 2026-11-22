@@ -1,0 +1,9 @@
+events:
+  modules: { github: {}, gitlab: {}, azureDevOps: {} }
+  http:
+    topics:
+      gitlab: /webhooks/gitlab
+---
+other:
+  modules:
+    gitlab: {}

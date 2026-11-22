@@ -1,0 +1,10 @@
+{
+  "replace-removed-frontend-plugin-api-types": [
+    {
+      "cardinality": {
+        "action": "reexport-todo"
+      },
+      "count": 5
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+auth:
+  experimentalDynamicClientRegistration:
+    enabled: 'true'
+  providers: {}
+---
+auth:
+  experimentalDynamicClientRegistration:
+    enabled: yes
+  providers: {}
+---
+auth:
+  experimentalDynamicClientRegistration:
+    enabled: on
+  providers: {}
+---
+auth:
+  experimentalDynamicClientRegistration:
+    enabled: 1
+  providers: {}
+---
+auth:
+  experimentalDynamicClientRegistration:
+    enabled: ${DCR_ENABLED}
+  providers: {}

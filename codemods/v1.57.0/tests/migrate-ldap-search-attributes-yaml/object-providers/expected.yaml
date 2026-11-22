@@ -1,0 +1,22 @@
+ldap:
+  providers:
+    main:
+      users: { dn: ou=users }
+      groups:
+        options:
+          scope: sub # important
+          # Preserves pre-1.57 behavior (all attributes). Narrow this list to the attributes your mappings and transformers use to benefit from attribute selection.
+          attributes: ['*', '+']
+catalog:
+  processors:
+    ldapOrg:
+      providers:
+        legacy:
+          users:
+            dn: ou=users # café
+            options:
+              # Preserves pre-1.57 behavior (all attributes). Narrow this list to the attributes your mappings and transformers use to benefit from attribute selection.
+              attributes: ['*', '+']
+          groups:
+            options:
+              attributes: ['gid']

@@ -1,0 +1,5 @@
+auth:
+  experimentalDynamicClientRegistration:
+    enabled: false
+app:
+  title: Example

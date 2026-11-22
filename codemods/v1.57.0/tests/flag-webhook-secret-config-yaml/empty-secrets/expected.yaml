@@ -1,0 +1,40 @@
+events:
+  modules:
+    # TODO(backstage-codemod): since 1.57 webhook requests are rejected (HTTP 403) without webhookSecret. Configure it here or in an environment-specific app-config.
+    gitlab:
+      webhookSecret: ''
+---
+events:
+  modules:
+    # TODO(backstage-codemod): since 1.57 webhook requests are rejected (HTTP 403) without webhookSecret. Configure it here or in an environment-specific app-config.
+    gitlab:
+      webhookSecret: ""
+---
+events:
+  modules:
+    # TODO(backstage-codemod): since 1.57 webhook requests are rejected (HTTP 403) without webhookSecret. Configure it here or in an environment-specific app-config.
+    gitlab:
+      webhookSecret: null
+---
+events:
+  modules:
+    # TODO(backstage-codemod): since 1.57 webhook requests are rejected (HTTP 403) without webhookSecret. Configure it here or in an environment-specific app-config.
+    gitlab:
+      webhookSecret: ~
+---
+events:
+  modules:
+    # TODO(backstage-codemod): since 1.57 webhook requests are rejected (HTTP 403) without webhookSecret. Configure it here or in an environment-specific app-config.
+    gitlab:
+      webhookSecret: 
+---
+events:
+  modules:
+    # TODO(backstage-codemod): since 1.57 webhook requests are rejected (HTTP 403) without webhookSecret. Configure it here or in an environment-specific app-config.
+    github:
+      enabled: true
+integrations:
+  github:
+    - host: github.com
+      apps:
+        - webhookSecret: ''

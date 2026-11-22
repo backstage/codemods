@@ -1,0 +1,17 @@
+{
+  "replace-create-specialized-app": [
+    {
+      "cardinality": {
+        "action": "call-migrated"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-renamed",
+        "name": "createSpecializedApp"
+      },
+      "count": 1
+    }
+  ]
+}

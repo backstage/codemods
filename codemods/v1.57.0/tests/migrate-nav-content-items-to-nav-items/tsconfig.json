@@ -1,0 +1,7 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": [
+    "../../scripts/migrate-nav-content-items-to-nav-items.ts",
+    "../../scripts/migrate-router-blueprint-to-app-root-wrapper-helpers.ts"
+  ]
+}

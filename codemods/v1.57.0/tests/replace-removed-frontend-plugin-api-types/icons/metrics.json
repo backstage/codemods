@@ -1,0 +1,10 @@
+{
+  "replace-removed-frontend-plugin-api-types": [
+    {
+      "cardinality": {
+        "action": "icon-todo"
+      },
+      "count": 1
+    }
+  ]
+}

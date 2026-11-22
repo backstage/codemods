@@ -1,0 +1,22 @@
+{
+  "migrate-router-blueprint-to-app-root-wrapper": [
+    {
+      "cardinality": {
+        "action": "blueprint-migrated"
+      },
+      "count": 4
+    },
+    {
+      "cardinality": {
+        "action": "browser-router-unwrapped"
+      },
+      "count": 2
+    },
+    {
+      "cardinality": {
+        "action": "manual-review"
+      },
+      "count": 2
+    }
+  ]
+}

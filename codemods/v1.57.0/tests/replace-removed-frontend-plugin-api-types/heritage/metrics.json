@@ -1,0 +1,18 @@
+{
+  "replace-removed-frontend-plugin-api-types": [
+    {
+      "cardinality": {
+        "action": "type-migrated",
+        "name": "ExtensionAttachTo"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "type-migrated",
+        "name": "ProgressProps"
+      },
+      "count": 1
+    }
+  ]
+}

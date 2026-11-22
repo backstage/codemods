@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": [
+    "../../scripts/migrate-ldap-search-attributes-yaml.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

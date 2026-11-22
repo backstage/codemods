@@ -1,0 +1,10 @@
+{
+  "migrate-api-refs-to-core-apis": [
+    {
+      "cardinality": {
+        "action": "todo"
+      },
+      "count": 1
+    }
+  ]
+}

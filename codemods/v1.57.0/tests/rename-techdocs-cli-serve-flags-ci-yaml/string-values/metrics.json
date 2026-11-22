@@ -1,0 +1,10 @@
+{
+  "rename-techdocs-cli-serve-flags-ci-yaml": [
+    {
+      "cardinality": {
+        "action": "command-updated"
+      },
+      "count": 3
+    }
+  ]
+}
