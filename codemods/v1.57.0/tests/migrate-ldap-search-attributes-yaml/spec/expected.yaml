@@ -1,0 +1,10 @@
+catalog:
+  providers:
+    ldapOrg:
+      default:
+        users:
+          dn: ou=people,dc=example,dc=com
+          options:
+            filter: (uid=*)
+            # Preserves pre-1.57 behavior (all attributes). Narrow this list to the attributes your mappings and transformers use to benefit from attribute selection.
+            attributes: ['*', '+']

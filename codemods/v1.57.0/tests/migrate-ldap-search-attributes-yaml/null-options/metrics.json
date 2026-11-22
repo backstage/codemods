@@ -1,0 +1,10 @@
+{
+  "migrate-ldap-search-attributes-yaml": [
+    {
+      "cardinality": {
+        "action": "attributes-added"
+      },
+      "count": 3
+    }
+  ]
+}

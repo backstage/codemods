@@ -1,0 +1,10 @@
+{
+  "remove-alert-display-anchor-origin": [
+    {
+      "cardinality": {
+        "action": "anchor-removed"
+      },
+      "count": 2
+    }
+  ]
+}

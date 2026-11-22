@@ -1,0 +1,6 @@
+app:
+  extensions:
+    - app-root-element:app/alert-display:
+        config:
+          # Keep this setting
+          transientTimeoutMs: 2500

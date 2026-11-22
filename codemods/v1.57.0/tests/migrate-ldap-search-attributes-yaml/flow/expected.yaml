@@ -1,0 +1,14 @@
+catalog:
+  providers:
+    ldapOrg:
+      default:
+        users: { dn: ou=users, options: { filter: test } }
+        groups:
+          dn: ou=groups
+          options: {}
+ldap:
+  providers: [{ users: { dn: example }, groups: { options: {} } }]
+events:
+  modules:
+    ldap:
+      users: {}

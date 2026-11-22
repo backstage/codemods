@@ -1,0 +1,10 @@
+# A normal adopter config
+auth:
+  # DCR settings
+  experimentalDynamicClientRegistration:
+    # Turned on before upgrade
+    enabled: true
+  environment: production
+  # Other provider config
+  providers:
+    guest: {}

@@ -1,0 +1,7 @@
+app:
+  title: 'Räksmörgås'
+auth:
+  experimentalDynamicClientRegistration:
+    enabled: false
+  providers:
+    guest: {}

@@ -1,0 +1,15 @@
+catalog:
+  providers:
+    ldapOrg:
+      default:
+        users:
+          options:
+            attributes: null
+        groups:
+          options:
+            attributes: []
+ldap:
+  providers:
+    first:
+      users: { options: { attributes: ['cn'] } }
+      groups: { options: { attributes: ['*', '+'] } }

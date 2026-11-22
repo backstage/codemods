@@ -1,0 +1,19 @@
+auth:
+  # TODO(backstage-codemod): Dynamic Client Registration was removed in 1.57. Configure auth.clientIdMetadataDocuments or auth.staticClients.
+  providers: {}
+---
+auth:
+  # TODO(backstage-codemod): Dynamic Client Registration was removed in 1.57. Configure auth.clientIdMetadataDocuments or auth.staticClients.
+  providers: {}
+---
+auth:
+  # TODO(backstage-codemod): Dynamic Client Registration was removed in 1.57. Configure auth.clientIdMetadataDocuments or auth.staticClients.
+  providers: {}
+---
+auth:
+  # TODO(backstage-codemod): Dynamic Client Registration was removed in 1.57. Configure auth.clientIdMetadataDocuments or auth.staticClients.
+  providers: {}
+---
+auth:
+  # TODO(backstage-codemod): Dynamic Client Registration was removed in 1.57. Configure auth.clientIdMetadataDocuments or auth.staticClients.
+  providers: {}

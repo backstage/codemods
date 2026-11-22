@@ -1,0 +1,9 @@
+auth:
+  experimentalDynamicClientRegistration:
+    enabled: true
+  staticClients: []
+---
+auth:
+  experimentalDynamicClientRegistration:
+    enabled: true
+  experimentalClientIdMetadataDocuments: {}

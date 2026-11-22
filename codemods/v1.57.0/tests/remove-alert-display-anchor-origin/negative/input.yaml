@@ -1,0 +1,13 @@
+app:
+  extensions:
+    - app-root-element:app/alert-display:
+        config:
+          transientTimeoutMs: 5000
+    - other/extension:
+        config:
+          anchorOrigin: top
+other:
+  extensions:
+    - app-root-element:app/alert-display:
+        config:
+          anchorOrigin: top

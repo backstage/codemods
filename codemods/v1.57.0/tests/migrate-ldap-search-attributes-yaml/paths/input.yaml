@@ -1,0 +1,29 @@
+catalog:
+  providers:
+    ldapOrg:
+      default:
+        users:
+          dn: ou=people,dc=example,dc=com
+          options:
+            filter: (uid=*) # keep inline
+        groups:
+          - dn: ou=groups
+          - dn: ou=other
+            options:
+              attributes: ['cn']
+  processors:
+    ldapOrg:
+      providers:
+        - users:
+            dn: ou=legacy
+          groups:
+            dn: ou=legacy-groups
+ldap:
+  providers:
+    - users:
+        - dn: ou=first
+          options:
+            filter: (objectClass=person)
+        - dn: ou=café
+      groups:
+        options: # keep comment

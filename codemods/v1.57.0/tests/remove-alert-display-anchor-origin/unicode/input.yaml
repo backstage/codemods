@@ -1,0 +1,8 @@
+app:
+  title: 'é'
+  extensions:
+    - app-root-element:app/alert-display:
+        config:
+          timeout: 1
+          anchorOrigin: top
+    - other/extension

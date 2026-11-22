@@ -1,0 +1,17 @@
+catalog:
+  providers:
+    ldapOrg:
+      default:
+        users:
+          - dn: one
+            options: # empty
+              # Preserves pre-1.57 behavior (all attributes). Narrow this list to the attributes your mappings and transformers use to benefit from attribute selection.
+              attributes: ['*', '+']
+          - dn: café
+            options:  # legacy
+              # Preserves pre-1.57 behavior (all attributes). Narrow this list to the attributes your mappings and transformers use to benefit from attribute selection.
+              attributes: ['*', '+']
+          - dn: three
+            options: 
+              # Preserves pre-1.57 behavior (all attributes). Narrow this list to the attributes your mappings and transformers use to benefit from attribute selection.
+              attributes: ['*', '+']

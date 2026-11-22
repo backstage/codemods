@@ -1,0 +1,11 @@
+catalog:
+  providers:
+    ldapOrg:
+      default:
+        users:
+          - dn: one
+            options: # empty
+          - dn: café
+            options: null # legacy
+          - dn: three
+            options: null

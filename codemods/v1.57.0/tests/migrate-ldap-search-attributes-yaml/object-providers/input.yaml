@@ -1,0 +1,17 @@
+ldap:
+  providers:
+    main:
+      users: { dn: ou=users }
+      groups:
+        options:
+          scope: sub # important
+catalog:
+  processors:
+    ldapOrg:
+      providers:
+        legacy:
+          users:
+            dn: ou=users # café
+          groups:
+            options:
+              attributes: ['gid']

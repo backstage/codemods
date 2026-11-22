@@ -1,0 +1,13 @@
+auth:
+  # TODO(backstage-codemod): Dynamic Client Registration was removed in 1.57. Configure auth.clientIdMetadataDocuments or auth.staticClients.
+  providers: {}
+other:
+  experimentalDynamicClientRegistration:
+    enabled: true
+---
+auth: {experimentalDynamicClientRegistration: {enabled: true}, providers: {}}
+---
+auth: {
+  experimentalDynamicClientRegistration: {enabled: true},
+  providers: {}
+}

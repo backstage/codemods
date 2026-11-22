@@ -1,0 +1,5 @@
+app:
+  extensions:
+    - app-root-element:app/alert-display
+    - app-root-element:app/alert-display:
+        disabled: true
