@@ -1,0 +1,6 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": [
+    "../../scripts/flag-bui-standalone-routing.ts"
+  ]
+}

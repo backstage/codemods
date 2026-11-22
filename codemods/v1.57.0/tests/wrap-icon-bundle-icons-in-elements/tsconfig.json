@@ -1,0 +1,6 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": [
+    "../../scripts/wrap-icon-bundle-icons-in-elements.ts"
+  ]
+}

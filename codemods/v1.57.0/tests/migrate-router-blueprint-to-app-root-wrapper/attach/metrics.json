@@ -1,0 +1,10 @@
+{
+  "migrate-router-blueprint-to-app-root-wrapper": [
+    {
+      "cardinality": {
+        "action": "manual-review"
+      },
+      "count": 1
+    }
+  ]
+}

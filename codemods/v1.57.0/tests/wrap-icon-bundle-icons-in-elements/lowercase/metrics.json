@@ -1,0 +1,16 @@
+{
+  "wrap-icon-bundle-icons-in-elements": [
+    {
+      "cardinality": {
+        "action": "icon-wrapped"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "manual-review"
+      },
+      "count": 1
+    }
+  ]
+}
