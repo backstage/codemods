@@ -1,0 +1,17 @@
+{
+  "replace-removed-frontend-plugin-api-types": [
+    {
+      "cardinality": {
+        "action": "reexport-todo"
+      },
+      "count": 2
+    },
+    {
+      "cardinality": {
+        "action": "type-migrated",
+        "name": "PageTab"
+      },
+      "count": 1
+    }
+  ]
+}

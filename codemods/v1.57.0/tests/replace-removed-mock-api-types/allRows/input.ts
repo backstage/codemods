@@ -1,0 +1,31 @@
+import {
+  type MockAlertApi,
+  type MockAnalyticsApi,
+  type MockConfigApi,
+  type MockErrorApi,
+  type MockFeatureFlagsApi,
+  type MockFetchApi,
+  type MockPermissionApi,
+  type MockStorageApi,
+  type MockTranslationApi,
+  type MockErrorApiOptions,
+  type MockFetchApiOptions,
+  type MockFeatureFlagsApiOptions,
+  type ErrorWithContext,
+} from '@backstage/frontend-test-utils';
+
+type AllMocks = [
+  MockAlertApi,
+  MockAnalyticsApi,
+  MockConfigApi,
+  MockErrorApi,
+  MockFeatureFlagsApi,
+  MockFetchApi,
+  MockPermissionApi,
+  MockStorageApi,
+  MockTranslationApi,
+  MockErrorApiOptions,
+  MockFetchApiOptions,
+  MockFeatureFlagsApiOptions,
+  ErrorWithContext,
+];

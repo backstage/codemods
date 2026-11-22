@@ -1,0 +1,11 @@
+{
+  "replace-removed-frontend-plugin-api-types": [
+    {
+      "cardinality": {
+        "action": "type-migrated",
+        "name": "PageTab"
+      },
+      "count": 1
+    }
+  ]
+}

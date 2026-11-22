@@ -1,0 +1,25 @@
+{
+  "migrate-api-refs-to-core-apis": [
+    {
+      "cardinality": {
+        "action": "import-migrated",
+        "name": "configApiRef"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-migrated",
+        "name": "discoveryApiRef"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "import-migrated",
+        "name": "fetchApiRef"
+      },
+      "count": 1
+    }
+  ]
+}

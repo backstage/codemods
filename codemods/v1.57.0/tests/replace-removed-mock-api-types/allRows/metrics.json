@@ -1,0 +1,95 @@
+{
+  "replace-removed-mock-api-types": [
+    {
+      "cardinality": {
+        "action": "type-migrated",
+        "name": "ErrorWithContext"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "type-migrated",
+        "name": "MockAlertApi"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "type-migrated",
+        "name": "MockAnalyticsApi"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "type-migrated",
+        "name": "MockConfigApi"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "type-migrated",
+        "name": "MockErrorApi"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "type-migrated",
+        "name": "MockErrorApiOptions"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "type-migrated",
+        "name": "MockFeatureFlagsApi"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "type-migrated",
+        "name": "MockFeatureFlagsApiOptions"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "type-migrated",
+        "name": "MockFetchApi"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "type-migrated",
+        "name": "MockFetchApiOptions"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "type-migrated",
+        "name": "MockPermissionApi"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "type-migrated",
+        "name": "MockStorageApi"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "type-migrated",
+        "name": "MockTranslationApi"
+      },
+      "count": 1
+    }
+  ]
+}

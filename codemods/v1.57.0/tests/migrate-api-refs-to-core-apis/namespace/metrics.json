@@ -1,0 +1,10 @@
+{
+  "migrate-api-refs-to-core-apis": [
+    {
+      "cardinality": {
+        "action": "reference-migrated"
+      },
+      "count": 2
+    }
+  ]
+}

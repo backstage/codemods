@@ -1,0 +1,25 @@
+{
+  "replace-removed-mock-api-types": [
+    {
+      "cardinality": {
+        "action": "reexport-todo",
+        "name": "ErrorWithContext"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "reexport-todo",
+        "name": "MockErrorApiOptions"
+      },
+      "count": 1
+    },
+    {
+      "cardinality": {
+        "action": "reexport-todo",
+        "name": "MockFetchApi"
+      },
+      "count": 1
+    }
+  ]
+}

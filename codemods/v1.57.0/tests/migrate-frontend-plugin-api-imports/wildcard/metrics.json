@@ -1,0 +1,11 @@
+{
+  "migrate-frontend-plugin-api-imports": [
+    {
+      "cardinality": {
+        "action": "source-rewritten",
+        "kind": "export"
+      },
+      "count": 1
+    }
+  ]
+}
