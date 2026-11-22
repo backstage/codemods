@@ -1,0 +1,10 @@
+{
+  "add-logger-to-gitlab-token-validator": [
+    {
+      "cardinality": {
+        "action": "logger-added"
+      },
+      "count": 2
+    }
+  ]
+}

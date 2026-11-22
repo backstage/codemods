@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": [
+    "../../scripts/add-timestamp-to-root-logger-json-format.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

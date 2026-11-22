@@ -1,0 +1,4 @@
+events:
+  modules:
+    gitlab:
+      someOtherOption: true

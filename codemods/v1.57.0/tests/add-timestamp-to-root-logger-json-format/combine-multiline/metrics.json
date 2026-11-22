@@ -1,0 +1,10 @@
+{
+  "add-timestamp-to-root-logger-json-format": [
+    {
+      "cardinality": {
+        "action": "timestamp-added"
+      },
+      "count": 1
+    }
+  ]
+}

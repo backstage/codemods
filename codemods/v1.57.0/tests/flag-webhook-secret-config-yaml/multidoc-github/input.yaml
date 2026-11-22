@@ -1,0 +1,12 @@
+events:
+  modules:
+    'github': # secret lives in other document
+      enabled: true
+    "gitlab":
+      enabled: true
+---
+integrations:
+  github:
+    - host: github.com
+      apps:
+        - webhookSecret: ${GITHUB_SECRET}

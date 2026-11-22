@@ -1,0 +1,11 @@
+app:
+  title: Backstage
+events:
+  modules:
+    github:
+      webhookSecret: 'null'
+    gitlab:
+      webhookSecret: ${GITLAB_SECRET}
+    azureDevOps:
+      webhookSecret:
+        $file: /run/secrets/azure-webhook

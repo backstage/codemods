@@ -1,0 +1,8 @@
+events:
+  modules:
+    github:
+      dangerouslyAllowUnauthenticatedEvents: true
+    gitlab:
+      dangerouslyAllowUnauthenticatedEvents: false
+    azureDevOps:
+      dangerouslyAllowUnauthenticatedEvents: false

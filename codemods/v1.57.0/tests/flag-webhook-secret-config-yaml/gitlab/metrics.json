@@ -1,0 +1,11 @@
+{
+  "flag-webhook-secret-config-yaml": [
+    {
+      "cardinality": {
+        "action": "module-flagged",
+        "module": "gitlab"
+      },
+      "count": 1
+    }
+  ]
+}

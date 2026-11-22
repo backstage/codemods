@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": [
+    "../../scripts/add-logger-to-gitlab-token-validator.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
